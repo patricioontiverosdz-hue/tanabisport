@@ -743,8 +743,8 @@ document.addEventListener("click",function(e){
     if(!cm){alert("Escribe qué hay que revisar.");return;}
     S.pays[d.key].status="revision";S.pays[d.key].comment=cm;notify(idsAdmin(),me().name+" pidió revisar su pago ("+weekLabel(kb[1])+")");save();render();
   }
-  else if(a==="prevW"&&isAdmin()){S.payWeek=addDays(S.payWeek,-7);render();}
-  else if(a==="nextW"&&isAdmin()){S.payWeek=addDays(S.payWeek,7);render();}
+  else if(a==="prevW"&&isAdmin()){S.payTouched=true;S.payWeek=addDays(S.payWeek,-7);render();}
+  else if(a==="nextW"&&isAdmin()){S.payTouched=true;S.payWeek=addDays(S.payWeek,7);render();}
   else if(a==="csvPay"&&isAdmin()){saveCsv("tanabi-pagos-"+S.payWeek+".csv",buildPayCsv());}
   else if(a==="addBulk"&&isAdmin()){
     var bd=document.getElementById("bd").value,bl=document.getElementById("bt").value.split(/\r?\n/),ok=0,badL=[];
@@ -966,8 +966,9 @@ function pendBox(){
   if(ln)it.push(["prestamos",ln+" préstamo(s) solicitado(s)"]);
   if(rq)it.push(["cobertura",rq+" solicitud(es) de modificar cobertura"]);
   if(od)it.push(["tienda",od+" pedido(s) nuevo(s) en la tienda"]);
+  pendingPayWeeks().forEach(function(p){it.push(["pagos",p.n+" pago(s) por aprobar: "+weekLabel(p.w),p.w]);});
   if(!it.length)return "";
-  return '<div class="card" style="margin-bottom:14px"><h3>Por atender</h3>'+it.map(function(i){return '<div class="pl"><span>'+i[1]+'</span><button class="btn small" data-tab="'+i[0]+'">Abrir</button></div>';}).join("")+'</div>';
+  return '<div class="card" style="margin-bottom:14px"><h3>Por atender</h3>'+it.map(function(i){return '<div class="pl"><span>'+i[1]+'</span>'+(i[2]?'<button class="btn small" data-x="goPay" data-w="'+i[2]+'">Abrir</button>':'<button class="btn small" data-tab="'+i[0]+'">Abrir</button>')+'</div>';}).join("")+'</div>';
 }
 function finSummary(){
   if(!S.sumMonth)S.sumMonth=todayStr().slice(0,7);
@@ -1490,6 +1491,7 @@ async function loadAll(lite){
     S.orders=d(r[10]).sort(function(a,b){return b.id-a.id;});
     S.pays={};r[11].forEach(function(x){S.pays[x.id]=x.data;});
   }
+  if(!lite&&authed&&!S.payTouched){var pwk=pendingPayWeeks();if(pwk.length)S.payWeek=pwk[0].w;}
   SYNC.snap=snapOf(buildRows());
   SYNC.prof={};S.users.forEach(function(u){SYNC.prof[u.id]=JSON.stringify([u.name,u.role]);});
 }
@@ -1700,8 +1702,8 @@ document.addEventListener("change",async function(e){
 });
 
 Object.assign(X,{
-  weekNow:function(){if(!isAdmin())return;S.payWeek=mondayOf(todayStr());render();},
-  weekLast:function(){if(!isAdmin())return;S.payWeek=addDays(mondayOf(todayStr()),-7);render();},
+  weekNow:function(){if(!isAdmin())return;S.payTouched=true;S.payWeek=mondayOf(todayStr());render();},
+  weekLast:function(){if(!isAdmin())return;S.payTouched=true;S.payWeek=addDays(mondayOf(todayStr()),-7);render();},
   unlockCov:function(t,d){
     if(!isAdmin())return;
     var m=matchById(d.id);if(!m||!m.cov)return;
@@ -1728,6 +1730,23 @@ function weekDiag(){
   }).join("");
   return h+'</div>';
 }
+
+function pendingPayWeeks(){
+  var out=[],cur=mondayOf(todayStr());
+  if(!me()||me().role!=="admin")return out;
+  for(var i=0;i<9;i++){
+    var w=addDays(cur,-7*i),n=0;
+    S.users.forEach(function(u){
+      if(u.role!=="foto"&&u.role!=="editora")return;
+      if(!S.pays[payKey(u.id,w)]&&hasPay(calcPay(u,w)))n++;
+    });
+    if(n)out.push({w:w,n:n});
+  }
+  return out;
+}
+Object.assign(X,{
+  goPay:function(t,d){if(!isAdmin())return;S.payTouched=true;S.payWeek=d.w;S.view="dash";S.tab="pagos";render();}
+});
 
 S.payWeek=addDays(mondayOf(todayStr()),-7);
 if(LIVE){boot();}else{load();render();}
