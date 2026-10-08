@@ -232,7 +232,7 @@ function calcPay(u,week){
     inWeek.forEach(function(m){
       if(m.ed!==u.id&&m.edBy!==u.id&&!(!m.ed&&!m.edBy&&byRole("editora").length===1))return;
       if(m.stage==="listos"){inc.push(m);tot+=Number(m.cov.players)||0;}
-      else{var si=stageIdx(m.stage);out.skipped.push(m.teams+" ("+(si<0?"sin iniciar":STAGES[si][1])+")");}
+      else{var si=stageIdx(m.stage);out.skipped.push(m.teams+" ("+(si<0?"sin iniciar":STAGES[si][1])+", "+(Number(m.cov.players)||0)+" jugadores)");}
     });
     var sinEd=inWeek.filter(function(m){return !m.ed&&!m.edBy&&byRole("editora").length>1;}).length;
     if(sinEd)out.notes.push("Hay "+sinEd+" partido(s) de la semana sin editora asignada. Asígnala en Partidos o espera a que la editora cambie su proceso.");
@@ -402,7 +402,7 @@ function tabPartidos(){
 function covCard(m){
   var c=m.cov||{players:"",all:false,nums:"",price:200,paid:0},adm=isAdmin(),lk=!!(m.cov&&m.cov.locked)&&!adm,dis=lk?" disabled":"";
   var h='<div class="match" data-card="'+m.id+'"><h3>'+esc(m.teams)+'</h3><div class="meta">'+fmtDate(m.date)+' · '+esc(m.cat)+' · '+esc(m.venue)+'</div>'+
-  '<div style="margin-bottom:6px">'+(m.cov?'<span class="badge good">Cobertura registrada</span>'+(m.cov.locked?' <span class="badge">Bloqueada</span>':'')+(m.covReq?' <span class="badge warn">Modificación solicitada</span>':''):'<span class="badge warn">Pendiente de registrar</span>')+'</div>'+linkBlock(m)+
+  '<div style="margin-bottom:6px">'+(m.cov?'<span class="badge good">Cobertura registrada</span>'+(m.cov.locked?' <span class="badge">Bloqueada</span>':'')+(m.covReq?' <span class="badge warn">Modificación solicitada</span>':''):'<span class="badge warn">Pendiente de registrar</span>')+'</div>'+linkBlock(m)+assignRow(m)+
   '<label>Jugadores cubiertos</label><input data-f="players" type="number" min="0" inputmode="numeric" value="'+esc(c.players)+'"'+dis+'>'+
   (m.f1&&m.f2&&m.f1!==m.f2?'<div class="row"><div><label>Jugadores de '+esc(userName(m.f1))+'</label><input data-f="p1" type="number" min="0" inputmode="numeric" value="'+esc(c.p1==null?"":c.p1)+'"'+dis+'></div><div><label>Jugadores de '+esc(userName(m.f2))+'</label><input data-f="p2" type="number" min="0" inputmode="numeric" value="'+esc(c.p2==null?"":c.p2)+'"'+dis+'></div></div>':'')+
   '<label class="chk"><input data-f="all" data-allbox="'+m.id+'" type="checkbox"'+(c.all?" checked":"")+dis+'> Se cubrió todo el equipo</label>'+
@@ -516,11 +516,12 @@ function payAdminCard(u){
   }else{
     h+=payBadge(rec.status,true);
     var changed=sigOf(c)!==sigOf(rec);
-    if(changed&&rec.status!=="pagado")h+='<span class="badge warn">Cambió desde la aprobación (ahora '+money(c.net)+')</span>';
+    if(changed)h+='<span class="badge warn">Cambió desde la aprobación (ahora '+money(c.net)+')</span><div class="note"><b>Con los partidos actuales:</b>'+breakdownHtml(c)+'</div>';
     if(rec.status==="revision")h+='<div class="note">Comentario: '+esc(rec.comment)+'</div>';
     if(rec.status==="aceptado")h+='<label>Medio de pago'+(rec.pref?' (prefiere '+esc(rec.pref)+')':'')+'</label><select data-method><option'+(rec.pref==="Transferencia"?" selected":"")+'>Transferencia</option><option'+(rec.pref==="Efectivo"?" selected":"")+'>Efectivo</option></select><div style="margin-top:8px"><button class="btn primary small" data-act="markPaid" data-key="'+k+'">Marcar como pagado</button></div>';
     if(rec.status==="pagado")h+='<div class="hint">Pagado por '+esc(rec.method)+' el '+fmtDate(rec.paidAt)+'.</div>';
     if((rec.status==="revision"||changed)&&rec.status!=="pagado")h+='<div style="margin-top:8px"><button class="btn small" data-act="recalc" data-key="'+k+'">Recalcular y reenviar</button></div>';
+    h+='<div style="margin-top:8px"><button class="btn small danger" data-x="reopenPay" data-key="'+k+'">Reabrir y recalcular</button></div>';
   }
   return h+'</div></div>';
 }
@@ -1725,6 +1726,7 @@ function weekDiag(){
     else{
       if(m.stage!=="listos")why.push("Para la editora aún no cuenta: falta el proceso 'Archivos listos'.");
       if(!eid)why.push("No hay editora atribuida a este partido.");
+      if(!m.f1&&!m.f2)why.push("Sin fotógrafo asignado: no se genera pago de fotógrafo. Asígnalo en la cobertura del partido.");
     }
     return '<div class="match"><strong>'+esc(m.teams)+'</strong> <span class="muted">· '+fmtDate(m.date)+'</span><div class="meta">Fotógrafo: '+esc(phs)+' · Cobertura: '+(m.cov?esc(m.cov.players)+" jugadores":"sin registrar")+' · Proceso: '+(si<0?"sin iniciar":STAGES[si][1])+' · Editora: '+esc(eid?userName(eid):"ninguna")+'</div>'+(why.length?'<div class="hint">'+esc(why.join(" "))+'</div>':'<span class="badge good">Cuenta para el pago</span>')+'</div>';
   }).join("");
@@ -1746,6 +1748,19 @@ function pendingPayWeeks(){
 }
 Object.assign(X,{
   goPay:function(t,d){if(!isAdmin())return;S.payTouched=true;S.payWeek=d.w;S.view="dash";S.tab="pagos";render();}
+});
+
+function assignRow(m){
+  if(!isAdmin())return "";
+  return '<div class="row"><div><label>Fotógrafo A</label><select data-asg="'+m.id+'" data-k="f1">'+staffOpts("foto",m.f1)+'</select></div><div><label>Fotógrafo B</label><select data-asg="'+m.id+'" data-k="f2">'+staffOpts("foto",m.f2)+'</select></div><div><label>Editora</label><select data-asg="'+m.id+'" data-k="ed">'+staffOpts("editora",m.ed)+'</select></div></div>';
+}
+Object.assign(X,{
+  reopenPay:function(t,d){
+    if(!isAdmin())return;
+    if(!S.pays[d.key])return;
+    if(typeof confirm==="function"&&!confirm("¿Reabrir este pago? Se borra su aprobación y se calcula de nuevo con los partidos actuales."))return;
+    delete S.pays[d.key];save();render();
+  }
 });
 
 S.payWeek=addDays(mondayOf(todayStr()),-7);
