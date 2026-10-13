@@ -421,6 +421,11 @@ function tabCobertura(){
   return '<div class="card"><h3>Cobertura de partidos</h3><p class="muted" style="margin-top:0">'+(isAdmin()?'Registra jugadores cubiertos, números y pagos.':'Registra cuántos jugadores cubriste y sus números.')+'</p>'+(list.map(covCard).join("")||'<p class="muted">No tienes partidos asignados.</p>')+'</div>';
 }
 
+function dorsalesHtml(m){
+  var c=m.cov||{},nums=String(c.nums==null?"":c.nums).trim();
+  var text=c.all?"Todo el equipo":nums||"No se registraron dorsales";
+  return '<div class="hint"><strong>Dorsales / números de jugadores:</strong> '+esc(text)+'</div>';
+}
 function tabProceso(){
   var list=S.matches.filter(function(m){return m.cov;}).sort(function(a,b){return cmp(b,a);});
   var canEdit=isAdmin()||me().role==="editora";
@@ -428,7 +433,7 @@ function tabProceso(){
   h+=list.map(function(m){
     var o='<option value="">Sin iniciar</option>';
     STAGES.forEach(function(s){o+='<option value="'+s[0]+'"'+(m.stage===s[0]?" selected":"")+'>'+s[1]+'</option>';});
-    return '<div class="match"><h3>'+esc(m.teams)+'</h3><div class="meta">'+fmtDate(m.date)+' · '+(m.cov.all?"Todo el equipo":m.cov.players+" jugadores")+'</div>'+stepsHtml(m)+
+    return '<div class="match"><h3>'+esc(m.teams)+'</h3><div class="meta">'+fmtDate(m.date)+' · '+(m.cov.all?"Todo el equipo":m.cov.players+" jugadores")+'</div>'+dorsalesHtml(m)+stepsHtml(m)+
       '<label>Paso actual</label><select data-stage="'+m.id+'"'+(canEdit?"":" disabled")+'>'+o+'</select>'+linkEditor(m)+'</div>';
   }).join("")||'<p class="muted">Aún no hay partidos con cobertura registrada.</p>';
   return h+'</div>';
