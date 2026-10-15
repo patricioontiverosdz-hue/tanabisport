@@ -183,6 +183,8 @@ body{background:var(--tsi-page)}
  .tsi-theme-picker select{max-width:120px}
 }
 
+
+.tsi-fb-photo-row{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}.tsi-fb-photo-item{display:flex;flex-direction:column;gap:6px;max-width:155px}.tsi-fb-photo-item img{display:block;width:145px;height:115px;object-fit:cover;border-radius:10px;border:1px solid var(--tsi-border,var(--line))}
 </style>
 <script>
 /*! xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
@@ -1135,17 +1137,61 @@ function tabAvisos(){
   return h;
 }
 
+
+/* Imágenes privadas de comentarios: no se almacenan en JSON ni en localStorage. */
+var tsiFbPhotos=[],tsiFbBusy=false,tsiFbUrls={};
+function tsiFbPhotoHtml(comment){
+ var photos=tsiFbPhotos.filter(function(p){return String(p.feedback_id)===String(comment.id);});
+ if(!photos.length)return '';
+ return '<div class="tsi-fb-photo-row">'+photos.map(function(p){
+   var url=tsiFbUrls[p.id],canDelete=me()&&(me().role==='admin'||(me().role==='editora'&&me().id===p.author_id));
+   return '<div class="tsi-fb-photo-item">'+(url?'<a href="'+esc(url)+'" target="_blank" rel="noopener" aria-label="Abrir fotografía"><img src="'+esc(url)+'" alt="Fotografía de referencia del partido"></a>':'<span class="muted">Cargando foto…</span>')+
+   (canDelete?'<button class="btn small" data-x="tsiFbRemovePhoto" data-id="'+esc(p.id)+'">Eliminar foto</button>':'')+'</div>';
+ }).join('')+'</div>';
+}
+async function tsiFbLoadPhotos(){
+ if(!LIVE||!AUTH.access)return;
+ try{
+  var result=await sb("GET","/rest/v1/feedback_photos?select=id,match_id,feedback_id,slot,author_id,storage_path");
+  tsiFbPhotos=result||[];
+  var keep={};tsiFbPhotos.forEach(function(p){keep[p.id]=true;});
+  Object.keys(tsiFbUrls).forEach(function(id){if(!keep[id]){URL.revokeObjectURL(tsiFbUrls[id]);delete tsiFbUrls[id];}});
+  await Promise.all(tsiFbPhotos.map(async function(p){
+    if(tsiFbUrls[p.id])return;
+    try{
+     await ensureToken();
+     var res=await fetch(SBU+"/storage/v1/object/authenticated/tsi-feedback/"+p.storage_path,{headers:{apikey:SBK,Authorization:"Bearer "+AUTH.access}});
+     if(!res.ok)return;
+     tsiFbUrls[p.id]=URL.createObjectURL(await res.blob());
+    }catch(e){}
+  }));
+  if(S.view==='dash'&&S.tab==='comentarios')render();
+ }catch(e){console.warn("No fue posible cargar imágenes de comentarios",e);}
+}
+async function tsiFbDeletePhoto(p){
+ await ensureToken();
+ var res=await fetch(SBU+"/storage/v1/object/tsi-feedback/"+p.storage_path,{method:"DELETE",headers:{apikey:SBK,Authorization:"Bearer "+AUTH.access}});
+ if(!res.ok&&res.status!==404)throw Error("El almacenamiento rechazó la eliminación.");
+ await sb("DELETE","/rest/v1/feedback_photos?id=eq."+encodeURIComponent(p.id),undefined,{prefer:"return=minimal"});
+ tsiFbPhotos=tsiFbPhotos.filter(function(x){return x.id!==p.id;});
+ if(tsiFbUrls[p.id]){URL.revokeObjectURL(tsiFbUrls[p.id]);delete tsiFbUrls[p.id];}
+}
+Object.assign(X,{tsiFbRemovePhoto:async function(t,d){
+ var p=tsiFbPhotos.find(function(p){return p.id===d.id;});if(!p)return;
+ try{await tsiFbDeletePhoto(p);render();}catch(e){S.banner="No se pudo eliminar foto: "+e.message;render();}
+}});
+
 /* ---------- Comentarios de la editora ---------- */
 function tabComentarios(){
   var u=me(),h="";
   if(u.role==="editora"||u.role==="admin"){
     var opts=S.matches.filter(function(m){return m.cov;}).sort(function(a,b){return cmp(b,a);}).map(function(m){return '<option value="'+m.id+'">'+esc(m.teams)+' · '+fmtDate(m.date)+'</option>';}).join("");
-    h+='<div class="card"><h3>Nuevo comentario sobre fotos</h3><p class="muted" style="margin-top:0">Escribe qué corregir en futuras tomas. Les llega a los fotógrafos del partido.</p><label for="fbm">Partido</label><select id="fbm">'+(opts||'<option value="">Aún no hay partidos con cobertura</option>')+'</select><label for="fbt">Comentario</label><textarea id="fbt" rows="4" placeholder="Ej. Varias fotos movidas en el segundo tiempo; subir la velocidad del obturador."></textarea><div style="margin-top:14px"><button class="btn primary" data-x="sendFb">Enviar comentario</button></div></div>';
+    h+='<div class="card"><h3>Nuevo comentario sobre fotos</h3><p class="muted" style="margin-top:0">Escribe qué corregir en futuras tomas. Les llega a los fotógrafos del partido.</p><label for="fbm">Partido</label><select id="fbm">'+(opts||'<option value="">Aún no hay partidos con cobertura</option>')+'</select><label for="fbt">Comentario</label><textarea id="fbt" rows="4" placeholder="Ej. Varias fotos movidas en el segundo tiempo; subir la velocidad del obturador."></textarea><label for="fbphotos">Fotos de ejemplo (máximo 3 por partido)</label><input id="fbphotos" type="file" accept="image/*" multiple><p class="hint">Las imágenes serán privadas y visibles para los fotógrafos asignados. Máximo 3 por partido entre todos los comentarios.</p><div style="margin-top:14px"><button class="btn primary" data-x="sendFb">Enviar comentario</button></div></div>';
   }
   var list=S.feedback.filter(function(f){var m=matchById(f.mid);return u.role!=="foto"||(m&&(m.f1===u.id||m.f2===u.id));}).sort(function(a,b){return b.id-a.id;});
   h+='<div class="card"><h3>'+(u.role==="foto"?"Comentarios para mejorar":"Comentarios enviados")+'</h3>'+(list.map(function(f){
-    var m=matchById(f.mid),ack=f.ack.indexOf(u.id)>=0;
-    return '<div class="match"><strong>'+esc(m?m.teams:"Partido")+'</strong> <span class="muted">· '+fmtDate(f.date)+' · '+esc(userName(f.by))+'</span><div>'+esc(f.text)+'</div><div style="margin-top:8px">'+(u.role==="foto"?(ack?'<span class="badge good">Entendido</span>':'<button class="btn small" data-x="ackFb" data-id="'+f.id+'">Entendido</button>'):(u.role==="admin"?'<button class="btn small danger" data-x="delFb" data-id="'+f.id+'">Eliminar</button>':''))+'</div></div>';
+    var m=matchById(f.mid),ack=f.ack.indexOf(u.id)>=0,fbimgs=tsiFbPhotoHtml(f);
+    return '<div class="match"><strong>'+esc(m?m.teams:"Partido")+'</strong> <span class="muted">· '+fmtDate(f.date)+' · '+esc(userName(f.by))+'</span><div>'+esc(f.text)+'</div>'+fbimgs+'<div style="margin-top:8px">'+(u.role==="foto"?(ack?'<span class="badge good">Entendido</span>':'<button class="btn small" data-x="ackFb" data-id="'+f.id+'">Entendido</button>'):(u.role==="admin"?'<button class="btn small danger" data-x="delFb" data-id="'+f.id+'">Eliminar</button>':''))+'</div></div>';
   }).join("")||'<p class="muted">Sin comentarios por ahora.</p>')+'</div>';
   return h;
 }
@@ -1326,17 +1372,56 @@ var X={
     save();render();
   },
   delAviso:function(t,d){if(!isAdmin())return;S.avisos=S.avisos.filter(function(a){return String(a.id)!==d.id;});save();render();},
-  sendFb:function(){
-    var u=me();if(!u||(u.role!=="editora"&&u.role!=="admin"))return;
+  sendFb:async function(){
+    var u=me();if(!u||(u.role!=="editora"&&u.role!=="admin")||tsiFbBusy)return;
     var m=matchById(document.getElementById("fbm").value),tx=document.getElementById("fbt").value.trim();
-    if(!m){alert("Elige un partido con cobertura registrada.");return;}
+    var files=Array.from(document.getElementById("fbphotos").files||[]);
+    if(!m||!m.cov){alert("Elige un partido con cobertura registrada.");return;}
     if(!tx){alert("Escribe el comentario.");return;}
-    S.feedback.push({id:nid(),mid:m.id,by:u.id,text:tx,date:todayStr(),ack:[]});
-    notify(matchTeamIds(m),"Comentario sobre las fotos de "+m.teams);
-    save();render();
+    if(files.length>3){alert("Máximo 3 fotos por partido.");return;}
+    if(files.some(function(f){return !f.type.startsWith("image/");})){alert("Selecciona únicamente fotografías.");return;}
+    var button=document.querySelector('[data-x="sendFb"]');if(button){button.disabled=true;button.textContent="Guardando…";}
+    tsiFbBusy=true;
+    var entry={id:nid(),mid:m.id,by:u.id,text:tx,date:todayStr(),ack:[]};
+    try{
+      // Guardamos primero el comentario: la foto siempre debe tener un comentario válido.
+      await sb("POST","/rest/v1/feedback",{id:String(entry.id),data:entry},{prefer:"return=minimal"});
+      S.feedback.push(entry);
+      if(files.length){
+        var existing=await sb("GET","/rest/v1/feedback_photos?select=slot&match_id=eq."+encodeURIComponent(String(m.id)));
+        var occupied=new Set(existing.map(function(x){return x.slot;}));
+        if(files.length>3-occupied.size)throw new Error("El partido ya tiene "+occupied.size+" foto(s). Solo quedan "+(3-occupied.size)+" espacios.");
+        var free=[1,2,3].filter(function(slot){return !occupied.has(slot);});
+        for(var i=0;i<files.length;i++){
+          var blob=await imgToBlob(files[i],1400,0.8);
+          if(blob.size>5242880)throw new Error("Una imagen supera los 5 MB permitidos.");
+          var row=await sb("POST","/rest/v1/feedback_photos?select=id,storage_path,slot,feedback_id,match_id,author_id",{match_id:String(m.id),feedback_id:String(entry.id),slot:free[i],author_id:u.id},{prefer:"return=representation"});
+          var photo=row[0];
+          try{
+            await ensureToken();
+            var response=await fetch(SBU+"/storage/v1/object/tsi-feedback/"+photo.storage_path,{
+              method:"POST",headers:{apikey:SBK,Authorization:"Bearer "+AUTH.access,"Content-Type":"image/jpeg"},body:blob
+            });
+            if(!response.ok)throw new Error("Error al subir imagen ("+response.status+")");
+            tsiFbPhotos.push(photo);
+          }catch(uploadError){
+            try{await sb("DELETE","/rest/v1/feedback_photos?id=eq."+encodeURIComponent(photo.id),undefined,{prefer:"return=minimal"});}catch(ignore){}
+            throw uploadError;
+          }
+        }
+      }
+      notify(matchTeamIds(m),"Comentario sobre las fotos de "+m.teams);
+      save();render();
+    }catch(e){S.banner="Comentario: "+(S.feedback.some(function(f){return f.id===entry.id;})?"guardado, pero hubo un problema con las fotos: ":"no se pudo guardar: ")+e.message;render();}
+    finally{tsiFbBusy=false;}
   },
   ackFb:function(t,d){var f=byId(S.feedback,d.id),u=me();if(f&&u&&f.ack.indexOf(u.id)<0){f.ack.push(u.id);save();render();}},
-  delFb:function(t,d){if(!isAdmin())return;S.feedback=S.feedback.filter(function(f){return String(f.id)!==d.id;});save();render();},
+  delFb:async function(t,d){
+    if(!isAdmin())return;
+    var targets=tsiFbPhotos.filter(function(p){return String(p.feedback_id)===String(d.id);});
+    for(var i=0;i<targets.length;i++)try{await tsiFbDeletePhoto(targets[i]);}catch(e){S.banner="No fue posible eliminar una fotografía: "+e.message;render();return;}
+    S.feedback=S.feedback.filter(function(f){return String(f.id)!==d.id;});save();render();
+  },
   reqEdit:function(t,d){
     var m=matchById(d.id),u=me();
     if(!m||!u||!isMine(m)||!m.cov||!m.cov.locked)return;
@@ -1643,6 +1728,7 @@ async function loadAll(lite){
     S.matches=d(r[3]);S.loans=d(r[4]);S.expenses=d(r[5]);S.bonuses=d(r[6]);
     S.notifs=d(r[7]).sort(function(a,b){return b.id-a.id;});
     S.avisos=d(r[8]);S.feedback=d(r[9]);
+    if(!lite)tsiFbLoadPhotos();
     S.orders=d(r[10]).sort(function(a,b){return b.id-a.id;});
     S.pays={};r[11].forEach(function(x){S.pays[x.id]=x.data;});
   }
