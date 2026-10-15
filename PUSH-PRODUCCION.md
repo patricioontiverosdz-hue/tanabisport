@@ -1,6 +1,6 @@
 # TSI push en producción
 
-Publicado el 15 de octubre de 2026. Página: https://patricioontiverosdz-hue.github.io/tanabisport/ . Versión: 2.0.4-push.1.
+Publicado el 15 de octubre de 2026. Página: https://patricioontiverosdz-hue.github.io/tanabisport/ . Versión: 2.0.4.
 
 Proyecto: tantlgswituiwkxfgmsr. Edge Function: tsi-push. Autenticación de cada sesión dentro de la función; despacho con secreto independiente. Cron tsi-push-dispatch cada minuto. Configuración privada cifrada en Vault, tsi_push_runtime_config, accesible únicamente por service_role mediante tsi_push_server_config(). Las claves de producción son independientes de staging y no se incluyen en este repositorio.
 
