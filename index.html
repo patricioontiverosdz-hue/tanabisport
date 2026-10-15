@@ -1410,6 +1410,7 @@ var X={
           }
         }
       }
+      await tsiFbLoadPhotos();
       notify(matchTeamIds(m),"Comentario sobre las fotos de "+m.teams);
       save();render();
     }catch(e){S.banner="Comentario: "+(S.feedback.some(function(f){return f.id===entry.id;})?"guardado, pero hubo un problema con las fotos: ":"no se pudo guardar: ")+e.message;render();}
@@ -1812,6 +1813,7 @@ async function doLogout(){
     try{await sb("POST","/auth/v1/logout",undefined);}catch(e){}
     clearAuth();
     S.meId=null;S.users=[];S.matches=[];S.loans=[];S.expenses=[];S.bonuses=[];S.notifs=[];S.avisos=[];S.feedback=[];S.orders=[];S.reservations=[];S.pays={};
+    Object.values(tsiFbUrls).forEach(function(url){URL.revokeObjectURL(url);});tsiFbUrls={};tsiFbPhotos=[];
     S.view="home";S.tab="resumen";S.loginErr="";S.loginOk="";
     try{await loadAll();}catch(e){}
     render();return;
