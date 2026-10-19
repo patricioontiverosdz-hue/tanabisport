@@ -1370,7 +1370,7 @@ document.addEventListener("change",function(e){
       procImg(f,function(url){
         if(!url){alert("No se pudo procesar la imagen: "+f.name);return;}
         if(url.length>500000){alert("La vista previa es demasiado grande. Reduce el tamaño de "+f.name+" e inténtalo de nuevo.");return;}
-        S.shop.items.push({id:nid(),title:f.name.replace(/\\.[^.]+$/,"").trim().slice(0,60)||"Fotografía",price:pr,img:url});
+        S.shop.items.push({id:nid(),title:f.name.replace(/\.[^.]+$/,"").trim().slice(0,60)||"Fotografía",price:pr,img:url});
         save();render();
       });
     });
