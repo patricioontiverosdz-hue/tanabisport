@@ -185,6 +185,17 @@ body{background:var(--tsi-page)}
 
 
 .tsi-fb-photo-row{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}.tsi-fb-photo-item{display:flex;flex-direction:column;gap:6px;max-width:155px}.tsi-fb-photo-item img{display:block;width:145px;height:115px;object-fit:cover;border-radius:10px;border:1px solid var(--tsi-border,var(--line))}
+/* TSI 2.0.8 · vistas previas de la tienda: desincentivar capturas, no bloquearlas */
+.shop-preview{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.shop-preview img{filter:grayscale(1) contrast(.93);pointer-events:none;-webkit-user-drag:none;-webkit-touch-callout:none}
+.shop-preview::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(135deg,transparent 0,transparent 46px,rgba(255,255,255,.1) 48px,transparent 50px,transparent 97px)}
+.shop-preview .shop-title{z-index:2}
+.shop-folder-grid{padding-bottom:8px}
+@media(max-width:767px){
+.shop-preview img{filter:grayscale(1) contrast(.89) blur(.5px)}
+.shop-preview::after{content:"TANABI SPORTS · VISTA PREVIA";display:flex;justify-content:center;align-items:center;text-align:center;font-weight:900;letter-spacing:1px;font-size:clamp(11px,2.7vw,19px);color:rgba(255,255,255,.68);text-shadow:1px 2px 2px #111,0 0 5px #111;background:repeating-linear-gradient(135deg,rgba(255,255,255,.09) 0,rgba(255,255,255,.09) 2px,transparent 2px,transparent 54px)}
+}
+@media print{.shop-preview img{visibility:hidden!important}.shop-preview::after{content:"VISTA PREVIA PROTEGIDA"}}
 </style>
 <script>
 /*! xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
@@ -1285,33 +1296,81 @@ function procImg(file,cb){
   r.onload=function(){
     var im=new Image();
     im.onload=function(){
-      var max=800,sc=Math.min(1,max/Math.max(im.width,im.height)),w=Math.round(im.width*sc),h=Math.round(im.height*sc);
+      var max=720,sc=Math.min(1,max/Math.max(im.width,im.height)),w=Math.round(im.width*sc),h=Math.round(im.height*sc);
+      if(!w||!h){cb("");return;}
       var c=document.createElement("canvas");c.width=w;c.height=h;
       var x=c.getContext("2d");x.drawImage(im,0,0,w,h);
-      x.save();x.globalAlpha=0.35;x.fillStyle="#ffffff";x.font="bold "+Math.round(w/9)+"px sans-serif";x.textAlign="center";x.translate(w/2,h/2);x.rotate(-Math.PI/6);x.fillText("TANABI SPORT",0,0);x.restore();
-      cb(c.toDataURL("image/jpeg",0.7));
+      // Blanco y negro grabado en los pixeles de la miniatura, no solo CSS.
+      var p=x.getImageData(0,0,w,h),d=p.data;
+      for(var i=0;i<d.length;i+=4){
+        var g=Math.round(d[i]*.299+d[i+1]*.587+d[i+2]*.114);
+        d[i]=g;d[i+1]=g;d[i+2]=g;
+      }
+      x.putImageData(p,0,0);
+      // Marcas repetidas incrustadas en el archivo, incluso cuando la imagen se abre fuera del portal.
+      x.save();x.translate(w/2,h/2);x.rotate(-Math.PI/6);
+      x.font="900 "+Math.max(16,Math.round(w/19))+"px sans-serif";
+      x.textAlign="center";x.textBaseline="middle";
+      x.lineWidth=2;x.strokeStyle="rgba(0,0,0,.55)";x.fillStyle="rgba(255,255,255,.55)";
+      var step=Math.max(155,Math.round(w*.53));
+      for(var yy=-h*2;yy<h*2;yy+=step){
+        for(var xx=-w*2;xx<w*2;xx+=step){
+          x.strokeText("TANABI SPORTS",xx,yy);
+          x.fillText("TANABI SPORTS",xx,yy);
+        }
+      }
+      x.restore();
+      cb(c.toDataURL("image/jpeg",.62));
     };
     im.onerror=function(){cb("");};
     im.src=r.result;
   };
+  r.onerror=function(){cb("");};
   r.readAsDataURL(file);
+}
+function shopFolderName(it){
+  return String(it&&it.folder||"").trim()||"Sin carpeta";
+}
+function shopGrouped(items){
+  var groups=Object.create(null);
+  (items||[]).forEach(function(it){
+    var name=shopFolderName(it);
+    (groups[name]||(groups[name]=[])).push(it);
+  });
+  return Object.keys(groups).sort(function(a,b){return a.localeCompare(b,"es",{numeric:true});}).map(function(name){return {name:name,items:groups[name]};});
+}
+function shopPreview(it){
+  return '<div class="tile shop-preview'+(it.img?'':' t1')+'">'+
+    (it.img?'<img loading="lazy" draggable="false" src="'+esc(it.img)+'" alt="Vista previa protegida de '+esc(it.title)+'">':'')+
+    '<span class="shop-title">'+esc(it.title)+'</span></div>';
 }
 function keepForm(){["sn","sc","sm"].forEach(function(k){var el=document.getElementById(k);if(el)S.shopForm[k]=el.value;});}
 function viewShop(){
+  if(S.cfg.shop!==true){
+    return topbar()+'<div class="card"><h2>Tienda temporalmente deshabilitada</h2><p>La venta de fotografías estará disponible cuando Tanabi Sports habilite el servicio.</p></div>';
+  }
   var inCart=function(id){return S.cart.indexOf(id)>=0;},tot=0;
   S.cart.forEach(function(id){var it=itemById(id);if(it)tot+=it.price;});
-  var f=S.shopForm||{};
-  var h=topbar()+'<section class="hero" style="padding-bottom:0"><h1 style="font-size:clamp(2.2rem,9vw,4.5rem)">Tienda de fotos</h1><p>Elige tus fotos del partido. Al hacer tu pedido te contactamos para coordinar el pago y te enviamos el enlace de descarga en alta calidad.</p></section>';
+  var f=S.shopForm||{},allGroups=shopGrouped(S.shop.items),chosen=S.shopFolderFilter||"";
+  if(chosen&&!allGroups.some(function(g){return g.name===chosen;}))chosen="";
+  var groups=allGroups.filter(function(g){return !chosen||g.name===chosen;});
+  var h=topbar()+'<section class="hero" style="padding-bottom:0"><h1 style="font-size:clamp(2.2rem,9vw,4.5rem)">Tienda de fotos</h1><p>Busca tu número o nombre de jugador y selecciona tus fotografías. Las vistas previas son en blanco y negro y contienen marcas de agua. Los originales se entregan por Drive tras el pago.</p></section>';
   if(S.lastOrder){
     var o=S.lastOrder,wa=S.cfg.whatsapp?"https://wa.me/"+digits(S.cfg.whatsapp)+"?text="+encodeURIComponent("Hola, hice el pedido #"+o.id+" en la tienda de Tanabi Sport. Fotos: "+o.items.map(function(i){return i.title;}).join(", ")+". Total: "+money(o.total)):"";
     h+='<div class="card" style="margin-top:14px"><h3>¡Pedido recibido!</h3><p>Tu pedido <b>#'+o.id+'</b> por '+money(o.total)+' quedó registrado. Te contactaremos para coordinar el pago y enviarte tus fotos.</p>'+(wa?'<a class="btn amber" style="text-decoration:none;display:inline-block" href="'+esc(wa)+'" target="_blank" rel="noopener">Avisar por WhatsApp</a> ':'')+'<button class="btn" data-x="goShop">Seguir comprando</button></div>';
   }
-  h+='<div class="gallery">'+(S.shop.items.map(function(it){
-    var on=inCart(it.id);
-    return '<div><div class="tile'+(it.img?"":" t1")+'">'+(it.img?'<img src="'+it.img+'" alt="'+esc(it.title)+'">':'')+'<span>'+esc(it.title)+'</span></div><div class="row" style="margin-top:6px;align-items:center"><strong>'+money(it.price)+'</strong><button class="btn small'+(on?" amber":"")+'" data-x="cart" data-id="'+it.id+'">'+(on?"Quitar":"Agregar")+'</button></div></div>';
-  }).join("")||'<p class="muted">Pronto habrá fotos disponibles.</p>')+'</div>';
+  if(allGroups.length){
+    h+='<div class="card"><label for="shopfolderfilter">Buscar por número o nombre (carpeta)</label><select id="shopfolderfilter"><option value="">Todas las carpetas</option>'+
+      allGroups.map(function(g){return '<option value="'+esc(g.name)+'"'+(g.name===chosen?' selected':'')+'>'+esc(g.name)+' ('+g.items.length+')</option>';}).join("")+'</select></div>';
+  }
+  h+=groups.map(function(g){
+    return '<section class="card"><h3>'+esc(g.name)+' <span class="muted">· '+g.items.length+' foto(s)</span></h3><div class="gallery shop-folder-grid">'+g.items.map(function(it){
+      var on=inCart(it.id);
+      return '<div>'+shopPreview(it)+'<div class="row" style="margin-top:6px;align-items:center"><strong>'+money(it.price)+'</strong><button class="btn small'+(on?' amber':'')+'" data-x="cart" data-id="'+it.id+'">'+(on?'Quitar':'Agregar')+'</button></div></div>';
+    }).join("")+'</div></section>';
+  }).join("")||'<p class="muted">Pronto habrá fotografías disponibles.</p>';
   if(S.cart.length)h+='<div class="card"><h3>Tu pedido</h3><p>'+S.cart.length+' foto(s) · <b>'+money(tot)+'</b></p><label for="sn">Nombre</label><input id="sn" value="'+esc(f.sn||"")+'"><label for="sc">WhatsApp o teléfono</label><input id="sc" inputmode="tel" value="'+esc(f.sc||"")+'"><label for="sm">Partido o nota (opcional)</label><input id="sm" placeholder="Ej. Sub-13, Halcones vs Tigres" value="'+esc(f.sm||"")+'"><div style="margin-top:14px"><button class="btn primary" data-x="order">Hacer pedido</button></div></div>';
-  return h+'<footer>Tanabi Sport · Fotografía y video deportivo. · Versión '+APP_VERSION+'</footer>';
+  return h+'<footer>Tanabi Sports · Fotografía y video deportivo. · Versión '+APP_VERSION+'</footer>';
 }
 function orderRow(o){
   var opts=["nuevo","pagado","entregado","cancelado"].map(function(s){return '<option'+(o.status===s?" selected":"")+'>'+s+'</option>';}).join("");
@@ -1324,21 +1383,29 @@ function canUploadShop(){
 }
 function tabTienda(){
   if(!canUploadShop())return '<div class="card"><h3>Tienda no disponible</h3><p>El administrador debe habilitar la tienda para que puedas agregar fotos.</p></div>';
-  var adm=isAdmin();
-  var h='<div class="card"><h3>Fotos en venta</h3><p class="muted" style="margin-top:0">Se muestran con marca de agua y tamaño reducido. Las originales se entregan por enlace de Drive cuando el cliente paga.</p>'+
+  var adm=isAdmin(),groups=shopGrouped(S.shop.items),folders=groups.filter(function(g){return g.name!=="Sin carpeta";});
+  var h='<div class="card"><h3>Fotos en venta</h3><p class="muted" style="margin-top:0">Organiza las fotos por número o nombre. Las miniaturas nuevas se convierten a blanco y negro y se protegen con marcas de agua; los originales se entregan por Drive cuando el cliente paga.</p>'+
     (!S.cfg.shop?'<div class="note">La tienda está deshabilitada. Los clientes no pueden ver ni comprar las fotografías desde el portal.</div>':'')+
     (adm?'<label for="shopprice">Precio por foto nueva</label><input id="shopprice" type="number" min="0" inputmode="numeric" value="'+esc(S.shopPrice==null?50:S.shopPrice)+'">':'<p class="hint">Las fotografías nuevas se registran a $50. El administrador puede modificar el precio posteriormente.</p>')+
-    '<label for="shopimg">Agregar fotos</label><input id="shopimg" type="file" accept="image/*" multiple><p class="hint">Carga hasta 10 fotos por selección. Se genera una vista previa con marca de agua, nunca se publica el archivo original.</p>';
-  if(S.shop.items.some(function(i){return i.demo;}))h+='<div class="note">Lo marcado como "ejemplo" es de muestra. El administrador debe quitarlo antes de publicar.</div>';
-  h+=(S.shop.items.map(function(it){
-    return '<div class="match"><div class="row"><div><label>Título</label>'+
-      (adm?'<input data-xc="itTitle|'+it.id+'" value="'+esc(it.title)+'">':'<div>'+esc(it.title)+'</div>')+
-      '</div><div><label>Precio</label>'+
-      (adm?'<input type="number" min="0" inputmode="numeric" data-xc="itPrice|'+it.id+'" value="'+esc(it.price)+'">':'<div>'+money(it.price)+'</div>')+
-      '</div></div><div style="margin-top:8px">'+(it.demo?'<span class="badge warn">ejemplo</span> ':'')+
-      (adm?'<button class="btn small danger" data-x="delItem" data-id="'+it.id+'">Eliminar</button>':'')+
-      '</div></div>';
-  }).join("")||'<p class="muted">Aún no hay fotos en venta.</p>')+'</div>';
+    '<label for="shopfolder">Carpeta por número o nombre del jugador</label><input id="shopfolder" list="shopfolders" maxlength="60" placeholder="Ej. #12 — Juan Pérez" autocomplete="off">'+
+    '<datalist id="shopfolders">'+folders.map(function(g){return '<option value="'+esc(g.name)+'"></option>';}).join("")+'</datalist>'+
+    '<label for="shopimg">Agregar fotografías a esa carpeta</label><input id="shopimg" type="file" accept="image/*" multiple>'+
+    '<p class="hint">Hasta 10 fotos por carga. Indica la carpeta antes de seleccionar los archivos; no se suben originales a la tienda.</p>';
+  if(S.shop.items.some(function(it){return it.demo;}))h+='<div class="note">Las fotos marcadas como "ejemplo" son de muestra. El administrador debe eliminarlas antes de habilitar la tienda.</div>';
+  h+=groups.map(function(g){
+    return '<h3 style="margin-top:20px">'+esc(g.name)+' <span class="muted">· '+g.items.length+' foto(s)</span></h3>'+
+    g.items.map(function(it){
+      return '<div class="match"><div class="row"><div><label>Título</label>'+
+        (adm?'<input data-xc="itTitle|'+it.id+'" value="'+esc(it.title)+'">':'<div>'+esc(it.title)+'</div>')+
+        '</div><div><label>Precio</label>'+
+        (adm?'<input type="number" min="0" inputmode="numeric" data-xc="itPrice|'+it.id+'" value="'+esc(it.price)+'">':'<div>'+money(it.price)+'</div>')+
+        '</div></div>'+
+        (adm?'<label>Carpeta</label><input data-xc="itFolder|'+it.id+'" maxlength="60" value="'+esc(it.folder||"")+'" placeholder="Ej. #12 — Juan Pérez">':'<div class="hint">Carpeta: '+esc(shopFolderName(it))+'</div>')+
+        '<div style="margin-top:8px">'+(it.demo?'<span class="badge warn">ejemplo</span> ':'')+
+        (adm?'<button class="btn small danger" data-x="delItem" data-id="'+it.id+'">Eliminar</button>':'')+'</div></div>';
+    }).join("");
+  }).join("")||'<p class="muted">Aún no hay fotos en venta.</p>';
+  h+='</div>';
   if(adm)h+='<div class="card"><h3>Pedidos</h3>'+(S.orders.map(orderRow).join("")||'<p class="muted">Aún no hay pedidos.</p>')+'</div>';
   return h;
 }
@@ -1549,8 +1616,14 @@ document.addEventListener("click",function(e){
 });
 document.addEventListener("change",function(e){
   var t=e.target;
+  if(t.id==="shopfolderfilter"){
+    S.shopFolderFilter=t.value;
+    render();return;
+  }
   if(t.id==="shopimg"){
     if(!canUploadShop())return;
+    var folderEl=document.getElementById("shopfolder"),folder=String(folderEl&&folderEl.value||"").replace(/\s+/g," ").trim();
+    if(!folder||folder.length>60){alert("Primero indica una carpeta con número o nombre de jugador (máximo 60 caracteres).");return;}
     var adm=isAdmin(),priceInput=document.getElementById("shopprice");
     var pr=adm?Math.max(0,Number(priceInput&&priceInput.value)||0):50;
     if(adm)S.shopPrice=pr;
@@ -1561,7 +1634,7 @@ document.addEventListener("change",function(e){
       procImg(f,function(url){
         if(!url){alert("No se pudo procesar la imagen: "+f.name);return;}
         if(url.length>500000){alert("La vista previa es demasiado grande. Reduce el tamaño de "+f.name+" e inténtalo de nuevo.");return;}
-        S.shop.items.push({id:nid(),title:f.name.replace(/\.[^.]+$/,"").trim().slice(0,60)||"Fotografía",price:pr,img:url});
+        S.shop.items.push({id:nid(),title:f.name.replace(/\.[^.]+$/,"").trim().slice(0,60)||"Fotografía",price:pr,img:url,folder:folder});
         save();render();
       });
     });
@@ -1572,7 +1645,14 @@ document.addEventListener("change",function(e){
   var p=xc.split("|"),k=p[0],id=p[1];
   if(k==="itTitle"){var it=itemById(id);if(it&&t.value.trim()){it.title=t.value.trim();save();}}
   else if(k==="itPrice"){var it2=itemById(id);if(it2){it2.price=Math.max(0,Number(t.value)||0);save();}}
+  else if(k==="itFolder"){var it3=itemById(id);if(it3){it3.folder=t.value.replace(/\s+/g," ").trim().slice(0,60)||"Sin carpeta";save();render();}}
   else if(k==="ordStatus"){var o=byId(S.orders,id);if(o){o.status=t.value;save();render();}}
+});
+document.addEventListener("contextmenu",function(e){
+  if(e.target&&e.target.closest&&e.target.closest(".shop-preview"))e.preventDefault();
+});
+document.addEventListener("dragstart",function(e){
+  if(e.target&&e.target.closest&&e.target.closest(".shop-preview"))e.preventDefault();
 });
 
 /* ===== Modo conectado (Supabase) ===== */
