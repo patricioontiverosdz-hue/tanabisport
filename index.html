@@ -463,10 +463,11 @@ function tabsFor(role){
           :role==="foto"?["resumen","partidos","micalendario","cobertura","comentarios","mipago","gastos","prestamos","avisos","notif","calendario","ubicaciones"]
           :["resumen","proceso","portafolio","comentarios","mipago","gastos","prestamos","avisos","notif","calendario"];
   if(role==="foto"&&processMatches().length)keys.splice(keys.indexOf("cobertura")+1,0,"proceso");
+  if(role==="editora"&&S.cfg.shop===true)keys.splice(keys.indexOf("portafolio"),0,"tienda");
   if(role!=="admin"&&!S.cfg.loans)keys=keys.filter(function(k){return k!=="prestamos";});
   return keys.map(function(k){return [k,all[k]];});
 }
-function tabsBar(){var entries=tabsFor(me().role),groups=[['Operaciones',['resumen','calendario','partidos','importarrol','micalendario','cobertura','proceso','fotografos','ubicaciones']],['Finanzas',['pagos','mipago','gastos','prestamos']],['Página pública',['portafolio','envivo']],['Equipo',['disponibilidad','comentarios','avisos','notif','equipo']],['TSI y configuración',['intelligence','estadisticas','catalogo','datos','ajustes']]];return '<details class="ti-menu" id="ti-menu" '+(S.tiMenuOpen!==false&&window.innerWidth>=1100?'open':'')+'><summary class="btn">☰ Menú</summary><nav class="ti-navigation" aria-label="Menú del equipo"><strong>Tanabi Sports<br><small>INTELLIGENCE</small></strong>'+groups.map(function(g){var list=entries.filter(function(x){return g[1].indexOf(x[0])>=0;});return list.length?'<h3>'+g[0]+'</h3>'+list.map(function(x){return '<button data-tab="'+x[0]+'" '+(S.tab===x[0]?'aria-current="page"':'')+'>'+esc(x[1])+'</button>';}).join(''):'';}).join('')+'</nav></details>';}
+function tabsBar(){var entries=tabsFor(me().role),groups=[['Operaciones',['resumen','calendario','partidos','importarrol','micalendario','cobertura','proceso','fotografos','ubicaciones']],['Finanzas',['pagos','mipago','gastos','prestamos']],['Página pública',['tienda','portafolio','envivo']],['Equipo',['disponibilidad','comentarios','avisos','notif','equipo']],['TSI y configuración',['intelligence','estadisticas','catalogo','datos','ajustes']]];return '<details class="ti-menu" id="ti-menu" '+(S.tiMenuOpen!==false&&window.innerWidth>=1100?'open':'')+'><summary class="btn">☰ Menú</summary><nav class="ti-navigation" aria-label="Menú del equipo"><strong>Tanabi Sports<br><small>INTELLIGENCE</small></strong>'+groups.map(function(g){var list=entries.filter(function(x){return g[1].indexOf(x[0])>=0;});return list.length?'<h3>'+g[0]+'</h3>'+list.map(function(x){return '<button data-tab="'+x[0]+'" '+(S.tab===x[0]?'aria-current="page"':'')+'>'+esc(x[1])+'</button>';}).join(''):'';}).join('')+'</nav></details>';}
 
 function tabResumen(){
   var u=me(),now=todayStr(),h="";
@@ -1318,13 +1319,27 @@ function orderRow(o){
   return '<div class="match"><strong>#'+o.id+' · '+esc(o.name)+'</strong> <span class="muted">· '+esc(o.contact)+' · '+fmtDate(o.date)+'</span><div class="meta">'+o.items.map(function(i){return esc(i.title);}).join(", ")+(o.note?" · "+esc(o.note):"")+' · <b>'+money(o.total)+'</b></div>'+
   '<label>Estado</label><select data-xc="ordStatus|'+o.id+'">'+opts+'</select><label>Enlace de descarga (Drive)</label><input data-ordlink type="url" placeholder="https://drive.google.com/..." value="'+esc(o.link||"")+'"><div class="row" style="margin-top:8px"><button class="btn small" data-x="ordLink" data-id="'+o.id+'">Guardar enlace</button>'+(wa?'<a class="btn small" style="text-decoration:none;display:inline-block;text-align:center" href="'+esc(wa)+'" target="_blank" rel="noopener">Enviar al cliente por WhatsApp</a>':'')+'</div></div>';
 }
+function canUploadShop(){
+  var u=me();return !!u&&(u.role==="admin"||(u.role==="editora"&&S.cfg.shop===true));
+}
 function tabTienda(){
-  var h='<div class="card"><h3>Fotos en venta</h3><p class="muted" style="margin-top:0">Se muestran con marca de agua y tamaño reducido. Las originales se entregan por enlace de Drive cuando el cliente paga.</p><label for="shopprice">Precio por foto nueva</label><input id="shopprice" type="number" min="0" inputmode="numeric" value="'+esc(S.shopPrice||50)+'"><label for="shopimg">Agregar fotos</label><input id="shopimg" type="file" accept="image/*" multiple>';
-  if(S.shop.items.some(function(i){return i.demo;}))h+='<div class="note">Lo marcado como "ejemplo" es de muestra. Elimínalo antes de publicar.</div>';
+  if(!canUploadShop())return '<div class="card"><h3>Tienda no disponible</h3><p>El administrador debe habilitar la tienda para que puedas agregar fotos.</p></div>';
+  var adm=isAdmin();
+  var h='<div class="card"><h3>Fotos en venta</h3><p class="muted" style="margin-top:0">Se muestran con marca de agua y tamaño reducido. Las originales se entregan por enlace de Drive cuando el cliente paga.</p>'+
+    (!S.cfg.shop?'<div class="note">La tienda está deshabilitada. Los clientes no pueden ver ni comprar las fotografías desde el portal.</div>':'')+
+    (adm?'<label for="shopprice">Precio por foto nueva</label><input id="shopprice" type="number" min="0" inputmode="numeric" value="'+esc(S.shopPrice==null?50:S.shopPrice)+'">':'<p class="hint">Las fotografías nuevas se registran a $50. El administrador puede modificar el precio posteriormente.</p>')+
+    '<label for="shopimg">Agregar fotos</label><input id="shopimg" type="file" accept="image/*" multiple><p class="hint">Carga hasta 10 fotos por selección. Se genera una vista previa con marca de agua, nunca se publica el archivo original.</p>';
+  if(S.shop.items.some(function(i){return i.demo;}))h+='<div class="note">Lo marcado como "ejemplo" es de muestra. El administrador debe quitarlo antes de publicar.</div>';
   h+=(S.shop.items.map(function(it){
-    return '<div class="match"><div class="row"><div><label>Título</label><input data-xc="itTitle|'+it.id+'" value="'+esc(it.title)+'"></div><div><label>Precio</label><input type="number" min="0" inputmode="numeric" data-xc="itPrice|'+it.id+'" value="'+esc(it.price)+'"></div></div><div style="margin-top:8px">'+(it.demo?'<span class="badge warn">ejemplo</span> ':'')+'<button class="btn small danger" data-x="delItem" data-id="'+it.id+'">Eliminar</button></div></div>';
+    return '<div class="match"><div class="row"><div><label>Título</label>'+
+      (adm?'<input data-xc="itTitle|'+it.id+'" value="'+esc(it.title)+'">':'<div>'+esc(it.title)+'</div>')+
+      '</div><div><label>Precio</label>'+
+      (adm?'<input type="number" min="0" inputmode="numeric" data-xc="itPrice|'+it.id+'" value="'+esc(it.price)+'">':'<div>'+money(it.price)+'</div>')+
+      '</div></div><div style="margin-top:8px">'+(it.demo?'<span class="badge warn">ejemplo</span> ':'')+
+      (adm?'<button class="btn small danger" data-x="delItem" data-id="'+it.id+'">Eliminar</button>':'')+
+      '</div></div>';
   }).join("")||'<p class="muted">Aún no hay fotos en venta.</p>')+'</div>';
-  h+='<div class="card"><h3>Pedidos</h3>'+(S.orders.map(orderRow).join("")||'<p class="muted">Aún no hay pedidos.</p>')+'</div>';
+  if(adm)h+='<div class="card"><h3>Pedidos</h3>'+(S.orders.map(orderRow).join("")||'<p class="muted">Aún no hay pedidos.</p>')+'</div>';
   return h;
 }
 
@@ -1534,13 +1549,19 @@ document.addEventListener("click",function(e){
 });
 document.addEventListener("change",function(e){
   var t=e.target;
-  if(t.id==="shopimg"&&isAdmin()){
-    var pr=Math.max(0,Number(document.getElementById("shopprice").value)||50);
-    S.shopPrice=pr;
-    Array.prototype.forEach.call(t.files,function(f){
+  if(t.id==="shopimg"){
+    if(!canUploadShop())return;
+    var adm=isAdmin(),priceInput=document.getElementById("shopprice");
+    var pr=adm?Math.max(0,Number(priceInput&&priceInput.value)||0):50;
+    if(adm)S.shopPrice=pr;
+    var files=Array.prototype.slice.call(t.files||[]);
+    if(files.length>10){alert("Sube un máximo de 10 fotos por selección.");return;}
+    files.forEach(function(f){
+      if(!f.type||f.type.indexOf("image/")!==0||f.size>20*1024*1024){alert("Selecciona una foto válida de máximo 20 MB: "+f.name);return;}
       procImg(f,function(url){
-        if(!url)return;
-        S.shop.items.push({id:nid(),title:f.name.replace(/\.[^.]+$/,"").slice(0,40),price:pr,img:url});
+        if(!url){alert("No se pudo procesar la imagen: "+f.name);return;}
+        if(url.length>500000){alert("La vista previa es demasiado grande. Reduce el tamaño de "+f.name+" e inténtalo de nuevo.");return;}
+        S.shop.items.push({id:nid(),title:f.name.replace(/\\.[^.]+$/,"").trim().slice(0,60)||"Fotografía",price:pr,img:url});
         save();render();
       });
     });
