@@ -9,4 +9,4 @@
 7. Bitácora protegida de cobros, pagos, asignaciones, avisos, equipo y nuevos módulos. Respaldos operativos cifrados con manifiesto y archivos de Storage; verificación de integridad y prueba de restauración aislada, sin sobrescribir producción. Documentar aparte la recuperación de cuentas y configuración de servidor.
 8. Accesibilidad y móvil: etiquetas, foco, mensajes de estado, contraste, botones utilizables, formularios y tablas adaptables.
 
-La aplicación 2.0.9 continúa funcionando mientras se desarrolla y valida esta rama. Publicación exclusivamente a las 00:00 de Monterrey, con comprobación del SHA y del proyecto de destino.
+La aplicación 2.0.9 continúa funcionando mientras se desarrolla y valida esta rama. Publicación de producción exclusivamente a las 00:00 de Monterrey, con comprobación del SHA y del proyecto de destino. Staging puede actualizarse en cualquier momento y ya dispone de la vista 2.1.0 sin modificar el frontend 2.0.9 de producción.

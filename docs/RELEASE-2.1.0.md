@@ -31,12 +31,12 @@ El respaldo operativo no sustituye el respaldo de Auth, configuración de servid
 
 ## Publicación y reversión
 
-Iniciar exclusivamente a las 00:00, zona `America/Monterrey`. El procesamiento de GitHub Pages puede terminar después; no adelantar el inicio para compensarlo.
+Iniciar la actualización de producción exclusivamente a las 00:00, zona `America/Monterrey`. Staging puede actualizarse en cualquier momento; su publicación 2.1.0 mantiene intacta la página 2.0.9 de producción. El procesamiento de GitHub Pages puede terminar después; no adelantar el inicio para compensarlo.
 
-1. Confirmar que `main` sigue en `8a18839d31ef93ca13e45342e97a45aa0eb5fcfe` y que la rama/PR corresponden al SHA probado. Si cambiaron, detener y revisar antes de publicar.
+1. Confirmar que `main` sigue en `a32fa0c347c17e734cb3c126037ffb343fed0b8b` (vista de staging 2.1.0) y que la rama/PR corresponden al SHA probado. El `index.html` de producción debe seguir siendo el blob `bfb86873a575ce649570382eb89bf6f1fa5e999a`, versión 2.0.9. Si cambiaron, detener y revisar antes de publicar.
 2. Ejecutar `docs/predeploy-210.sql` en TanabiSport producción `tantlgswituiwkxfgmsr`; confirmar una fila privada para la versión 2.1.0.
 3. Aplicar en ese proyecto las tres migraciones `tsi210_*` en orden. Confirmar funciones, RLS y versión de esquema. No ejecutar las pruebas con registros de ficción en producción.
 4. Integrar el PR verificado a `main`, sin forzar ni sobrescribir cambios de terceros. Esperar el despliegue de GitHub Pages y verificar versión 2.1.0 y coincidencia de los archivos con el SHA probado.
-5. Ante fallo del frontend, restaurar sólo `index.html` y `staging/index.html` de la versión 2.0.9. Conservar las nuevas tablas, datos y bitácora. Ante incompatibilidad de las nuevas validaciones de gastos, retirar únicamente el trigger `tsi210_expense_allocation` mientras se revisa. La copia privada del predeploy queda en `tsi210_release_safety`.
+5. Ante fallo del frontend de producción, restaurar únicamente `index.html` al blob `bfb86873a575ce649570382eb89bf6f1fa5e999a` de la versión 2.0.9. Mantener staging 2.1.0 para revisión y conservar los recursos nuevos, tablas, datos y bitácora. Ante incompatibilidad de las nuevas validaciones de gastos, retirar únicamente el trigger `tsi210_expense_allocation` mientras se revisa. La copia privada del predeploy queda en `tsi210_release_safety`.
 
 No incluir archivos de respaldo ni registros privados en GitHub.
