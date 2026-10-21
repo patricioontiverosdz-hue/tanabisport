@@ -1,0 +1,25 @@
+/* TSI 2.1.0: formularios internos, móvil y accesibilidad. */
+.s210-panel{background:var(--tsi-panel,var(--surface));color:var(--ink)}
+.s210-panel h2{font-size:1.35rem;margin:0 0 18px}.s210-panel h3{font-size:1.1rem;overflow-wrap:anywhere}
+.s210-panel h4{font-size:1rem;margin:14px 0}.s210-panel p{line-height:1.6;overflow-wrap:anywhere}
+.s210-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 18px;margin:14px 0}
+.s210-grid label{display:block}.s210-grid input{min-width:0}
+.s210-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:15px 0}
+.s210-actions .btn,.s210-panel>.btn,.s210-panel summary{min-height:44px}
+.s210-panel summary{cursor:pointer;font-weight:600;padding:12px 0;overflow-wrap:anywhere}
+.s210-row{border-top:1px solid var(--tsi-border,var(--line));padding:20px 0;overflow-wrap:anywhere;min-width:0}
+.s210-row:first-child{border-top:0}.s210-inset{background:var(--tsi-soft,var(--surface));border:1px solid var(--tsi-border,var(--line));padding:18px;border-radius:14px;margin:14px 0}
+.s210-preserve{white-space:pre-wrap}.s210-empty{padding:18px 0}.s210-status:empty{display:none}
+.s210-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:16px 0}
+.s210-metrics>div{padding:16px;background:var(--tsi-soft,var(--surface));border:1px solid var(--tsi-border,var(--line));border-radius:12px;min-width:0}
+.s210-metrics span{display:block;font-size:.85rem;line-height:1.4}.s210-metrics strong{display:block;font-size:1.25rem;margin-top:10px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.s210-detail{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:10px 18px}.s210-detail dt,.s210-detail dd{margin:0;padding:9px 0;border-bottom:1px solid var(--tsi-border,var(--line));overflow-wrap:anywhere}
+.s210-checklist{border:1px solid var(--tsi-border,var(--line));border-radius:12px;padding:12px 16px;max-height:340px;overflow:auto;margin:15px 0}
+.s210-checklist label{padding:7px 0;line-height:1.4}.s210-checklist input{width:22px;min-width:22px;height:22px}
+.s210-panel input,.s210-panel textarea,.s210-panel select{min-height:44px}.s210-panel input[readonly]{background:var(--tsi-soft,var(--surface))}
+.s210-panel :is(button,a,input,select,textarea,summary):focus-visible{outline:3px solid #867cf5;outline-offset:3px}
+.s210-draft .btn{margin-left:10px}.s210-panel pre{font-size:.8rem;max-height:280px}
+@media(max-width:900px){.s210-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.s210-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.s210-grid{display:block}.s210-grid input{margin-bottom:14px}.s210-panel{padding:18px}.s210-actions .btn{flex:1 1 140px}.s210-detail{grid-template-columns:1fr}.s210-detail dt{border:0;padding-bottom:0;font-weight:600}.s210-detail dd{padding-top:0}.s210-metrics{gap:9px}.s210-metrics>div{padding:12px}.s210-metrics strong{font-size:1.05rem}.s210-draft .btn{margin:9px 0 0}}
+@media(pointer:coarse){.btn.small,.av29-toolbar .btn{min-height:44px}.ti-navigation button{min-height:46px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
