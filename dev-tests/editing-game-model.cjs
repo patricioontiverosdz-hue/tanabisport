@@ -141,13 +141,11 @@ for (const id of ['bright-detail', 'flat-action']) {
   assert.equal(M.evaluate(item, { ...settingsFor(item), crop: 'portrait' }).passed, false, 'El grupo completo y la atajada requieren conservar todos sus extremos');
 }
 for (const item of M.SCENES.slice(8)) {
-  assert.ok(!item.cropGoal, 'Los nuevos encargos no exigen un formato sin inspeccionar la fotografía');
+  assert.ok(!item.cropGoal, 'Los nuevos encargos admiten distintos formatos cuando conservan al protagonista');
   assert.equal(M.evaluate(item, settingsFor(item)).passed, true, 'La composición completa es una entrega válida');
-  for (const crop of ['square', 'portrait']) {
-    assert.equal(M.evaluate(item, { ...settingsFor(item), crop }).passed, false,
-      'Hasta revisar la región del sujeto, el encuadre protege toda la composición');
-  }
+  assert.ok(item.subject.width<1, 'Cada imagen nueva tiene una región del protagonista revisada');
 }
+for(const id of ['pool-color','indoor-volleyball'])assert.equal(M.evaluate(scene(id),{...settingsFor(scene(id)),crop:'portrait'}).passed,false,'El recorte conserva manos y participantes: '+id);
 
 // Invalid values fail consistently in both the renderer API and scoring API.
 for (const bad of [null, undefined, '', {}, [], 'unknown', { id: 'unknown' }]) {
@@ -202,4 +200,8 @@ const context = vm.createContext({});
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../staging/editing-game-model.js'), 'utf8'), context);
 assert.equal(typeof context.TSIEditingGameModel.evaluate, 'function', 'El navegador expone el modelo UMD');
 assert.equal(context.TSIEditingGameModel.evaluate(night.id, settingsFor(night)).passed, true);
+for(const [id,crop,panX] of [['detail-track','square',0],['natural-tennis','portrait',0],['indoor-volleyball','square',0],['sunlit-cycling','portrait',0],['late-baseball','square',35],['shade-portrait','portrait',0]]){
+ const scene=M.SCENES.find(item=>item.id===id);
+ assert.equal(M.evaluate(scene,{...settingsFor(scene),crop,panX}).score,100,'Un recorte que conserva al protagonista es válido: '+id);
+}
 console.log(`Juego de edición: dieciséis retos sin recetas, varias ediciones válidas, luz, color, validación y encuadres aprobados; ${evaluatedCount} combinaciones comprobadas.`);

@@ -10,7 +10,7 @@ stage=source.replace('tantlgswituiwkxfgmsr','nksqpoigywfegcbvfhoa').replace('sb_
 stage=stage.replace('href="assets/','href="../assets/').replace('src="assets/','src="../assets/')
 game_assets='<link rel="stylesheet" href="game-ranking.css?v=220">\n<script src="game-ranking.js?v=220"></script>\n'
 game_assets+='<link rel="stylesheet" href="photo-game.css?v=220">\n<script src="photo-game-model.js?v=220"></script>\n<script src="photo-game.js?v=220"></script>\n'
-game_assets+='<link rel="stylesheet" href="editing-game.css?v=220">\n<script src="editing-game-model.js?v=220"></script>\n<script src="editing-game-renderer.js?v=220"></script>\n<script src="editing-game.js?v=220"></script>\n'
+game_assets+='<link rel="stylesheet" href="editing-game.css?v=220">\n<script src="editing-game-model.js?v=221"></script>\n<script src="editing-game-renderer.js?v=220"></script>\n<script src="editing-game.js?v=220"></script>\n'
 stage=stage.replace('\n</head>\n<body>', '\n'+game_assets+'</head>\n<body>',1)
 stage=stage.replace("['TSI y configuración'", "['Entrenamiento',['fotojuego','edicionjuego','rankingjuegos']],['TSI y configuración'",1)
 game_hook=(root/'scripts/staging-photo-game.inc.js').read_text(encoding='utf-8')

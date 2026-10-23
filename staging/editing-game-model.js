@@ -100,7 +100,7 @@
       asset: 'track-finish.jpg',
       imageAlt: 'Atleta adulto corriendo hacia la meta sobre una pista de atletismo soleada.',
       base: base({ exposure: -0.8, shadows: -30, contrast: 15 }),
-      subject: { x: 0, y: 0, width: 1, height: 1 }
+      subject: { x: 0.286, y: 0.018, width: 0.457, height: 0.928 }
     },
     {
       id: 'natural-tennis', title: 'El saque conserva sus matices', subtitle: 'La cancha y el protagonista',
@@ -108,7 +108,7 @@
       asset: 'tennis-serve.jpg',
       imageAlt: 'Tenista adulto preparando un saque con la raqueta y la pelota visibles en una cancha soleada.',
       base: base({ highlights: 45, saturation: 40, exposure: 0.4 }),
-      subject: { x: 0, y: 0, width: 1, height: 1 }
+      subject: { x: 0.37, y: 0.012, width: 0.245, height: 0.91 }
     },
     {
       id: 'indoor-volleyball', title: 'Color junto a la red', subtitle: 'La fuerza del bloqueo',
@@ -116,7 +116,7 @@
       asset: 'volleyball-block.jpg',
       imageAlt: 'Jugadores adultos de voleibol bloqueando un balón por encima de una red en un pabellón.',
       base: base({ temperature: -50, shadows: -35, exposure: -0.5 }),
-      subject: { x: 0, y: 0, width: 1, height: 1 }
+      subject: { x: 0.224, y: 0.012, width: 0.49, height: 0.988 }
     },
     {
       id: 'sunlit-cycling', title: 'Volumen sobre ruedas', subtitle: 'La bicicleta y la luz del camino',
@@ -124,7 +124,7 @@
       asset: 'cycling-sprint.jpg',
       imageAlt: 'Ciclista adulto realizando un sprint sobre una bicicleta de ruta en un camino soleado.',
       base: base({ contrast: 40, highlights: 35, saturation: 20 }),
-      subject: { x: 0, y: 0, width: 1, height: 1 }
+      subject: { x: 0.42, y: 0.04, width: 0.235, height: 0.875 }
     },
     {
       id: 'pool-color', title: 'El agua tiene identidad', subtitle: 'Piel y reflejos en la alberca',
@@ -132,7 +132,7 @@
       asset: 'swimming-race.jpg',
       imageAlt: 'Nadador adulto compitiendo entre salpicaduras en una alberca cubierta.',
       base: base({ temperature: 45, saturation: -35, contrast: -20 }),
-      subject: { x: 0, y: 0, width: 1, height: 1 }
+      subject: { x: 0.045, y: 0.24, width: 0.89, height: 0.47 }
     },
     {
       id: 'late-baseball', title: 'La tarde conserva su textura', subtitle: 'El bateo y la luz del estadio',
@@ -140,7 +140,7 @@
       asset: 'baseball-swing.jpg',
       imageAlt: 'Beisbolista adulto realizando un bateo durante la tarde en un estadio.',
       base: base({ exposure: 0.7, highlights: 50, shadows: -20 }),
-      subject: { x: 0, y: 0, width: 1, height: 1 }
+      subject: { x: 0.39, y: 0.18, width: 0.465, height: 0.67 }
     },
     {
       id: 'night-celebration', title: 'La emoción se ve de noche', subtitle: 'El equipo celebra unido',
@@ -148,7 +148,7 @@
       asset: 'soccer-celebration.jpg',
       imageAlt: 'Futbolistas adultos celebrando juntos en una cancha nocturna iluminada por reflectores.',
       base: base({ exposure: -0.9, temperature: 30, shadows: -45 }),
-      subject: { x: 0, y: 0, width: 1, height: 1 }
+      subject: { x: 0.225, y: 0.025, width: 0.56, height: 0.945 }
     },
     {
       id: 'shade-portrait', title: 'Un rostro junto a la cancha', subtitle: 'La pausa también cuenta',
@@ -156,7 +156,7 @@
       asset: 'sideline-portrait.jpg',
       imageAlt: 'Deportista adulto posando a la sombra junto a una cancha durante una pausa.',
       base: base({ temperature: -40, shadows: -35, contrast: -30 }),
-      subject: { x: 0, y: 0, width: 1, height: 1 }
+      subject: { x: 0.278, y: 0.005, width: 0.44, height: 0.995 }
     }
   ].map(function (scene) {
     Object.freeze(scene.subject);
