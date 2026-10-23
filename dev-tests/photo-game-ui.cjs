@@ -76,6 +76,25 @@ function noWrites(env){
  assert.deepEqual(env.errors,[],'Sin errores de ejecución en el navegador');
 }
 
+const configurationClue=/\bISO\b|\bapertura\b|\bf\s*\/\s*\d|\b1\s*\/\s*\d|\bEV\b/i;
+function noHints(doc){
+ assert.equal(doc.querySelectorAll('[data-pg-action="hint"],[data-pg-action="solution"],[data-pg-action="apply-solution"],.pg-hint-text,.pg-solution').length,0,'El juego no ofrece pistas ni combinaciones de cámara');
+ assert.equal(doc.querySelectorAll('.pg-setting small').length,0,'Los controles no revelan recomendaciones de uso');
+ assert.ok(!configurationClue.test(doc.querySelector('.pg-goal').textContent),'El objetivo describe la foto sin indicar configuraciones');
+ const sceneLabels=Array.from(doc.querySelectorAll('.pg-camera-top,.pg-camera-bottom>span')).map(el=>el.textContent).join(' ');
+ assert.ok(!/\bEV\b|\bf\s*\/\s*\d/i.test(sceneLabels),'La escena no adelanta exposición ni apertura de referencia');
+}
+
+function findSuccessfulSettings(model,scene){
+ // El test busca una solución en el modelo para poder recorrer el flujo de
+ // éxito; ninguna combinación se ofrece en la interfaz del juego.
+ for(const shutter of model.SHUTTERS)for(const aperture of model.APERTURES)for(const iso of model.ISOS){
+  const settings={shutter,aperture,iso},result=model.evaluate(scene,settings);
+  if(result.passed&&result.score===100)return settings;
+ }
+ assert.fail('El reto '+scene.id+' debe admitir una foto con puntuación 100');
+}
+
 async function main(){
  assert.equal(project,'nksqpoigywfegcbvfhoa','Esta prueba es exclusiva de staging');
  const production=fs.readFileSync(path.join(root,'index.html'),'utf8');
@@ -93,9 +112,23 @@ async function main(){
    assert.ok(doc.querySelector('.pg-shell'),role+': vista del juego');
    click('.ti-navigation [data-tab="resumen"]');click('.ti-navigation [data-tab="'+tab+'"]');
    assert.equal(api.S.tab,tab,role+': navegación desde el menú');
-   const initial=env.snapshot(),sceneId=initial.sceneId;
+   const model=window.TSIPhotoGameModel,initial=env.snapshot(),sceneId=initial.sceneId;
    assert.equal(doc.querySelector('.pg-shell').getAttribute('data-scene-id'),sceneId);
-   assert.ok(window.TSIPhotoGameModel.SCENES.some(scene=>scene.id===sceneId),'Escenario existente en el modelo');
+   assert.ok(model.SCENES.some(scene=>scene.id===sceneId),'Escenario existente en el modelo');
+   assert.ok(model.SCENES.length>=12,'El entrenamiento incluye al menos doce retos');
+   assert.equal(new Set(model.SCENES.map(scene=>scene.id)).size,model.SCENES.length,'Cada reto tiene un identificador único');
+   for(const scene of model.SCENES){
+    assert.ok(!configurationClue.test(scene.goal),scene.id+': objetivo sin pistas de configuración');
+    assert.ok(!Object.hasOwn(scene,'recommended')&&!Object.hasOwn(scene,'tip'),scene.id+': sin recetas ni pistas en el escenario');
+    findSuccessfulSettings(model,scene);
+   }
+   const assets=new Set(model.SCENES.map(scene=>scene.asset.split('?')[0]));
+   assert.ok(assets.size>=8,'Los retos cuentan con al menos ocho imágenes distintas');
+   for(const asset of assets){
+    assert.ok(!path.isAbsolute(asset)&&!asset.includes('..'),'Recurso de escena local '+asset);
+    assert.ok(fs.statSync(path.join(root,'staging/photo-game-scenes',asset)).isFile(),'Existe la imagen '+asset);
+   }
+   noHints(doc);
    for(const key of ['shutter','aperture','iso']){
     const control=doc.getElementById('pg-'+key);assert.ok(control,'Control '+key);
     assert.ok(control.hasAttribute('data-pg-setting'),'Control con evento de juego');
@@ -105,21 +138,28 @@ async function main(){
     control.dispatchEvent(new window.Event('change',{bubbles:true}));
     assert.equal(Number(env.snapshot().settings[key]),Number(alternative.value),'El selector actualiza '+key);
    }
-   assert.equal(doc.querySelectorAll('[data-pg-action="solution"]').length,0,'La respuesta no se ofrece antes del primer intento');
    click('[data-pg-action="shoot"]');
    assert.equal(env.snapshot().stats.shots,initial.stats.shots+1,'El primer intento cuenta un disparo');
-   click('[data-pg-action="solution"]');click('[data-pg-action="apply-solution"]');
+   noHints(doc);
+   assert.ok(!configurationClue.test(doc.querySelector('.pg-feedback').textContent),'El resultado describe la imagen sin recomendar ajustes');
+   const solution=findSuccessfulSettings(model,model.SCENES.find(scene=>scene.id===sceneId));
+   for(const key of ['shutter','aperture','iso']){
+    const control=doc.getElementById('pg-'+key);control.value=String(solution[key]);
+    control.dispatchEvent(new window.Event('change',{bubbles:true}));
+   }
    const good=env.snapshot();
-   assert.deepEqual(good.settings,plain(window.TSIPhotoGameModel.SCENES.find(scene=>scene.id===sceneId).recommended),'El ejemplo aplica una combinación válida del escenario');
+   assert.deepEqual(good.settings,solution,'Los selectores aplican los ajustes elegidos');
    // happy-dom 21 deja .value en la segunda opción al parsear un select con
    // selected posterior. Una reproducción mínima devuelve 60 con 1000 marcado.
    // Comprobar el atributo que recibe el navegador, además del estado del juego.
-   for(const key of ['shutter','aperture','iso'])assert.equal(Number(doc.getElementById('pg-'+key).querySelector('option[selected]').value),Number(good.settings[key]),'Ajuste recomendado marcado '+key);
+   for(const key of ['shutter','aperture','iso'])assert.equal(Number(doc.getElementById('pg-'+key).querySelector('option[selected]').value),Number(good.settings[key]),'Ajuste elegido marcado '+key);
    click('[data-pg-action="shoot"]');
    const shot=env.snapshot();
-   assert.ok(shot.result&&shot.result.score>=85,'Los ajustes recomendados producen una foto satisfactoria');
+   assert.ok(shot.result&&shot.result.passed&&shot.result.score===100,'Los ajustes correctos producen una foto satisfactoria');
    assert.equal(shot.stats.shots,initial.stats.shots+2,'Dos intentos registran exactamente dos disparos');
    assert.ok(shot.stats.solved.includes(sceneId),'El escenario resuelto queda en el progreso');
+   noHints(doc);
+   assert.ok(!configurationClue.test(doc.querySelector('.pg-feedback').textContent),'El éxito no revela recetas de configuración');
    click('[data-pg-action="reference"]');assert.ok(doc.querySelector('.pg-shell img[src]'),'Comparación muestra una imagen');
    assert.equal(doc.querySelector('[data-pg-action="reference"]').getAttribute('aria-pressed'),'true','La vista de referencia indica su estado');
    click('[data-pg-action="result"]');assert.deepEqual(env.snapshot().result,shot.result,'Comparar no altera la evaluación');
@@ -131,7 +171,15 @@ async function main(){
    assert.equal(env.snapshot().stats.shots,shot.stats.shots,'Renderizar no añade disparos');
    doc.querySelector('.pg-photo').dispatchEvent(new window.Event('error'));
    assert.equal(doc.querySelector('.pg-image-error').hidden,false,'Una imagen fallida muestra una explicación');
-   click('[data-pg-action="next"]');assert.notEqual(env.snapshot().sceneId,sceneId,'Siguiente cambia de escenario');
+   const round=new Set([sceneId]);
+   for(let i=1;i<model.SCENES.length;i++){
+    click('[data-pg-action="next"]');const nextId=env.snapshot().sceneId;
+    assert.ok(!round.has(nextId),'La ronda no repite retos antes de mostrarlos todos');
+    round.add(nextId);noHints(doc);
+   }
+   assert.deepEqual([...round].sort(),plain(model.SCENES.map(scene=>scene.id)).sort(),'Una ronda permite jugar todos los retos');
+   const lastScene=env.snapshot().sceneId;
+   click('[data-pg-action="next"]');assert.notEqual(env.snapshot().sceneId,lastScene,'La siguiente ronda empieza con otra escena');
    assert.equal(env.snapshot().stats.shots,shot.stats.shots,'Cambiar escenario conserva progreso');
    noWrites(env);
    if(role==='foto'){
@@ -171,6 +219,6 @@ async function main(){
    assert.equal(env.window.document.querySelectorAll('[data-tab="'+tab+'"]').length,0);noWrites(env);
   }finally{await env.close();}
  }
- console.log('Fotojuego staging: roles, menú e inicio, ajustes, disparo/evaluación, comparación, render persistente, enlace directo, progreso por usuario y ausencia de escrituras operativas aprobados.');
+ console.log('Fotojuego staging: doce retos sin pistas, ocho imágenes, rondas sin repeticiones, roles, navegación, ajustes, evaluación, comparación, render persistente, progreso por usuario y aislamiento operativo aprobados.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

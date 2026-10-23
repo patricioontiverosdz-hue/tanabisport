@@ -13,70 +13,166 @@
       id: 'daylight-action',
       title: 'Acción a pleno sol',
       subtitle: 'Un instante decisivo en la cancha',
-      goal: 'Equilibra la exposición y congela la acción con 1/1000 s o más rápido y f/5.6 o más abierto para separar al sujeto.',
-      lighting: 'Sol de día · EV 14',
+      goal: 'Captura la carrera con la jugadora y el balón bien definidos, luz equilibrada y el fondo en segundo plano.',
+      lighting: 'Sol de día',
       ev: 14,
       asset: 'daylight-action.jpg',
-      imageAlt: 'Futbolista en plena carrera en una cancha iluminada por el sol.',
+      imageAlt: 'Jugadora de flag football corriendo con el balón en una cancha soleada.',
       minShutter: 1000,
       maxAperture: 5.6,
-      preferredISO: 400,
-      recommended: { shutter: 1000, aperture: 4, iso: 100 },
-      tip: 'Empieza por una velocidad que congele al jugador. Ajusta después apertura e ISO para equilibrar la exposición.'
+      preferredISO: 400
     },
     {
       id: 'night-action',
       title: 'Partido bajo reflectores',
-      subtitle: 'Velocidad cuando la luz escasea',
-      goal: 'Equilibra la exposición y congela la acción con 1/1000 s o más rápido y f/4 o más abierto.',
-      lighting: 'Cancha nocturna · EV 8',
+      subtitle: 'Una carrera en la cancha nocturna',
+      goal: 'Captura al corredor nítido y destacado frente al fondo, sin perder detalle en su rostro ni en el uniforme.',
+      lighting: 'Cancha nocturna',
       ev: 8,
       asset: 'night-action.jpg',
-      imageAlt: 'Futbolista en acción durante un partido nocturno bajo los reflectores de la cancha.',
+      imageAlt: 'Jugador de flag football corriendo con el balón bajo los reflectores de una cancha nocturna.',
       minShutter: 1000,
       maxAperture: 4,
-      preferredISO: 6400,
-      recommended: { shutter: 1000, aperture: 2.8, iso: 3200 },
-      tip: 'El ISO alto puede ser necesario de noche. Prioriza congelar la acción y exponer bien; después busca reducir ruido si la luz lo permite.'
+      preferredISO: 6400
     },
     {
       id: 'team-portrait',
       title: 'Retrato de equipo',
       subtitle: 'Cada rostro cuenta',
-      goal: 'Equilibra la exposición y mantén nítidas las dos filas: usa f/8 o más cerrado y 1/125 s o más rápido.',
-      lighting: 'Luz de día suave · EV 12',
+      goal: 'Consigue que todos los rostros de las dos filas se vean nítidos y conserven detalle, con luz equilibrada.',
+      lighting: 'Luz de día suave',
       ev: 12,
       asset: 'team-portrait.jpg',
-      imageAlt: 'Equipo de fútbol posando en dos filas para una fotografía de grupo.',
+      imageAlt: 'Equipo de flag football posando en dos filas para una fotografía de grupo.',
       minShutter: 125,
       minAperture: 8,
       preferredISO: 800,
-      recommended: { shutter: 125, aperture: 8, iso: 200 },
-      tip: 'Cerrar a f/8 ayuda a cubrir ambas filas. Si falta luz, compensa con ISO sin bajar de la velocidad del reto.'
+      depthSubject: 'group'
     },
     {
       id: 'golden-hour-portrait',
       title: 'Retrato al atardecer',
       subtitle: 'El protagonista y un fondo suave',
-      goal: 'Equilibra la exposición y suaviza el fondo usando f/2.8 y 1/125 s o más rápido.',
-      lighting: 'Atardecer · EV 10',
+      goal: 'Destaca a la jugadora con el rostro nítido, luz equilibrada y un fondo suave que acompañe el retrato.',
+      lighting: 'Atardecer',
       ev: 10,
       asset: 'golden-hour-portrait.jpg',
-      imageAlt: 'Retrato de una futbolista al atardecer con la cancha al fondo.',
+      imageAlt: 'Retrato de una jugadora de flag football con el balón al atardecer y la cancha al fondo.',
       minShutter: 125,
       maxAperture: 2.8,
-      preferredISO: 800,
-      recommended: { shutter: 125, aperture: 2.8, iso: 100 },
-      tip: 'Abre a f/2.8 para un fondo suave. Puedes combinar distintas velocidades e ISO manteniendo la exposición.'
+      preferredISO: 800
+    },
+    {
+      id: 'aerial-catch',
+      title: 'Recepción en el aire',
+      subtitle: 'El balón llega en pleno salto',
+      goal: 'Detén el instante de la recepción con manos, balón y rostro definidos, luz equilibrada y el receptor destacado.',
+      lighting: 'Cancha soleada',
+      ev: 14,
+      asset: 'aerial-catch.jpg',
+      imageAlt: 'Receptor de flag football saltando para atrapar un balón durante un partido soleado.',
+      minShutter: 2000,
+      maxAperture: 4,
+      preferredISO: 800
+    },
+    {
+      id: 'goalkeeper-save',
+      title: 'La atajada decisiva',
+      subtitle: 'Una estirada que cambia el partido',
+      goal: 'Captura al portero y el balón nítidos en el aire, con detalle en los guantes y el fondo en segundo plano.',
+      lighting: 'Cancha al atardecer',
+      ev: 11,
+      asset: 'goalkeeper-save.jpg',
+      imageAlt: 'Portero de fútbol lanzándose para detener un balón en una cancha al atardecer.',
+      minShutter: 1000,
+      maxAperture: 5.6,
+      preferredISO: 3200
+    },
+    {
+      id: 'rainy-action',
+      title: 'Acción bajo la lluvia',
+      subtitle: 'Gotas y movimiento bajo las luces',
+      goal: 'Muestra al atleta y las gotas detenidos, con el rostro reconocible, luz equilibrada y el fondo en segundo plano.',
+      lighting: 'Lluvia bajo reflectores',
+      ev: 8,
+      asset: 'rainy-action.jpg',
+      imageAlt: 'Atleta de flag football en acción bajo la lluvia y los reflectores de una cancha nocturna.',
+      minShutter: 1000,
+      maxAperture: 4,
+      preferredISO: 6400
+    },
+    {
+      id: 'indoor-basketball',
+      title: 'Salto hacia la canasta',
+      subtitle: 'La jugada culmina en el pabellón',
+      goal: 'Captura el salto con el jugador y el balón definidos, detalle en el uniforme y el público en segundo plano.',
+      lighting: 'Iluminación de pabellón',
+      ev: 9,
+      asset: 'indoor-basketball.jpg',
+      imageAlt: 'Jugador de baloncesto saltando con el balón hacia la canasta en un pabellón deportivo.',
+      minShutter: 1000,
+      maxAperture: 4,
+      preferredISO: 6400
+    },
+    {
+      id: 'daylight-context',
+      title: 'La jugada completa',
+      subtitle: 'La protagonista y quienes la acompañan',
+      goal: 'Cuenta la jugada con la corredora nítida y sus compañeras reconocibles, conservando detalle en la cancha y luz equilibrada.',
+      lighting: 'Sol de día',
+      ev: 14,
+      asset: 'daylight-action.jpg',
+      imageAlt: 'Corredora de flag football con varias jugadoras a diferentes distancias en una cancha soleada.',
+      minShutter: 1000,
+      minAperture: 8,
+      preferredISO: 1600,
+      depthSubject: 'scene'
+    },
+    {
+      id: 'night-context',
+      title: 'El equipo entra en escena',
+      subtitle: 'Una historia más amplia bajo reflectores',
+      goal: 'Muestra la carrera nítida y conserva reconocibles a los jugadores que la acompañan, sin que la imagen quede oscura.',
+      lighting: 'Cancha nocturna',
+      ev: 8,
+      asset: 'night-action.jpg',
+      imageAlt: 'Corredor de flag football y otros jugadores repartidos por una cancha nocturna bajo reflectores.',
+      minShutter: 1000,
+      minAperture: 4,
+      preferredISO: 12800,
+      depthSubject: 'scene'
+    },
+    {
+      id: 'team-detail',
+      title: 'Los rostros de primera fila',
+      subtitle: 'Un retrato dentro del retrato de equipo',
+      goal: 'Da protagonismo a los rostros de la primera fila, nítidos y bien iluminados, con el resto del equipo en un segundo plano suave.',
+      lighting: 'Luz de día suave',
+      ev: 12,
+      asset: 'team-portrait.jpg',
+      imageAlt: 'Equipo de flag football en dos filas, con varios rostros y el balón en primer plano.',
+      minShutter: 125,
+      maxAperture: 4,
+      preferredISO: 400
+    },
+    {
+      id: 'golden-hour-detail',
+      title: 'Detalles en luz dorada',
+      subtitle: 'El gesto, el uniforme y el balón',
+      goal: 'Conserva definidos el gesto y las texturas del uniforme y el balón, con luz equilibrada y un fondo suave que acompañe la atmósfera cálida.',
+      lighting: 'Atardecer',
+      ev: 10,
+      asset: 'golden-hour-portrait.jpg',
+      imageAlt: 'Jugadora de flag football sosteniendo el balón con la cancha y el sol del atardecer detrás.',
+      minShutter: 125,
+      maxAperture: 5.6,
+      preferredISO: 800
     }
   ].map(function (scene) {
-    Object.freeze(scene.recommended);
     return Object.freeze(scene);
   }));
 
   function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
-  function stopText(value) { return Math.abs(value).toFixed(1).replace('.', ','); }
-  function fText(value) { return 'f/' + String(value).replace('.', ','); }
 
   function resolveScene(scene) {
     const id = typeof scene === 'string' ? scene : scene && scene.id;
@@ -133,33 +229,35 @@
     const feedback = [{
       kind: 'exposure',
       ok: exposureOk,
-      title: exposureOk ? 'Exposición equilibrada' : exposure > 0 ? 'Demasiada luz' : 'Falta luz',
+      title: exposureOk ? 'Luz equilibrada' : exposure > 0 ? 'Demasiada luz' : 'Imagen oscura',
       text: exposureOk
-        ? 'La exposición cumple el reto. Hay varias combinaciones de velocidad, apertura e ISO que pueden conseguirlo.'
+        ? 'La imagen conserva detalle en las zonas claras y oscuras.'
         : exposure > 0
-          ? 'La foto queda aproximadamente ' + stopText(exposure) + ' pasos sobreexpuesta. Baja el ISO, acelera el obturador o cierra la apertura, conservando el objetivo del reto.'
-          : 'La foto queda aproximadamente ' + stopText(exposure) + ' pasos subexpuesta. Sube el ISO o abre la apertura si el reto lo permite. Baja la velocidad solo sin perder la nitidez requerida.'
+          ? 'La foto queda sobreexpuesta: las zonas claras pierden detalle.'
+          : 'La foto queda subexpuesta: el sujeto y las sombras pierden detalle.'
     }, {
       kind: 'motion',
       ok: shutterOk,
-      title: shutterOk ? 'Velocidad suficiente' : 'Riesgo de movimiento',
+      title: shutterOk ? 'Movimiento definido' : 'Sujeto borroso',
       text: shutterOk
-        ? '1/' + shutter + ' s cumple la velocidad mínima de este reto. Puedes compensar los cambios de velocidad con apertura o ISO.'
-        : 'Usa 1/' + scene.minShutter + ' s o más rápido para ' + (scene.minShutter >= 1000 ? 'congelar la acción.' : 'mantener nítidos a los sujetos.') + ' Compensa la pérdida de luz con apertura o ISO.'
+        ? 'Los sujetos se ven definidos, sin rastros de movimiento que oculten sus detalles.'
+        : 'El movimiento deja rastros y los contornos de los sujetos pierden nitidez.'
     }, {
       kind: 'depth',
       ok: depthOk,
-      title: depthOk ? 'Apertura adecuada al objetivo' : scene.minAperture ? 'Falta profundidad de campo' : 'Fondo demasiado definido',
+      title: depthOk ? 'Planos acordes al objetivo' : scene.minAperture ? (scene.depthSubject === 'group' ? 'El grupo pierde nitidez' : 'Entorno poco definido') : 'Fondo demasiado definido',
       text: scene.minAperture
-        ? (depthOk ? 'La apertura ayuda a mantener ambas filas nítidas.' : 'Cierra a ' + fText(scene.minAperture) + ' o más para cubrir las dos filas; compensa la luz con ISO o velocidad dentro del reto.') + ' En una cámara real también influyen la distancia, la focal y el punto de enfoque.'
-        : (depthOk ? 'La apertura cumple el objetivo de separar al sujeto del fondo.' : 'Abre a ' + fText(scene.maxAperture) + ' o más para suavizar el fondo y ajusta la exposición.') + ' El desenfoque mostrado es orientativo; en una cámara real también depende de la focal y las distancias.'
+        ? scene.depthSubject === 'group'
+          ? (depthOk ? 'Los rostros de las dos filas conservan nitidez.' : 'Parte de los rostros de las dos filas queda fuera de la zona nítida.')
+          : (depthOk ? 'El sujeto y los elementos que lo rodean se reconocen en la escena.' : 'Los elementos que rodean al sujeto quedan demasiado difusos para contar la escena.')
+        : (depthOk ? 'El sujeto destaca frente a un segundo plano suave.' : 'El segundo plano compite con el sujeto y distrae la atención.'),
     }, {
       kind: 'noise',
       ok: iso <= scene.preferredISO,
-      title: iso <= scene.preferredISO ? 'ISO dentro de la referencia' : 'Atención al ruido',
+      title: iso <= scene.preferredISO ? 'Textura acorde a la escena' : 'Textura granulada',
       text: (iso <= scene.preferredISO
-        ? 'El ISO ' + iso + ' está dentro de la referencia de esta escena.'
-        : 'El ISO ' + iso + ' puede aumentar el ruido. Redúcelo solo si puedes conservar exposición, velocidad y apertura del reto.') + ' Es una simulación orientativa: el ruido real depende de la cámara y la luz. El ISO no resta puntos por sí solo.'
+        ? 'La textura conserva el detalle esperado para esta luz.'
+        : 'El grano se vuelve más visible y resta suavidad a los detalles.') + ' La textura se muestra de forma orientativa y no resta puntos por sí sola.'
     }];
 
     return {
