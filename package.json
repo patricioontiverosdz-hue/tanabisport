@@ -4,7 +4,7 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "test": "node dev-tests/model-210.cjs && node dev-tests/ui-210.cjs && node dev-tests/release-209.cjs && node dev-tests/production-push.cjs && node dev-tests/staging-isolation.cjs"
+    "test": "node dev-tests/model-210.cjs && node dev-tests/ui-210.cjs && node dev-tests/release-209.cjs && node dev-tests/production-push.cjs && node dev-tests/staging-isolation.cjs && node dev-tests/editor-availability.cjs staging/index.html"
   },
   "devDependencies": {
     "happy-dom": "21.0.4"
