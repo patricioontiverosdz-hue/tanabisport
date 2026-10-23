@@ -4,6 +4,7 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
+    "test:photo-game": "node dev-tests/photo-game-model.cjs && node dev-tests/photo-game-ui.cjs",
     "test": "node dev-tests/model-210.cjs && node dev-tests/ui-210.cjs && node dev-tests/release-209.cjs && node dev-tests/production-push.cjs && node dev-tests/staging-isolation.cjs && node dev-tests/editor-availability.cjs staging/index.html"
   },
   "devDependencies": {

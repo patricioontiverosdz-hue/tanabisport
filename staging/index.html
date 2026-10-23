@@ -330,6 +330,9 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
 <script src="../assets/tsi-210-model.js"></script>
 <script src="../assets/tsi-210-backup.js"></script>
 <script src="../assets/tsi-210.js"></script>
+<link rel="stylesheet" href="photo-game.css">
+<script src="photo-game-model.js"></script>
+<script src="photo-game.js"></script>
 </head>
 <body>
 <div class="wrap" id="app"></div>
@@ -585,7 +588,7 @@ function tabsFor(role){
   if(role!=="admin"&&!S.cfg.loans)keys=keys.filter(function(k){return k!=="prestamos";});
   return keys.map(function(k){return [k,all[k]];});
 }
-function tabsBar(){var entries=tabsFor(me().role),groups=[['Operaciones',['resumen','calendario','partidos','importarrol','micalendario','cobertura','proceso','fotografos','ubicaciones']],['Negocio',['cotizador','rentabilidad','clientes','entregas','pendientes','borradores','registro','recuperacion']],['Finanzas',['pagos','mipago','gastos','prestamos']],['Página pública',['tienda','portafolio','envivo']],['Equipo',['disponibilidad','disponibilidadedicion','comentarios','avisos','notif','equipo']],['TSI y configuración',['intelligence','estadisticas','catalogo','datos','ajustes']]];return '<details class="ti-menu" id="ti-menu" '+(S.tiMenuOpen!==false&&window.innerWidth>=1100?'open':'')+'><summary class="btn">☰ Menú</summary><nav class="ti-navigation" aria-label="Menú del equipo"><strong>Tanabi Sports<br><small>INTELLIGENCE</small></strong>'+groups.map(function(g){var list=entries.filter(function(x){return g[1].indexOf(x[0])>=0;});return list.length?'<h3>'+g[0]+'</h3>'+list.map(function(x){return '<button data-tab="'+x[0]+'" '+(S.tab===x[0]?'aria-current="page"':'')+'>'+esc(x[1])+'</button>';}).join(''):'';}).join('')+'</nav></details>';}
+function tabsBar(){var entries=tabsFor(me().role),groups=[['Operaciones',['resumen','calendario','partidos','importarrol','micalendario','cobertura','proceso','fotografos','ubicaciones']],['Negocio',['cotizador','rentabilidad','clientes','entregas','pendientes','borradores','registro','recuperacion']],['Finanzas',['pagos','mipago','gastos','prestamos']],['Página pública',['tienda','portafolio','envivo']],['Equipo',['disponibilidad','disponibilidadedicion','comentarios','avisos','notif','equipo']],['Entrenamiento',['fotojuego']],['TSI y configuración',['intelligence','estadisticas','catalogo','datos','ajustes']]];return '<details class="ti-menu" id="ti-menu" '+(S.tiMenuOpen!==false&&window.innerWidth>=1100?'open':'')+'><summary class="btn">☰ Menú</summary><nav class="ti-navigation" aria-label="Menú del equipo"><strong>Tanabi Sports<br><small>INTELLIGENCE</small></strong>'+groups.map(function(g){var list=entries.filter(function(x){return g[1].indexOf(x[0])>=0;});return list.length?'<h3>'+g[0]+'</h3>'+list.map(function(x){return '<button data-tab="'+x[0]+'" '+(S.tab===x[0]?'aria-current="page"':'')+'>'+esc(x[1])+'</button>';}).join(''):'';}).join('')+'</nav></details>';}
 
 function tabResumen(){
   var u=me(),now=todayStr(),h="";
@@ -3629,6 +3632,19 @@ if(window.TSI210Install){
  var ux210Fin=finMonth;finMonth=function(month){var r=ux210Fin(month),extra=UX210.directMonthly(month);r.gastos+=extra;r.ganancia-=extra;return r;};
  var ux210AddMatch=X.addMatch2;X.addMatch2=function(){var old=S.matches.length;ux210AddMatch.apply(this,arguments);if(S.matches.length>old)UX210.trackCoreSave(S.matches[S.matches.length-1].id,'core:match');};
  var ux210Publish=X.av29Publish;X.av29Publish=async function(){await ux210Publish.apply(this,arguments);if(!AV29.draft&&AV29.message)UX210.avisoSaved();};
+}
+
+/* Este bloque se inserta solo en el arranque de staging por build-staging.py. */
+var PG=null;
+if(window.TSIPhotoGame&&window.TSIPhotoGameModel&&SBU==='https://nksqpoigywfegcbvfhoa.supabase.co'){
+ PG=window.TSIPhotoGame.create({me:me,server:SBU,render:function(){render();},imageBase:'photo-game-scenes/'});
+ var pgBaseTabs=tabsFor;tabsFor=function(role){var list=pgBaseTabs(role);if(['admin','foto','editora'].includes(role))list.push(['fotojuego','Reto fotográfico']);return list;};
+ var pgBaseView=viewDash;viewDash=function(){
+  if(S.tab!=='fotojuego'||!me()||!['admin','foto','editora'].includes(me().role))return pgBaseView();
+  return topbar()+'<div class="ti-section-head">'+tabsBar()+'<h1>Reto fotográfico</h1></div>'+PG.render()+'<footer>Progreso guardado en este navegador. · Versión '+APP_VERSION+'</footer>';
+ };
+ var pgBaseSummary=tabResumen;tabResumen=function(){var html=pgBaseSummary();if(me()&&['admin','foto','editora'].includes(me().role))html=html.replace(/(<nav class="d29-actions"[^>]*>)/,'$1'+d29Action('fotojuego','Reto fotográfico','Entrena tu ojo y tu cámara','camera'));return html;};
+ var pgBaseRender=render;render=function(){var active=document.activeElement,focusId=active&&active.closest('.pg-shell')?active.id:'',focusAction=active&&active.closest('.pg-shell')?active.getAttribute('data-pg-action'):'';pgBaseRender();if(S.view==='dash'&&S.tab==='fotojuego'){PG.afterRender();var restored=focusId?document.getElementById(focusId):focusAction?document.querySelector('[data-pg-action="'+focusAction+'"]'):null;if(restored)restored.focus({preventScroll:true});}};
 }
 
 var tsiStage210Top=topbar;topbar=function(){return '<div class="note"><strong>STAGING · Pruebas 2.1.1</strong> · Datos y sesión de prueba.</div>'+tsiStage210Top();};
