@@ -25,8 +25,9 @@
 
   // These clean synthetic JPEGs are shared with the camera game. The initial
   // defects are applied to the clean source rather than destructively baked in.
-  // Subject rectangles were inspected against every asset and include the ball,
-  // hands and head. A crop must keep the whole rectangle, not just its center.
+  // Inspected subject rectangles include the ball, hands and head. New scenes
+  // conservatively protect the full frame until their subject crop is reviewed.
+  // A crop must keep the whole rectangle, not just its center.
   const SCENES = Object.freeze([
     {
       id: 'night-detail', title: 'Detalle bajo reflectores', subtitle: 'La carrera continúa de noche',
@@ -92,6 +93,70 @@
       imageAlt: 'Portero de fútbol con uniforme amarillo estirándose en el aire para detener un balón con sus guantes.',
       base: base({ contrast: -35, exposure: 0.4, saturation: -20 }),
       subject: { x: 0.058, y: 0.125, width: 0.885, height: 0.66 }
+    },
+    {
+      id: 'detail-track', title: 'La meta conserva el detalle', subtitle: 'El esfuerzo en cada gesto',
+      goal: 'Haz reconocibles el rostro y la textura del uniforme del corredor, con una pista luminosa y colores naturales.',
+      asset: 'track-finish.jpg',
+      imageAlt: 'Atleta adulto corriendo hacia la meta sobre una pista de atletismo soleada.',
+      base: base({ exposure: -0.8, shadows: -30, contrast: 15 }),
+      subject: { x: 0, y: 0, width: 1, height: 1 }
+    },
+    {
+      id: 'natural-tennis', title: 'El saque conserva sus matices', subtitle: 'La cancha y el protagonista',
+      goal: 'Conserva la textura de la ropa y colores creíbles en la piel y la cancha, con el tenista, la raqueta y la pelota reconocibles.',
+      asset: 'tennis-serve.jpg',
+      imageAlt: 'Tenista adulto preparando un saque con la raqueta y la pelota visibles en una cancha soleada.',
+      base: base({ highlights: 45, saturation: 40, exposure: 0.4 }),
+      subject: { x: 0, y: 0, width: 1, height: 1 }
+    },
+    {
+      id: 'indoor-volleyball', title: 'Color junto a la red', subtitle: 'La fuerza del bloqueo',
+      goal: 'Muestra los rostros y los uniformes de colores creíbles, con detalle en las manos y el balón y un ambiente de pabellón natural.',
+      asset: 'volleyball-block.jpg',
+      imageAlt: 'Jugadores adultos de voleibol bloqueando un balón por encima de una red en un pabellón.',
+      base: base({ temperature: -50, shadows: -35, exposure: -0.5 }),
+      subject: { x: 0, y: 0, width: 1, height: 1 }
+    },
+    {
+      id: 'sunlit-cycling', title: 'Volumen sobre ruedas', subtitle: 'La bicicleta y la luz del camino',
+      goal: 'Conserva los matices del rostro, el uniforme y la bicicleta, con una luz de sol creíble y texturas sin bordes duros.',
+      asset: 'cycling-sprint.jpg',
+      imageAlt: 'Ciclista adulto realizando un sprint sobre una bicicleta de ruta en un camino soleado.',
+      base: base({ contrast: 40, highlights: 35, saturation: 20 }),
+      subject: { x: 0, y: 0, width: 1, height: 1 }
+    },
+    {
+      id: 'pool-color', title: 'El agua tiene identidad', subtitle: 'Piel y reflejos en la alberca',
+      goal: 'Consigue colores naturales en la piel y el agua, conservando el brillo de las salpicaduras y el volumen del nadador.',
+      asset: 'swimming-race.jpg',
+      imageAlt: 'Nadador adulto compitiendo entre salpicaduras en una alberca cubierta.',
+      base: base({ temperature: 45, saturation: -35, contrast: -20 }),
+      subject: { x: 0, y: 0, width: 1, height: 1 }
+    },
+    {
+      id: 'late-baseball', title: 'La tarde conserva su textura', subtitle: 'El bateo y la luz del estadio',
+      goal: 'Da presencia al bateador y conserva detalle en la piel, la ropa y el bate, con los matices de una tarde en el estadio.',
+      asset: 'baseball-swing.jpg',
+      imageAlt: 'Beisbolista adulto realizando un bateo durante la tarde en un estadio.',
+      base: base({ exposure: 0.7, highlights: 50, shadows: -20 }),
+      subject: { x: 0, y: 0, width: 1, height: 1 }
+    },
+    {
+      id: 'night-celebration', title: 'La emoción se ve de noche', subtitle: 'El equipo celebra unido',
+      goal: 'Haz que los gestos y las texturas de los uniformes del equipo sean reconocibles, con color natural y ambiente nocturno.',
+      asset: 'soccer-celebration.jpg',
+      imageAlt: 'Futbolistas adultos celebrando juntos en una cancha nocturna iluminada por reflectores.',
+      base: base({ exposure: -0.9, temperature: 30, shadows: -45 }),
+      subject: { x: 0, y: 0, width: 1, height: 1 }
+    },
+    {
+      id: 'shade-portrait', title: 'Un rostro junto a la cancha', subtitle: 'La pausa también cuenta',
+      goal: 'Muestra el gesto del deportista con piel creíble y textura en el uniforme, conservando la luz suave de la sombra.',
+      asset: 'sideline-portrait.jpg',
+      imageAlt: 'Deportista adulto posando a la sombra junto a una cancha durante una pausa.',
+      base: base({ temperature: -40, shadows: -35, contrast: -30 }),
+      subject: { x: 0, y: 0, width: 1, height: 1 }
     }
   ].map(function (scene) {
     Object.freeze(scene.subject);

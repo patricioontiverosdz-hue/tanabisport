@@ -1,7 +1,7 @@
 /* Laboratorio de edición: se instala exclusivamente en staging. */
 var EG=null;
 if(window.TSIEditingGame&&window.TSIEditingGameModel&&window.TSIEditingRenderer&&SBU==='https://nksqpoigywfegcbvfhoa.supabase.co'){
- EG=window.TSIEditingGame.create({me:me,server:SBU,render:function(){render();},imageBase:'photo-game-scenes/'});
+ EG=window.TSIEditingGame.create({me:me,server:SBU,render:function(){render();},imageBase:'photo-game-scenes/',ranking:GR});
  var egBaseTabs=tabsFor;tabsFor=function(role){var list=egBaseTabs(role);if(['admin','foto','editora'].includes(role))list.push(['edicionjuego','Reto de edición']);return list;};
  var egBaseView=viewDash;viewDash=function(){
   if(S.tab!=='edicionjuego'||!me()||!['admin','foto','editora'].includes(me().role))return egBaseView();

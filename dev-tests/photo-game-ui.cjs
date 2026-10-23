@@ -1,7 +1,7 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 
 // Ejecuta el portal completo con perfiles y RPC de lectura simulados. El juego
-// debe poder usarse sin escribir ningún dato operativo en Supabase.
+// guarda únicamente intentos de entrenamiento, sin modificar datos operativos.
 const root=path.join(__dirname,'..'),htmlPath=path.join(root,'staging/index.html');
 const html=fs.readFileSync(htmlPath,'utf8'),serverUrl=html.match(/var SBU="([^"]+)"/)[1];
 const authKey=html.match(/localStorage\.setItem\(["']([^"']+_auth)["']/)[1];
@@ -30,7 +30,8 @@ async function environment(role,options={}){
   const url=new URL(String(input)),method=request.method||'GET',body=request.body?JSON.parse(request.body):{};
   assert.equal(url.origin,serverUrl,'El portal probado solo consulta el proyecto staging');
   calls.push({path:url.pathname,method,body});
-  assert.ok(method==='GET'||method==='POST'&&readRPCs.has(url.pathname),'El juego no debe generar escrituras: '+method+' '+url.pathname);
+  assert.ok(method==='GET'||method==='POST'&&(readRPCs.has(url.pathname)||url.pathname==='/functions/v1/training-game'),'El juego no debe generar escrituras operativas: '+method+' '+url.pathname);
+  if(url.pathname==='/functions/v1/training-game')return response({accepted:true});
   if(url.pathname==='/rest/v1/settings')return response([{id:'cfg',data:{shop:false,reservasPublicas:false,autoArchive:false}}]);
   if(url.pathname==='/rest/v1/profiles')return response(profiles);
   if(url.pathname==='/rest/v1/rpc/tsi11_state')return response(state());
@@ -72,7 +73,8 @@ async function environment(role,options={}){
 }
 
 function noWrites(env){
- assert.ok(env.calls.every(call=>call.method==='GET'||call.method==='POST'&&/\/rpc\/(tsi11_state|tsi11_photographer_risks|tsi11_photo_availability_state|tsi210_state)$/.test(call.path)),'El entrenamiento no modifica datos del equipo');
+ assert.ok(env.calls.every(call=>call.method==='GET'||call.method==='POST'&&(/\/rpc\/(tsi11_state|tsi11_photographer_risks|tsi11_photo_availability_state|tsi210_state)$/.test(call.path)||call.path==='/functions/v1/training-game')),'El entrenamiento no modifica datos operativos del equipo');
+ for(const call of env.calls.filter(call=>call.path==='/functions/v1/training-game'))assert.deepEqual(Object.keys(call.body).sort(),['game','sceneId','settings'],'El intento no incluye puntuación ni identidad elegida por el cliente');
  assert.deepEqual(env.errors,[],'Sin errores de ejecución en el navegador');
 }
 
@@ -115,7 +117,7 @@ async function main(){
    const model=window.TSIPhotoGameModel,initial=env.snapshot(),sceneId=initial.sceneId;
    assert.equal(doc.querySelector('.pg-shell').getAttribute('data-scene-id'),sceneId);
    assert.ok(model.SCENES.some(scene=>scene.id===sceneId),'Escenario existente en el modelo');
-   assert.ok(model.SCENES.length>=12,'El entrenamiento incluye al menos doce retos');
+   assert.ok(model.SCENES.length>=20,'El entrenamiento incluye al menos veinte retos');
    assert.equal(new Set(model.SCENES.map(scene=>scene.id)).size,model.SCENES.length,'Cada reto tiene un identificador único');
    for(const scene of model.SCENES){
     assert.ok(!configurationClue.test(scene.goal),scene.id+': objetivo sin pistas de configuración');
@@ -123,7 +125,7 @@ async function main(){
     findSuccessfulSettings(model,scene);
    }
    const assets=new Set(model.SCENES.map(scene=>scene.asset.split('?')[0]));
-   assert.ok(assets.size>=8,'Los retos cuentan con al menos ocho imágenes distintas');
+   assert.ok(assets.size>=16,'Los retos cuentan con al menos dieciséis imágenes distintas');
    for(const asset of assets){
     assert.ok(!path.isAbsolute(asset)&&!asset.includes('..'),'Recurso de escena local '+asset);
     assert.ok(fs.statSync(path.join(root,'staging/photo-game-scenes',asset)).isFile(),'Existe la imagen '+asset);
@@ -181,6 +183,10 @@ async function main(){
    const lastScene=env.snapshot().sceneId;
    click('[data-pg-action="next"]');assert.notEqual(env.snapshot().sceneId,lastScene,'La siguiente ronda empieza con otra escena');
    assert.equal(env.snapshot().stats.shots,shot.stats.shots,'Cambiar escenario conserva progreso');
+   await until(()=>env.calls.filter(call=>call.path==='/functions/v1/training-game').length>=2,'envío de ambos disparos al ranking');
+   const attempts=env.calls.filter(call=>call.path==='/functions/v1/training-game');
+   assert.equal(attempts.length,2,'Cada disparo envía exactamente un intento; renderizar y comparar no los duplican');
+   assert.ok(attempts.every(call=>call.body.game==='camera'&&call.body.sceneId===sceneId),'Los envíos corresponden al juego y reto evaluado');
    noWrites(env);
    if(role==='foto'){
     saved=env.storage();firstScene=sceneId;firstStats=shot.stats;
@@ -219,6 +225,6 @@ async function main(){
    assert.equal(env.window.document.querySelectorAll('[data-tab="'+tab+'"]').length,0);noWrites(env);
   }finally{await env.close();}
  }
- console.log('Fotojuego staging: doce retos sin pistas, ocho imágenes, rondas sin repeticiones, roles, navegación, ajustes, evaluación, comparación, render persistente, progreso por usuario y aislamiento operativo aprobados.');
+ console.log('Fotojuego staging: veinte retos sin pistas, dieciséis imágenes, rondas sin repeticiones, roles, navegación, ajustes, evaluación, comparación, render persistente, progreso por usuario e intentos de ranking aislados aprobados.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

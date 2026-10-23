@@ -1,6 +1,6 @@
 # Escenas del juego de fotografía (staging)
 
-Estas cuatro imágenes son sintéticas y fueron generadas con IA con `image_gen` integrado para el prototipo de entrenamiento de Tanabi. Las personas son personajes adultos ficticios. No representan sesiones, equipos ni clientes reales.
+Estas imágenes son sintéticas y fueron generadas con IA con `image_gen` integrado para el prototipo de entrenamiento de Tanabi. Las personas son personajes adultos ficticios. No representan sesiones, equipos ni clientes reales.
 
 Las imágenes base tienen exposición y enfoque intencionalmente correctos. El juego aplica por separado efectos pedagógicos de exposición, movimiento y ruido; esos efectos son aproximaciones visuales y no simulan físicamente una cámara o lente específico.
 
@@ -63,5 +63,42 @@ Use case: photorealistic-natural. Asset type: horizontal clean base photograph f
 #### indoor-basketball
 
 Use case: photorealistic-natural. Asset type: horizontal clean base photograph for camera exposure training game. Primary request: an entirely fictional adult male basketball player jumping toward the hoop for a layup shot with a basketball held in one raised hand, indoors on a polished wooden basketball court. Plain green basketball jersey and shorts with no numbers or markings. Composition: horizontal 16:9, full athlete, basketball and hoop visible with realistic proportions, court level sports perspective, illuminated indoor arena ceiling and basketball court environment establish location, distant fictional adult players. Lighting: evenly bright indoor sports arena lights, balanced correct exposure, natural skin and wood colors. Player, ball, hands and hoop tack sharp, action frozen. Photorealistic sports photography, natural anatomy. No text, letters, numbers, logos, brands, watermark, borders or camera UI. No motion blur, noise, overexposure or underexposure; clean correctly captured source.
+
+## Ampliación 2.2.0: ocho escenas nuevas
+
+Se añaden ocho fotografías generadas con `image_gen` integrado. Se revisaron visualmente: atletismo, tenis, voleibol, ciclismo, natación, béisbol, celebración de fútbol y retrato en la banda. Son adultos ficticios; no proceden de sesiones ni de clientes. Cada archivo se exportó a JPEG RGB de 1400 × 788, calidad 88, para compartirlo entre los retos de cámara y edición.
+
+### track-finish.jpg
+
+Use case: photorealistic-natural. Asset type: clean base photograph for a sports photography and editing training game. Create one standalone landscape image, 16:9 wide composition. A fictional adult female sprinter in red crossing the finish line on an outdoor athletics track, midday sunlight, other runners farther behind, entire runner head to shoes and finish ribbon visible. Realistic anatomy, believable equipment and physics, natural colors, balanced exposure, crisp fine detail, no crushed blacks or clipped whites. All people are fictional adults. No text, logos, brands, numbers on clothing, watermarks, collage, borders or camera interface. This is a clean source photograph; simulated defects will be added by the app. Keep key subject comfortably inside the frame.
+
+### tennis-serve.jpg
+
+Use case: photorealistic-natural. Asset type: clean base photograph for a sports photography and editing training game. Create one standalone landscape image, 16:9 wide composition. A fictional adult male tennis player in white and blue serving on an outdoor blue tennis court in clear afternoon sun. Entire body, racket above head and ball visible, subject centered with comfortable margins. Realistic anatomy, believable equipment and physics, natural colors, balanced exposure, crisp fine detail, no crushed blacks or clipped whites. All people are fictional adults. No text, logos, brands, numbers on clothing, watermarks, collage, borders or camera interface. This is a clean source photograph; simulated defects will be added by the app. Keep key subject comfortably inside the frame.
+
+### volleyball-block.jpg
+
+Use case: photorealistic-natural. Asset type: clean base photograph for a sports photography and editing training game. Create one standalone landscape image, 16:9 wide composition. Two fictional adult women volleyball players in contrasting uniforms jumping to block a volleyball above a net in an indoor sports hall, entire arms, hands, ball and bodies visible, centered action, spectators softly visible. Realistic anatomy, believable equipment and physics, natural colors, balanced exposure, crisp fine detail, no crushed blacks or clipped whites. All people are fictional adults. No text, logos, brands, numbers on clothing, watermarks, collage, borders or camera interface. This is a clean source photograph; simulated defects will be added by the app. Keep key subject comfortably inside the frame.
+
+### cycling-sprint.jpg
+
+Use case: photorealistic-natural. Asset type: clean base photograph for a sports photography and editing training game. Create one standalone landscape image, 16:9 wide composition. A fictional adult road cyclist in orange leading a sprint on a road in afternoon sunlight. Entire bicycle, wheels, rider and helmet visible, a few riders farther behind, sharp sports editorial scene. Realistic anatomy, believable equipment and physics, natural colors, balanced exposure, crisp fine detail, no crushed blacks or clipped whites. All people are fictional adults. No text, logos, brands, numbers on clothing, watermarks, collage, borders or camera interface. This is a clean source photograph; simulated defects will be added by the app. Keep key subject comfortably inside the frame.
+
+### swimming-race.jpg
+
+Use case: photorealistic-natural. Asset type: clean base photograph for a sports photography and editing training game. Create one standalone landscape image, 16:9 wide composition. A fictional adult competitive swimmer mid butterfly stroke toward the camera in an indoor pool, face, both arms and splashing water clearly visible, other lanes softly visible, balanced cool daylight from windows. Realistic anatomy, believable equipment and physics, natural colors, balanced exposure, crisp fine detail, no crushed blacks or clipped whites. All people are fictional adults. No text, logos, brands, numbers on clothing, watermarks, collage, borders or camera interface. This is a clean source photograph; simulated defects will be added by the app. Keep key subject comfortably inside the frame.
+
+### baseball-swing.jpg
+
+Use case: photorealistic-natural. Asset type: clean base photograph for a sports photography and editing training game. Create one standalone landscape image, 16:9 wide composition. A fictional adult baseball batter in navy uniform swinging at a baseball on a field in late afternoon sun, entire body, bat and ball visible, full sports editorial composition with room around action. Realistic anatomy, believable equipment and physics, natural colors, balanced exposure, crisp fine detail, no crushed blacks or clipped whites. All people are fictional adults. No text, logos, brands, numbers on clothing, watermarks, collage, borders or camera interface. This is a clean source photograph; simulated defects will be added by the app. Keep key subject comfortably inside the frame.
+
+### soccer-celebration.jpg
+
+Use case: photorealistic-natural. Asset type: clean base photograph for a sports photography and editing training game. Create one standalone landscape image, 16:9 wide composition. Three fictional adult soccer players in green uniforms celebrating a goal together on a stadium pitch at night under floodlights. All three players full body visible with joyful expressions, balanced night exposure, distant crowd soft. Realistic anatomy, believable equipment and physics, natural colors, balanced exposure, crisp fine detail, no crushed blacks or clipped whites. All people are fictional adults. No text, logos, brands, numbers on clothing, watermarks, collage, borders or camera interface. This is a clean source photograph; simulated defects will be added by the app. Keep key subject comfortably inside the frame.
+
+### sideline-portrait.jpg
+
+Use case: photorealistic-natural. Asset type: clean base photograph for a sports photography and editing training game. Create one standalone landscape image, 16:9 wide composition. A fictional adult female athlete in burgundy training kit holding a soccer ball at the sideline in soft open shade. Waist-up portrait, face and both hands and entire ball visible, centered with space around, natural skin texture and softly blurred field background. Realistic anatomy, believable equipment and physics, natural colors, balanced exposure, crisp fine detail, no crushed blacks or clipped whites. All people are fictional adults. No text, logos, brands, numbers on clothing, watermarks, collage, borders or camera interface. This is a clean source photograph; simulated defects will be added by the app. Keep key subject comfortably inside the frame.
+
 
 

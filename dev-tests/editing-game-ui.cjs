@@ -29,7 +29,8 @@ async function environment(role,options={}){
   const url=new URL(String(input)),method=request.method||'GET',body=request.body?JSON.parse(request.body):{};
   assert.equal(url.origin,serverUrl,'El portal probado solo consulta el proyecto staging');
   calls.push({path:url.pathname,method,body});
-  assert.ok(method==='GET'||method==='POST'&&readRPCs.has(url.pathname),'El juego no debe generar escrituras: '+method+' '+url.pathname);
+  assert.ok(method==='GET'||method==='POST'&&(readRPCs.has(url.pathname)||url.pathname==='/functions/v1/training-game'),'El juego no debe generar escrituras operativas: '+method+' '+url.pathname);
+  if(url.pathname==='/functions/v1/training-game')return response({accepted:true});
   if(url.pathname==='/rest/v1/settings')return response([{id:'cfg',data:{shop:false,reservasPublicas:false,autoArchive:false}}]);
   if(url.pathname==='/rest/v1/profiles')return response(profiles);
   if(url.pathname==='/rest/v1/rpc/tsi11_state')return response(state());
@@ -92,7 +93,8 @@ async function environment(role,options={}){
 }
 
 function noWrites(env){
- assert.ok(env.calls.every(call=>call.method==='GET'||call.method==='POST'&&/\/rpc\/(tsi11_state|tsi11_photographer_risks|tsi11_photo_availability_state|tsi210_state)$/.test(call.path)),'El entrenamiento no modifica datos del equipo');
+ assert.ok(env.calls.every(call=>call.method==='GET'||call.method==='POST'&&(/\/rpc\/(tsi11_state|tsi11_photographer_risks|tsi11_photo_availability_state|tsi210_state)$/.test(call.path)||call.path==='/functions/v1/training-game')),'El entrenamiento no modifica datos operativos del equipo');
+ for(const call of env.calls.filter(call=>call.path==='/functions/v1/training-game'))assert.deepEqual(Object.keys(call.body).sort(),['game','sceneId','settings'],'El intento no incluye puntuación ni identidad elegida por el cliente');
  assert.deepEqual(env.errors,[],'Sin errores de ejecución en el navegador');
 }
 function evaluationBlocked(env,message){
@@ -146,7 +148,7 @@ async function main(){
    const model=window.TSIEditingGameModel,initial=env.snapshot(),sceneId=initial.sceneId;
    assert.equal(doc.querySelector('.eg-shell').getAttribute('data-scene-id'),sceneId);
    assert.ok(model.SCENES.some(scene=>scene.id===sceneId),'Escenario existente en el modelo');
-   assert.ok(model.SCENES.length>=8,'Hay al menos ocho retos de edición');
+   assert.ok(model.SCENES.length>=16,'Hay al menos dieciséis retos de edición');
    assert.equal(new Set(model.SCENES.map(scene=>scene.id)).size,model.SCENES.length,'Cada reto tiene identificador único');
    for(const scene of model.SCENES){
     assert.ok(!recipe.test(scene.goal),scene.id+': objetivo sin receta de ajustes');
@@ -240,6 +242,10 @@ async function main(){
    const lastScene=env.snapshot().sceneId;
    click('[data-eg-action="next"]');assert.notEqual(env.snapshot().sceneId,lastScene,'La nueva ronda no repite inmediatamente el último reto');
    assert.equal(env.snapshot().stats.evaluations,success.stats.evaluations,'Cambiar de reto conserva el progreso');
+   await until(()=>env.calls.filter(call=>call.path==='/functions/v1/training-game').length>=2,'envío de ambas evaluaciones al ranking');
+   const attempts=env.calls.filter(call=>call.path==='/functions/v1/training-game');
+   assert.equal(attempts.length,2,'Cada evaluación envía exactamente un intento; renderizar, comparar y fallar una imagen no los duplican');
+   assert.ok(attempts.every(call=>call.body.game==='editing'&&call.body.sceneId===sceneId),'Los envíos corresponden al juego y reto evaluado');
    noWrites(env);
    if(role==='foto'){
     saved=env.storage();firstScene=sceneId;firstStats=success.stats;
@@ -288,6 +294,6 @@ async function main(){
    assert.equal(env.window.document.querySelectorAll('[data-tab="'+tab+'"]').length,0);noWrites(env);
   }finally{await env.close();}
  }
- console.log('Edición staging: ocho retos sin recetas, roles, navegación, controles en vivo, encuadre, evaluación, comparación, deshacer/restablecer, rondas, progreso por cuenta y aislamiento operativo aprobados.');
+ console.log('Edición staging: dieciséis retos sin recetas, roles, navegación, controles en vivo, encuadre, evaluación, comparación, deshacer/restablecer, rondas, progreso por cuenta e intentos de ranking aislados aprobados.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

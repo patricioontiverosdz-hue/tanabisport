@@ -19,9 +19,12 @@ const solutions = new Map(M.SCENES.map(item => [item.id,
 const solution = id => solutions.get(id)[0];
 const recipePattern = /\b(?:ISO|apertura|velocidad|obturador|diafragma|EV|usa|sube|baja|abre|cierra|acelera|reduce|compensa|recomendaci[oó]n)\b|f\s*\/|\d/i;
 
-assert.equal(M.SCENES.length, 12);
-assert.equal(new Set(M.SCENES.map(item => item.id)).size, 12, 'Cada reto tiene un id propio');
-assert.equal(new Set(M.SCENES.map(item => item.asset)).size, 8, 'Ocho escenas visuales ofrecen doce objetivos');
+assert.equal(M.SCENES.length, 20);
+assert.equal(new Set(M.SCENES.map(item => item.id)).size, 20, 'Cada reto tiene un id propio');
+assert.equal(new Set(M.SCENES.map(item => item.asset)).size, 16, 'Dieciséis escenas visuales ofrecen veinte objetivos');
+const addedScenes = ['track-finish', 'tennis-serve', 'volleyball-block', 'cycling-sprint',
+  'swimming-race', 'baseball-swing', 'soccer-celebration', 'sideline-portrait'];
+assert.deepEqual(M.SCENES.slice(12).map(item => item.id), addedScenes, 'La ampliación conserva los retos anteriores');
 assert.deepEqual(M.SHUTTERS, [30, 60, 125, 250, 500, 1000, 2000, 4000]);
 assert.deepEqual(M.APERTURES, [2.8, 4, 5.6, 8, 11, 16]);
 assert.deepEqual(M.ISOS, [100, 200, 400, 800, 1600, 3200, 6400, 12800]);
@@ -32,6 +35,7 @@ for (const item of M.SCENES) {
   }
   assert.ok(!Object.hasOwn(item, 'recommended') && !Object.hasOwn(item, 'tip'), 'Las escenas no incluyen soluciones ni pistas');
   assert.ok(item.asset.endsWith('.jpg'));
+  assert.ok(fs.existsSync(path.join(__dirname, '../staging/photo-game-scenes', item.asset)), `Existe la fotografía de ${item.id}`);
   assert.ok(solutions.get(item.id).length >= 2, `El reto ${item.id} permite varias soluciones perfectas`);
   const result = M.evaluate(item, solution(item.id));
   assert.equal(result.passed, true, `Una solución válida debe aprobar: ${item.id}`);
@@ -129,6 +133,15 @@ const aerialMotion = evaluate('aerial-catch', { shutter: 1000, aperture: 4, iso:
 assert.equal(aerialMotion.exposureOk, true);
 assert.equal(aerialMotion.shutterOk, false, 'La recepción exige detener un movimiento más rápido');
 assert.equal(aerialMotion.passed, false);
+const celebration = evaluate('soccer-celebration', { shutter: 500, aperture: 4, iso: 3200 });
+assert.equal(celebration.passed, true, 'La celebración admite conservar al equipo en el ambiente nocturno');
+assert.ok(!celebration.feedback[2].text.includes('filas'), 'La celebración no describe la formación del retrato de equipo');
+for (const id of ['track-finish', 'tennis-serve', 'cycling-sprint', 'baseball-swing']) {
+  const settings = solution(id);
+  const result = evaluate(id, { ...settings, shutter: 1000 });
+  assert.equal(result.shutterOk, false, `${id} distingue el movimiento rápido del gesto estático`);
+  assert.equal(result.passed, false);
+}
 
 for (const bad of [null, undefined, '', {}, 'unknown', { id: 'unknown', ev: 0 }]) {
   assert.throws(() => M.evaluate(bad, solution('night-action')), RangeError);
@@ -180,4 +193,4 @@ const context = vm.createContext({});
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../staging/photo-game-model.js'), 'utf8'), context);
 assert.equal(typeof context.TSIPhotoGameModel.evaluate, 'function', 'El navegador expone el modelo UMD');
 assert.equal(context.TSIPhotoGameModel.evaluate('night-action', { shutter: 1000, aperture: 2.8, iso: 3200 }).passed, true);
-console.log(`Juego fotográfico: doce retos sin recetas, física de exposición, objetivos, validación, límites y UMD aprobados; ${passingCombinations} combinaciones válidas.`);
+console.log(`Juego fotográfico: veinte retos sin recetas, física de exposición, objetivos, validación, límites y UMD aprobados; ${passingCombinations} combinaciones válidas.`);

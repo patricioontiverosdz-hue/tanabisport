@@ -25,9 +25,15 @@ const diagnose = result => {
   }
 };
 
-assert.equal(M.SCENES.length, 8);
-assert.equal(new Set(M.SCENES.map(item => item.id)).size, 8);
-assert.equal(new Set(M.SCENES.map(item => item.asset)).size, 8);
+assert.equal(M.SCENES.length, 16);
+assert.equal(new Set(M.SCENES.map(item => item.id)).size, 16);
+assert.equal(new Set(M.SCENES.map(item => item.asset)).size, 16);
+const addedScenes = ['detail-track', 'natural-tennis', 'indoor-volleyball', 'sunlit-cycling',
+  'pool-color', 'late-baseball', 'night-celebration', 'shade-portrait'];
+assert.deepEqual(M.SCENES.slice(8).map(item => item.id), addedScenes, 'La ampliación conserva los encargos anteriores');
+const camera = require('../staging/photo-game-model.js');
+assert.deepEqual([...new Set(M.SCENES.map(item => item.asset))].sort(),
+  [...new Set(camera.SCENES.map(item => item.asset))].sort(), 'Los dos juegos comparten las fotografías nuevas');
 assert.deepEqual(M.CROPS, ['original', 'landscape', 'square', 'portrait']);
 assert.deepEqual(M.CONTROLS.map(item => [item.key, item.min, item.max, item.step]), [
   ['exposure', -3, 3, 0.1], ['temperature', -100, 100, 5], ['highlights', -100, 100, 5],
@@ -134,6 +140,14 @@ for (const id of ['bright-detail', 'flat-action']) {
   const item = scene(id);
   assert.equal(M.evaluate(item, { ...settingsFor(item), crop: 'portrait' }).passed, false, 'El grupo completo y la atajada requieren conservar todos sus extremos');
 }
+for (const item of M.SCENES.slice(8)) {
+  assert.ok(!item.cropGoal, 'Los nuevos encargos no exigen un formato sin inspeccionar la fotografía');
+  assert.equal(M.evaluate(item, settingsFor(item)).passed, true, 'La composición completa es una entrega válida');
+  for (const crop of ['square', 'portrait']) {
+    assert.equal(M.evaluate(item, { ...settingsFor(item), crop }).passed, false,
+      'Hasta revisar la región del sujeto, el encuadre protege toda la composición');
+  }
+}
 
 // Invalid values fail consistently in both the renderer API and scoring API.
 for (const bad of [null, undefined, '', {}, [], 'unknown', { id: 'unknown' }]) {
@@ -188,4 +202,4 @@ const context = vm.createContext({});
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../staging/editing-game-model.js'), 'utf8'), context);
 assert.equal(typeof context.TSIEditingGameModel.evaluate, 'function', 'El navegador expone el modelo UMD');
 assert.equal(context.TSIEditingGameModel.evaluate(night.id, settingsFor(night)).passed, true);
-console.log(`Juego de edición: ocho retos sin recetas, varias ediciones válidas, luz, color, validación y encuadres aprobados; ${evaluatedCount} combinaciones comprobadas.`);
+console.log(`Juego de edición: dieciséis retos sin recetas, varias ediciones válidas, luz, color, validación y encuadres aprobados; ${evaluatedCount} combinaciones comprobadas.`);

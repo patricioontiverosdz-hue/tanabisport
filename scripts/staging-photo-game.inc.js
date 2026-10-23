@@ -1,7 +1,9 @@
 /* Este bloque se inserta solo en el arranque de staging por build-staging.py. */
+var GR=null;
+if(window.TSIGameRanking&&SBU==='https://nksqpoigywfegcbvfhoa.supabase.co')GR=window.TSIGameRanking.create({me:me,server:SBU,request:async function(method,path,body,context){await ensureToken();if(!me()||me().id!==context.expectedUserId||AUTH.uid&&AUTH.uid!==context.expectedUserId)throw Error('La cuenta cambió.');return sb(method,path,body);},render:function(){render();}});
 var PG=null;
 if(window.TSIPhotoGame&&window.TSIPhotoGameModel&&SBU==='https://nksqpoigywfegcbvfhoa.supabase.co'){
- PG=window.TSIPhotoGame.create({me:me,server:SBU,render:function(){render();},imageBase:'photo-game-scenes/'});
+ PG=window.TSIPhotoGame.create({me:me,server:SBU,render:function(){render();},imageBase:'photo-game-scenes/',ranking:GR});
  var pgBaseTabs=tabsFor;tabsFor=function(role){var list=pgBaseTabs(role);if(['admin','foto','editora'].includes(role))list.push(['fotojuego','Reto fotográfico']);return list;};
  var pgBaseView=viewDash;viewDash=function(){
   if(S.tab!=='fotojuego'||!me()||!['admin','foto','editora'].includes(me().role))return pgBaseView();
