@@ -333,6 +333,10 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
 <link rel="stylesheet" href="photo-game.css?v=2">
 <script src="photo-game-model.js?v=2"></script>
 <script src="photo-game.js?v=2"></script>
+<link rel="stylesheet" href="editing-game.css?v=1">
+<script src="editing-game-model.js?v=1"></script>
+<script src="editing-game-renderer.js?v=1"></script>
+<script src="editing-game.js?v=1"></script>
 </head>
 <body>
 <div class="wrap" id="app"></div>
@@ -588,7 +592,7 @@ function tabsFor(role){
   if(role!=="admin"&&!S.cfg.loans)keys=keys.filter(function(k){return k!=="prestamos";});
   return keys.map(function(k){return [k,all[k]];});
 }
-function tabsBar(){var entries=tabsFor(me().role),groups=[['Operaciones',['resumen','calendario','partidos','importarrol','micalendario','cobertura','proceso','fotografos','ubicaciones']],['Negocio',['cotizador','rentabilidad','clientes','entregas','pendientes','borradores','registro','recuperacion']],['Finanzas',['pagos','mipago','gastos','prestamos']],['Página pública',['tienda','portafolio','envivo']],['Equipo',['disponibilidad','disponibilidadedicion','comentarios','avisos','notif','equipo']],['Entrenamiento',['fotojuego']],['TSI y configuración',['intelligence','estadisticas','catalogo','datos','ajustes']]];return '<details class="ti-menu" id="ti-menu" '+(S.tiMenuOpen!==false&&window.innerWidth>=1100?'open':'')+'><summary class="btn">☰ Menú</summary><nav class="ti-navigation" aria-label="Menú del equipo"><strong>Tanabi Sports<br><small>INTELLIGENCE</small></strong>'+groups.map(function(g){var list=entries.filter(function(x){return g[1].indexOf(x[0])>=0;});return list.length?'<h3>'+g[0]+'</h3>'+list.map(function(x){return '<button data-tab="'+x[0]+'" '+(S.tab===x[0]?'aria-current="page"':'')+'>'+esc(x[1])+'</button>';}).join(''):'';}).join('')+'</nav></details>';}
+function tabsBar(){var entries=tabsFor(me().role),groups=[['Operaciones',['resumen','calendario','partidos','importarrol','micalendario','cobertura','proceso','fotografos','ubicaciones']],['Negocio',['cotizador','rentabilidad','clientes','entregas','pendientes','borradores','registro','recuperacion']],['Finanzas',['pagos','mipago','gastos','prestamos']],['Página pública',['tienda','portafolio','envivo']],['Equipo',['disponibilidad','disponibilidadedicion','comentarios','avisos','notif','equipo']],['Entrenamiento',['fotojuego','edicionjuego']],['TSI y configuración',['intelligence','estadisticas','catalogo','datos','ajustes']]];return '<details class="ti-menu" id="ti-menu" '+(S.tiMenuOpen!==false&&window.innerWidth>=1100?'open':'')+'><summary class="btn">☰ Menú</summary><nav class="ti-navigation" aria-label="Menú del equipo"><strong>Tanabi Sports<br><small>INTELLIGENCE</small></strong>'+groups.map(function(g){var list=entries.filter(function(x){return g[1].indexOf(x[0])>=0;});return list.length?'<h3>'+g[0]+'</h3>'+list.map(function(x){return '<button data-tab="'+x[0]+'" '+(S.tab===x[0]?'aria-current="page"':'')+'>'+esc(x[1])+'</button>';}).join(''):'';}).join('')+'</nav></details>';}
 
 function tabResumen(){
   var u=me(),now=todayStr(),h="";
@@ -3645,6 +3649,19 @@ if(window.TSIPhotoGame&&window.TSIPhotoGameModel&&SBU==='https://nksqpoigywfegcb
  };
  var pgBaseSummary=tabResumen;tabResumen=function(){var html=pgBaseSummary();if(me()&&['admin','foto','editora'].includes(me().role))html=html.replace(/(<nav class="d29-actions"[^>]*>)/,'$1'+d29Action('fotojuego','Reto fotográfico','Entrena tu ojo y tu cámara','camera'));return html;};
  var pgBaseRender=render;render=function(){var active=document.activeElement,focusId=active&&active.closest('.pg-shell')?active.id:'',focusAction=active&&active.closest('.pg-shell')?active.getAttribute('data-pg-action'):'';pgBaseRender();if(S.view==='dash'&&S.tab==='fotojuego'){PG.afterRender();var restored=focusId?document.getElementById(focusId):focusAction?document.querySelector('[data-pg-action="'+focusAction+'"]'):null;if(restored)restored.focus({preventScroll:true});}};
+}
+
+/* Laboratorio de edición: se instala exclusivamente en staging. */
+var EG=null;
+if(window.TSIEditingGame&&window.TSIEditingGameModel&&window.TSIEditingRenderer&&SBU==='https://nksqpoigywfegcbvfhoa.supabase.co'){
+ EG=window.TSIEditingGame.create({me:me,server:SBU,render:function(){render();},imageBase:'photo-game-scenes/'});
+ var egBaseTabs=tabsFor;tabsFor=function(role){var list=egBaseTabs(role);if(['admin','foto','editora'].includes(role))list.push(['edicionjuego','Reto de edición']);return list;};
+ var egBaseView=viewDash;viewDash=function(){
+  if(S.tab!=='edicionjuego'||!me()||!['admin','foto','editora'].includes(me().role))return egBaseView();
+  return topbar()+'<div class="ti-section-head">'+tabsBar()+'<h1>Reto de edición</h1></div>'+EG.render()+'<footer>Progreso guardado en este navegador. · Versión '+APP_VERSION+'</footer>';
+ };
+ var egBaseSummary=tabResumen;tabResumen=function(){var html=egBaseSummary();if(me()&&['admin','foto','editora'].includes(me().role))html=html.replace(/(<nav class="d29-actions"[^>]*>)/,'$1'+d29Action('edicionjuego','Reto de edición','Luz, color y encuadre','camera'));return html;};
+ var egBaseRender=render;render=function(){var active=document.activeElement,focusId=active&&active.closest('.eg-shell')?active.id:'',focusAction=active&&active.closest('.eg-shell')?active.getAttribute('data-eg-action'):'';egBaseRender();if(S.view==='dash'&&S.tab==='edicionjuego'){EG.afterRender();var restored=focusId?document.getElementById(focusId):focusAction?document.querySelector('[data-eg-action="'+focusAction+'"]'):null;if(restored)restored.focus({preventScroll:true});}};
 }
 
 var tsiStage210Top=topbar;topbar=function(){return '<div class="note"><strong>STAGING · Pruebas 2.1.1</strong> · Datos y sesión de prueba.</div>'+tsiStage210Top();};
