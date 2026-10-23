@@ -100,7 +100,9 @@ function findSuccessfulSettings(model,scene){
 async function main(){
  assert.equal(project,'nksqpoigywfegcbvfhoa','Esta prueba es exclusiva de staging');
  const production=fs.readFileSync(path.join(root,'index.html'),'utf8');
- assert.ok(!production.includes('photo-game')&&!production.includes('fotojuego'),'Producción no incluye recursos ni rutas del juego');
+ assert.ok(!production.includes('nksqpoigywfegcbvfhoa')&&!production.includes('tsi_staging_'),'Producción no incluye el servidor ni el almacenamiento de staging');
+ assert.ok(!/(?:src|href)=["']staging\/(?:photo-game|editing-game|game-ranking)/.test(production),'Producción no importa los recursos del entrenamiento de staging');
+ assert.match(production,/src="training\/photo-game\.js/,'La cámara de producción utiliza su propia copia en training/');
  let saved,firstScene,firstStats;
  for(const role of ['admin','foto','editora']){
   const env=await environment(role);
