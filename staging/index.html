@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://nksqpoigywfegcbvfhoa.supabase.co; connect-src https://nksqpoigywfegcbvfhoa.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'; worker-src 'self'; manifest-src 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Tanabi Sports Intelligence 2.0</title>
+<title>Tanabi Sports Intelligence 2.2.0</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="TSI STAGING">
@@ -330,6 +330,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
 <script src="../assets/tsi-210-model.js"></script>
 <script src="../assets/tsi-210-backup.js"></script>
 <script src="../assets/tsi-210.js"></script>
+<!-- TSI_TRAINING_ASSETS_START -->
 <link rel="stylesheet" href="game-ranking.css?v=220">
 <script src="game-ranking.js?v=220"></script>
 <link rel="stylesheet" href="photo-game.css?v=220">
@@ -339,6 +340,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
 <script src="editing-game-model.js?v=221"></script>
 <script src="editing-game-renderer.js?v=220"></script>
 <script src="editing-game.js?v=220"></script>
+<!-- TSI_TRAINING_ASSETS_END -->
 </head>
 <body>
 <div class="wrap" id="app"></div>
@@ -3640,6 +3642,7 @@ if(window.TSI210Install){
  var ux210Publish=X.av29Publish;X.av29Publish=async function(){await ux210Publish.apply(this,arguments);if(!AV29.draft&&AV29.message)UX210.avisoSaved();};
 }
 
+/* TSI_TRAINING_HOOKS_START */
 /* Este bloque se inserta solo en el arranque de staging por build-staging.py. */
 var GR=null;
 if(window.TSIGameRanking&&SBU==='https://nksqpoigywfegcbvfhoa.supabase.co')GR=window.TSIGameRanking.create({me:me,server:SBU,request:async function(method,path,body,context){await ensureToken();if(!me()||me().id!==context.expectedUserId||AUTH.uid&&AUTH.uid!==context.expectedUserId)throw Error('La cuenta cambió.');return sb(method,path,body);},render:function(){render();}});
@@ -3680,6 +3683,7 @@ if(GR&&SBU==='https://nksqpoigywfegcbvfhoa.supabase.co'){
 }
 
 var tsiStage210Top=topbar;topbar=function(){return '<div class="note"><strong>STAGING · Pruebas 2.2.0</strong> · Datos y sesión de prueba.</div>'+tsiStage210Top();};
+/* TSI_TRAINING_HOOKS_END */
 var configError=stagingConfigError();
 if(configError){
   S.booting=false;

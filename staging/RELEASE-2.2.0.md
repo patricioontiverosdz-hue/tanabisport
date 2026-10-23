@@ -1,6 +1,6 @@
 # TSI 2.2.0 · entrenamiento y podio
 
-Versión de revisión: `2.2.0-staging`. Se publica únicamente en `/staging/`; la página y los recursos vigentes de producción permanecen sin cambios.
+Versión de revisión: `2.2.0-staging`, con datos y sesiones independientes. La versión `2.2.0` también se publica en producción tras la autorización puntual de Patricio del 23 de octubre de 2026.
 
 - Reto fotográfico: 20 encargos con objetivos visuales, sin recetas de cámara.
 - Reto de edición: 16 encargos de luz, color y encuadre, con varias soluciones válidas.
