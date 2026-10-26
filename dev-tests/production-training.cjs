@@ -88,7 +88,7 @@ function checkAssets(window){
  }
 }
 async function main(){
- assert.ok(html.includes('APP_VERSION="2.2.0"'),'Producción está identificada como 2.2.0');
+ assert.ok(html.includes('APP_VERSION="2.2.2"'),'Producción está identificada como 2.2.2');
  assert.ok(html.includes('var SBU="'+PROD+'"'));
  assert.ok(!html.includes('nksqpoigywfegcbvfhoa')&&!html.includes('tsi_staging_'),'La página de producción no contiene configuración de staging');
  assert.match(html,/src="training\/game-ranking\.js/);assert.match(html,/src="training\/photo-game\.js/);assert.match(html,/src="training\/editing-game\.js/);
@@ -147,6 +147,6 @@ async function main(){
   try{for(const tab of gameTabs){assert.ok(!env.api.tabsFor(role||'').some(entry=>entry[0]===tab));env.go(tab);assert.equal(env.window.document.querySelectorAll('.pg-shell,.eg-shell,.gr-shell').length,0,'Una ruta forzada no abre el entrenamiento sin rol permitido');}assert.equal(env.calls.filter(call=>/training-game|tsi_game_rankings/.test(call.path)).length,0);env.checkIsolation();}
   finally{await env.close();}
  }
- console.log('Producción 2.2.0: veinte retos de cámara, dieciséis de edición, podio, roles, progreso por cuenta, reintentos y separación completa de staging aprobados.');
+ console.log('Producción 2.2.2: veinte retos de cámara, dieciséis de edición, podio, roles, progreso por cuenta, reintentos y separación completa de staging aprobados.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});
