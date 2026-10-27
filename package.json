@@ -8,8 +8,9 @@
     "test:game-ranking": "node dev-tests/game-ranking-ui.cjs && node dev-tests/game-ranking-backend.cjs",
     "test:editing-game": "node dev-tests/editing-game-model.cjs && node dev-tests/editing-game-renderer.cjs && node dev-tests/editing-game-ui.cjs",
     "test:photo-game": "node dev-tests/photo-game-model.cjs && node dev-tests/photo-game-ui.cjs",
-    "test": "node dev-tests/model-210.cjs && node dev-tests/ui-210.cjs && node dev-tests/release-209.cjs && node dev-tests/production-push.cjs && node dev-tests/staging-isolation.cjs && node dev-tests/editor-availability.cjs && node dev-tests/editor-availability.cjs staging/index.html && node dev-tests/release-222.cjs",
-    "test:release-222": "node dev-tests/release-222.cjs"
+    "test": "node dev-tests/model-210.cjs && node dev-tests/ui-210.cjs && node dev-tests/release-209.cjs && node dev-tests/production-push.cjs && node dev-tests/staging-isolation.cjs && node dev-tests/editor-availability.cjs && node dev-tests/editor-availability.cjs staging/index.html && node dev-tests/release-222.cjs && node dev-tests/shop-access.cjs",
+    "test:release-222": "node dev-tests/release-222.cjs",
+    "test:shop": "node dev-tests/shop-access.cjs"
   },
   "devDependencies": {
     "happy-dom": "21.0.4"
