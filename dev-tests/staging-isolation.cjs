@@ -1,5 +1,6 @@
 const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const path=require('node:path');
+const appVersion=require('../package.json').version;
 const html=fs.readFileSync(path.join(__dirname,'../staging/index.html'),'utf8');
 const source=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const tokens=['function tsi11Forecast','function tabRoleImport','function tabPhotoAvailability','function discountPayForm','dorsalesHtml'];
@@ -38,7 +39,7 @@ last=last.slice(0,pos)+'globalThis.__tsiTest={state:S,TP:TP,load:tsiPushLoad,con
 for(const script of [...scripts,last])vm.runInContext(script,ctx,{timeout:10000});
 (async()=>{for(let i=0;i<12;i++)await new Promise(r=>setImmediate(r));
  assert.equal(ctx.__tsiTest.config(),'');assert.equal(ctx.__tsiTest.state.meId,uid);assert.equal(ctx.__tsiTest.state.tab,'notif');
- assert.ok(html.includes('APP_VERSION="2.2.2-staging"'));assert.ok(app.innerHTML.includes('STAGING · Pruebas 2.2.1'));assert.ok(app.innerHTML.includes('STAGING'));assert.ok(app.innerHTML.includes('Avisos al celular'));assert.ok(ctx.__tsiTest.TP.info);assert.ok(ctx.__tsiTest.TP.reg);
+ assert.equal(html.match(/\bvar APP_VERSION="([^"]+)"/)?.[1],appVersion+'-staging','Staging conserva su identificador y la versión del paquete');assert.ok(app.innerHTML.includes('STAGING · Pruebas '+appVersion));assert.ok(app.innerHTML.includes('STAGING'));assert.ok(app.innerHTML.includes('Avisos al celular'));assert.ok(ctx.__tsiTest.TP.info);assert.ok(ctx.__tsiTest.TP.reg);
  assert.equal(values.get('tsi_production_tantlgswituiwkxfgmsr_auth'),'production-sentinel');
  assert.ok(calls.length);assert.ok(calls.every(u=>new URL(u).origin==='https://nksqpoigywfegcbvfhoa.supabase.co'));
  console.log('Página completa: arranque y panel push correctos; todas las llamadas a staging y sesión de producción intacta.');
