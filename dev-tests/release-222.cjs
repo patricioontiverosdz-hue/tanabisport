@@ -1,4 +1,5 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto');
+const appVersion=require('../package.json').version;
 const root=path.join(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const PROD='https://tantlgswituiwkxfgmsr.supabase.co',STAGING='nksqpoigywfegcbvfhoa';
 const ids={admin:'00000000-0000-4000-8000-000000000001',foto:'00000000-0000-4000-8000-000000000002',editora:'00000000-0000-4000-8000-000000000003'};
@@ -83,8 +84,8 @@ function renderedSelection(doc,id){
  return selected[0].value;
 }
 async function main(){
- assert.match(html,/var APP_VERSION="2\.2\.2"/,'La versión pública es 2.2.2');
- assert.match(html,/<title>Tanabi Sports Intelligence 2\.2\.2<\/title>/);
+ assert.equal(html.match(/\bvar APP_VERSION="([^"]+)"/)?.[1],appVersion,'La versión pública coincide con package.json');
+ assert.equal(html.match(/<title>([^<]+)<\/title>/)?.[1],'Tanabi Sports Intelligence '+appVersion,'El título público coincide con package.json');
  assert.match(html,/<script src="assets\/tsi-210\.js\?[^"\s]+"/,'El módulo promovido renueva la caché');
  assert.ok(html.includes('var SBU="'+PROD+'"'));
  assert.ok(!html.includes(STAGING)&&!html.includes('tsi_staging_'),'El HTML público conserva la configuración de producción');
@@ -137,6 +138,6 @@ async function main(){
   assert.equal(env.api.ux.diagnostics().forms.team,undefined,'Los controles forzados tampoco abren un formulario');
   assert.equal(env.api.ux.diagnostics().error,'');env.checkIsolation();
  }finally{await env.close();}
- console.log('TSI 2.2.2: temporadas y años, registros legados, directorio de editora sin mutaciones y aislamiento de producción aprobados (servidor simulado).');
+ console.log('TSI '+appVersion+': temporadas y años, registros legados, directorio de editora sin mutaciones y aislamiento de producción aprobados (servidor simulado).');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});
