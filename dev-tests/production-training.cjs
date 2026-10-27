@@ -1,4 +1,5 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto');
+const appVersion=require('../package.json').version;
 const root=path.join(__dirname,'..'),htmlPath=path.join(root,'index.html'),html=fs.readFileSync(htmlPath,'utf8');
 const PROD='https://tantlgswituiwkxfgmsr.supabase.co',STAGING='https://nksqpoigywfegcbvfhoa.supabase.co';
 const authKey='tsi_production_tantlgswituiwkxfgmsr_auth',gameTabs=['fotojuego','edicionjuego','rankingjuegos'];
@@ -88,7 +89,7 @@ function checkAssets(window){
  }
 }
 async function main(){
- assert.ok(html.includes('APP_VERSION="2.2.2"'),'Producción está identificada como 2.2.2');
+ assert.equal(html.match(/\bvar APP_VERSION="([^"]+)"/)?.[1],appVersion,'La versión pública coincide con package.json');
  assert.ok(html.includes('var SBU="'+PROD+'"'));
  assert.ok(!html.includes('nksqpoigywfegcbvfhoa')&&!html.includes('tsi_staging_'),'La página de producción no contiene configuración de staging');
  assert.match(html,/src="training\/game-ranking\.js/);assert.match(html,/src="training\/photo-game\.js/);assert.match(html,/src="training\/editing-game\.js/);
@@ -147,6 +148,6 @@ async function main(){
   try{for(const tab of gameTabs){assert.ok(!env.api.tabsFor(role||'').some(entry=>entry[0]===tab));env.go(tab);assert.equal(env.window.document.querySelectorAll('.pg-shell,.eg-shell,.gr-shell').length,0,'Una ruta forzada no abre el entrenamiento sin rol permitido');}assert.equal(env.calls.filter(call=>/training-game|tsi_game_rankings/.test(call.path)).length,0);env.checkIsolation();}
   finally{await env.close();}
  }
- console.log('Producción 2.2.2: veinte retos de cámara, dieciséis de edición, podio, roles, progreso por cuenta, reintentos y separación completa de staging aprobados.');
+ console.log('Producción '+appVersion+': veinte retos de cámara, dieciséis de edición, podio, roles, progreso por cuenta, reintentos y separación completa de staging aprobados.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});
