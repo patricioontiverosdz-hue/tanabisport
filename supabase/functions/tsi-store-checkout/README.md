@@ -18,7 +18,7 @@ Deploy `tsi-store-checkout` only to staging `nksqpoigywfegcbvfhoa` with `verify_
 - `POST ?action=status`: `{order_id,access_token}`. A UUID alone never grants access. Only paid orders can include a delivery link.
 - `POST /webhook`: configure `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` and `checkout.session.expired` in Stripe. A webhook signing secret is mandatory. The raw signature is validated before retrieving the current Stripe session and recording an event.
 
-Equivalent `/config`, `/quote`, `/create-session` and `/status` paths are accepted. Browser `action` in the JSON body is also accepted. Secrets and access tokens must never appear in URLs, logs, analytics or error messages. The fixed return URL is the TSI staging URL and carries only Stripe's session ID.
+Equivalent `/config`, `/quote`, `/create-session` and `/status` paths are accepted. Browser `action` in the JSON body is also accepted. Secrets and access tokens must never appear in URLs, logs, analytics or error messages. Embedded Checkout uses `redirect_on_completion=if_required`: card payments complete in the embedded form, while methods requiring a redirect return to the fixed TSI staging URL carrying only Stripe's session ID. Stripe rejects a `return_url` combined with `redirect_on_completion=never`.
 
 ## Reservations and reconciliation
 
@@ -36,6 +36,6 @@ There is an in-process request limiter plus the database-backed checkout limiter
 
 The real entry point was also checked with Deno 2.9.6 and the downloaded `stripe@22.6.0` package using `deno check --config supabase/functions/tsi-store-checkout/deno.json supabase/functions/tsi-store-checkout/index.ts`. The adjacent `deno.lock` records the resolved dependency integrities. This verifies imports and types without starting the HTTP server or reading runtime secrets.
 
-Before enabling even test payments, supply valid test secrets, configure the signed webhook and verify a real sandbox integration separately. These files alone do not claim that Stripe is connected or that a payment succeeded.
+Activation uses runtime test secrets and the signed webhook above, then the admin store configuration enables payments. `config.ready=true` confirms that configuration is present; the first Checkout request verifies the approved account and its key permissions. Verify the embedded form and a Stripe test payment separately; configuration readiness alone does not confirm a successful payment.
 
 Primary references: [Checkout lifecycle](https://docs.stripe.com/payments/checkout/how-checkout-works?payment-ui=embedded-page), [fulfillment](https://docs.stripe.com/checkout/fulfillment), [webhook signatures](https://docs.stripe.com/webhooks), [dynamic payment methods](https://docs.stripe.com/payments/payment-methods/dynamic-payment-methods).

@@ -65,7 +65,7 @@ function fixture(overrides={}){
   checkout:{sessions:{
    create:async(params,options)=>{
     stripeCalls.push({type:'create',params:clone(params),options:clone(options)});
-    assert.equal(params.payment_method_types,undefined,'Métodos dinámicos, sin listas manuales');assert.equal(params.ui_mode,'embedded_page');assert.equal(params.return_url,RETURN_URL);
+    assert.equal(params.payment_method_types,undefined,'Métodos dinámicos, sin listas manuales');assert.equal(params.ui_mode,'embedded_page');assert.equal(params.redirect_on_completion,'if_required','El retorno fijo permite métodos que requieren redirección sin sacar las tarjetas del pago embebido');assert.equal(params.return_url,RETURN_URL);
     assert.match(params.integration_identifier,/^tsi_store_staging_[a-z]{8}$/);assert.equal(params.expires_at,Math.floor(Date.parse(orders.get(params.client_reference_id).created_at)/1000)+45*60);
     if(createErrors.length)throw createErrors.shift();
     const fingerprint=JSON.stringify(params),saved=idempotency.get(options.idempotencyKey);
