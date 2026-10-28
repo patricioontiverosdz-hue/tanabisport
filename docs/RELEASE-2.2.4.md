@@ -40,6 +40,12 @@ La prueba SQL del catálogo, reservas, límites, estados y permisos pasó en sta
 
 Primero validar esta versión en staging. La promoción de producción debe comenzar a las 00:00 de `America/Monterrey`, conforme a `AGENTS.md`; no hay una excepción autorizada para 2.2.4. En ese momento aplicar la misma migración al proyecto de producción, repetir las verificaciones de permisos, actualizar el HTML y la versión del paquete de producción y comprobar el despliegue servido. La publicación en staging no programa ni adelanta por sí misma esa promoción.
 
+## Seguimiento del comprador
+
+La tienda de staging recupera automáticamente el pedido más reciente al volver a abrirla o recargar, aunque la URL ya no contenga el retorno de Stripe. «Mis pedidos» permite consultar los últimos 10 pedidos iniciados en este navegador. Se conservan los identificadores y la autorización del comprador en almacenamiento local separado por proyecto; los registros existentes de la pestaña se migran sin perder el carrito. Si el navegador bloquea ese guardado, se conserva el respaldo de la pestaña y se avisa al comprador. Un navegador distinto o borrar sus datos requiere conservar otro medio de acceso; esta entrega no incorpora recuperación por correo.
+
+Cada consulta comprueba el estado con el servidor usando la autorización propia del pedido. El cliente ve pago, preparación y entrega, paquetería, número de guía y enlace seguro de seguimiento cuando están registrados; conserva el acceso a la entrega digital de pedidos pagados. Los errores de consulta muestran un reintento y no confirman un pago ni una entrega a partir del almacenamiento local. No se modifican Stripe, la base de datos ni la versión publicada de producción.
+
 ## Reversión de pruebas
 
 Restaurar el HTML de staging y los archivos de esta entrega desde el commit base. Mantener las fuentes privadas y los ajustes evita perder la capacidad de reprocesar las nuevas fotos; su acceso permanece protegido. No borrar fuentes para revertir un cambio visual.

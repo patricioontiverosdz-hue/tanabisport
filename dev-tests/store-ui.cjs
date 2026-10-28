@@ -6,6 +6,7 @@ async function environment(options={}){
  const {Window}=await import('happy-dom'),window=new Window({url:options.url||'https://patricioontiverosdz-hue.github.io/tanabisport/staging/',settings:{disableJavaScriptFileLoading:true,disableCSSFileLoading:true}});
  Object.defineProperty(window,'crypto',{value:crypto.webcrypto});window.TextEncoder=TextEncoder;window.console=console;window.confirm=()=>true;window.document.body.innerHTML='<div id="app"></div>';window.HTMLElement.prototype.scrollIntoView=()=>{};
  let role=options.role||null,status=options.status||'awaiting_payment',deferredAdmin=null;
+ const buyerOrders=options.buyerOrders||{},pendingStatuses=[];
  const state={booting:!!options.booting,view:role?'dash':'shop',tab:'tienda',cfg:{shop:true},cart:[],shop:{items:[{id:701,title:'Foto de prueba',folder:'#12 — Demo',price:50,img:'protected-photo'}]}};
  const data={products:[{id:'p1',slug:'gorra',category:'merch',kind:'physical',title:'Gorra pública',description:'Producto público',image:'data:image/jpeg;base64,cHVibGlj',active:true,personalization:true,version:1},{id:'draft',slug:'draft',category:'merch',kind:'physical',title:'Borrador secreto',description:'No debe publicarse',image:'',active:false,personalization:false,version:1}],variants:[{id:'v1',product_id:'p1',title:'Negra',sku:'CAP',price_cents:25000,stock:10,active:true,version:1}],config:{id:'shop',shipping_fee_cents:10000,payments_enabled:!!options.stripeReady,version:1},orders:[{id:'private-order',reference:'TS-PRIVATE',status:'paid',fulfillment:'unfulfilled',email:'private@example.invalid',total_cents:5000,items:[],version:1}]};
  const clone=v=>JSON.parse(JSON.stringify(v)),calls=[],manual=[],stripeCounts={init:0,mount:0,destroy:0};let stripeOptions;
@@ -25,18 +26,28 @@ async function environment(options={}){
  async function edge(method,url,body){calls.push({surface:'edge',method,url,body:clone(body||{})});
   if(url==='config')return {ready:!!options.stripeReady,publishable_key:options.stripeReady?'pk_test_fixture':null,environment:'staging',currency:'MXN'};
   if(url==='quote')return quote(body.cart);
-  if(url==='create-session'){assert.ok(options.stripeReady);assert.match(body.access_token,/^[a-f0-9]{64}$/);assert.ok(body.request_id);assert.ok(body.email.includes('@'));quote(body.cart);if(options.rejectCheckout){options.rejectCheckout=false;throw Object.assign(Error('Cancelado sin cobro'),{status:409,body:{code:'checkout_rejected'}});}if(options.networkFailOnce){options.networkFailOnce=false;throw Object.assign(Error('Conexión interrumpida'),{status:500,body:{code:'internal_error'}});}return {order_id:'buyer-order',reference:'TS-BUYER',session_id:'cs_test_fixture',client_secret:options.createStatus?null:'cs_test_fixture_secret',status:options.createStatus||'awaiting_payment'};}
-  if(url==='status'){assert.equal(body.order_id,'buyer-order');assert.match(body.access_token,/^[a-f0-9]{64}$/);return {order:{id:'buyer-order',reference:'TS-BUYER',status,fulfillment:'unfulfilled',items:quote(store.diagnostics().cart.length?store.diagnostics().cart:[{kind:'photo',id:'701',quantity:1}]).items,total_cents:5000,delivery_link:status==='paid'?'https://example.invalid/delivery':'',version:1}};}
+  if(url==='create-session'){assert.ok(options.stripeReady);assert.match(body.access_token,/^[a-f0-9]{64}$/);assert.ok(body.request_id);assert.ok(body.email.includes('@'));quote(body.cart);if(options.checkoutOrder)buyerOrders['buyer-order']={...clone(options.checkoutOrder),access_token:body.access_token};if(options.rejectCheckout){options.rejectCheckout=false;throw Object.assign(Error('Cancelado sin cobro'),{status:409,body:{code:'checkout_rejected'}});}if(options.networkFailOnce){options.networkFailOnce=false;throw Object.assign(Error('Conexión interrumpida'),{status:500,body:{code:'internal_error'}});}return {order_id:'buyer-order',reference:'TS-BUYER',session_id:'cs_test_fixture',client_secret:options.createStatus?null:'cs_test_fixture_secret',status:options.createStatus||'awaiting_payment'};}
+  if(url==='status'){
+   assert.match(body.access_token,/^[a-f0-9]{64}$/);
+   const fixture=buyerOrders[body.order_id];
+   if(Object.keys(buyerOrders).length){assert.ok(fixture,'Solo se consulta un pedido autorizado en esta prueba');assert.equal(body.access_token,fixture.access_token,'Cada pedido utiliza su propia autorización');}
+   else assert.equal(body.order_id,'buyer-order');
+   if(options.delayStatus)await new Promise(resolve=>pendingStatuses.push(resolve));
+   if(options.statusError)throw Object.assign(Error('No se pudo consultar el pedido. Intenta nuevamente.'),{status:503});
+   const order={id:body.order_id,reference:'TS-BUYER',status,fulfillment:'unfulfilled',items:quote(store.diagnostics().cart.length?store.diagnostics().cart:[{kind:'photo',id:'701',quantity:1}]).items,total_cents:5000,delivery_link:status==='paid'?'https://example.invalid/delivery':'',version:1,...clone(fixture||{})};
+   delete order.access_token;return {order};
+  }
   throw Error('Edge no permitido: '+url);
  }
  window.Stripe=key=>{assert.equal(key,'pk_test_fixture');return {initEmbeddedCheckout:async opts=>{stripeCounts.init++;stripeOptions=opts;assert.equal(await opts.fetchClientSecret(),'cs_test_fixture_secret');return {mount:selector=>{stripeCounts.mount++;const frame=window.document.createElement('iframe');frame.name='stripe-fixture';window.document.querySelector(selector).appendChild(frame);},destroy:()=>{stripeCounts.destroy++;window.document.querySelector('iframe[name="stripe-fixture"]')?.remove();}};}};};
- if(options.saved)for(const [key,value]of options.saved)window.sessionStorage.setItem(key,value);
+ if(options.saved)for(const [key,value,storage]of options.saved)(storage==='local'?window.localStorage:window.sessionStorage).setItem(key,value);
  window.eval(source);
  store=window.TSIStore224Install({state,me:()=>role?{id:'user-'+role,role}:null,esc,sb,edge,server:'https://nksqpoigywfegcbvfhoa.supabase.co',render,topbar:()=>'<header>Tanabi Sports</header>',photoPreview:item=>'<div class="protected-photo" data-photo="'+item.id+'">'+esc(item.title)+'</div>',loadShop:async()=>{},manualPhotoOrder:async payload=>{manual.push(payload);return {id:901};}});
  render();if(state.view==='shop')await until(()=>store.diagnostics().loaded,'carga pública');
  const click=(action,attrs='')=>{const el=window.document.querySelector('[data-st-action="'+action+'"]'+attrs);assert.ok(el,'Control '+action+attrs);el.click();};
  const fill=(id,value,type='input')=>{const el=window.document.getElementById(id);assert.ok(el,'Campo '+id);if(el.type==='checkbox')el.checked=value;else el.value=value;el.dispatchEvent(new window.Event(type,{bubbles:true}));};
- return {window,state,data,store,calls,manual,stripeCounts,click,fill,render,role:value=>{role=value;state.view=value?'dash':'shop';render();},setStatus:value=>status=value,setCreateStatus:value=>options.createStatus=value,complete:()=>stripeOptions.onComplete(),resolveAdmin:()=>deferredAdmin&&deferredAdmin(),saved:()=>Array.from({length:window.sessionStorage.length},(_,i)=>{const key=window.sessionStorage.key(i);return[key,window.sessionStorage.getItem(key)];}),close:async()=>{await window.happyDOM.cancelAsync();window.close();}};
+ const storageSnapshot=(storage,kind)=>Array.from({length:storage.length},(_,i)=>{const key=storage.key(i);return kind?[key,storage.getItem(key),kind]:[key,storage.getItem(key)];});
+ return {window,state,data,store,calls,manual,stripeCounts,click,fill,render,buyerOrders,role:value=>{role=value;state.view=value?'dash':'shop';render();},setStatus:value=>status=value,setCreateStatus:value=>options.createStatus=value,setStatusError:value=>options.statusError=value,resolveStatuses:async()=>{options.delayStatus=false;pendingStatuses.splice(0).forEach(resolve=>resolve());await pause(0);},complete:()=>stripeOptions.onComplete(),resolveAdmin:()=>deferredAdmin&&deferredAdmin(),saved:()=>[...storageSnapshot(window.localStorage,'local'),...storageSnapshot(window.sessionStorage)],localSaved:()=>storageSnapshot(window.localStorage,'local'),close:async()=>{await window.happyDOM.cancelAsync();window.close();}};
 }
 async function main(){
  let env=await environment();try{
@@ -85,7 +96,96 @@ async function main(){
   env.state.booting=false;env.render();await until(()=>env.store.diagnostics().order?.status==='paid','retorno tras completar inicio de sesión');
   for(let i=0;i<3;i++)env.render();assert.equal(env.calls.filter(c=>c.url==='status').length,1,'El retorno se consulta una sola vez con el usuario final');assert.equal(env.store.diagnostics().cart.length,0);assert.ok(env.window.document.body.textContent.includes('Entrega: Pendiente de preparación'));
  }finally{await env.close();}
+ const orderKey='tsi224:orders:nksqpoigywfegcbvfhoa',cartKey='tsi224:cart:nksqpoigywfegcbvfhoa';
+ const older={request_id:crypto.randomUUID(),access_token:'b'.repeat(64),order_id:'11111111-1111-4111-8111-111111111111',reference:'TS-OLDER',session_id:'cs_test_older',cart:[],cleared:true};
+ const latest={request_id:crypto.randomUUID(),access_token:'c'.repeat(64),order_id:'22222222-2222-4222-8222-222222222222',reference:'TS-LATEST',session_id:'cs_test_latest',cart:[],cleared:true};
+ const trackedOrders={
+  [older.order_id]:{access_token:older.access_token,reference:older.reference,status:'paid',fulfillment:'packing',requires_shipping:true,tracking_carrier:'',tracking_number:'',tracking_url:'',delivery_link:''},
+  [latest.order_id]:{access_token:latest.access_token,reference:latest.reference,status:'paid',fulfillment:'shipped',requires_shipping:true,tracking_carrier:'Paquetería de prueba',tracking_number:'GUIA-2026-002',tracking_url:'https://example.invalid/tracking/002',delivery_link:''}
+ };
+ let persistentOrders;
+ env=await environment({saved:[[orderKey,JSON.stringify([older,latest])]],buyerOrders:trackedOrders});try{
+  await until(()=>env.store.diagnostics().order?.id===latest.order_id&&!env.store.diagnostics().checking,'recuperar el último pedido sin session_id');
+  assert.equal(new URL(env.window.location.href).searchParams.has('session_id'),false);
+  assert.equal(env.calls.filter(c=>c.url==='status').length,1,'La recarga consulta una vez el pedido más reciente');
+  assert.equal(env.calls.find(c=>c.url==='status').body.access_token,latest.access_token);
+  assert.equal(env.store.diagnostics().order.fulfillment,'shipped');
+  assert.ok(env.window.document.body.textContent.includes('Paquetería de prueba'),'La paquetería está visible');
+  assert.ok(env.window.document.body.textContent.includes('GUIA-2026-002'),'La guía está visible');
+  assert.ok(env.window.document.querySelector('a[href="https://example.invalid/tracking/002"]'),'Se puede abrir el seguimiento');
+  assert.ok(env.window.document.querySelector('[data-st-action="toggle-orders"]')?.textContent.includes('Mis pedidos'),'Mis pedidos permite volver al historial');
+  env.click('toggle-orders');env.click('select-order','[data-id="'+older.order_id+'"]');
+  await until(()=>env.store.diagnostics().order?.id===older.order_id&&!env.store.diagnostics().checking,'elegir un pedido anterior');
+  assert.equal(env.store.diagnostics().order.fulfillment,'packing');
+  assert.equal(env.calls.filter(c=>c.url==='status').at(-1).body.access_token,older.access_token);
+  assert.ok(!env.window.document.querySelector('a[href="https://example.invalid/tracking/002"]'),'Un pedido anterior no hereda el enlace de otro');
+  assert.equal(env.calls.filter(c=>c.url==='create-session').length,0,'Consultar un pedido no crea pagos');
+  persistentOrders=env.localSaved();const stored=JSON.parse(persistentOrders.find(([key])=>key===orderKey)[1]);
+  assert.deepEqual(stored.map(row=>row.order_id),[older.order_id,latest.order_id],'Se migran los pedidos de la pestaña a almacenamiento persistente');
+  for(const record of stored){assert.ok(record.access_token);assert.ok(record.request_id);}
+  assert.ok(!env.window.document.body.innerHTML.includes(latest.access_token),'La autorización no aparece en la interfaz');
+  assert.ok(!env.window.location.href.includes(latest.access_token),'La autorización no aparece en la URL');
+ }finally{await env.close();}
+ env=await environment({saved:persistentOrders,buyerOrders:trackedOrders});try{
+  await until(()=>env.store.diagnostics().order?.id===latest.order_id,'recuperar el seguimiento en una pestaña nueva');
+  assert.equal(env.store.diagnostics().order.fulfillment,'shipped');
+  assert.ok(persistentOrders.every(([, ,storage])=>storage==='local'),'La pestaña nueva recupera pedidos usando solo datos de localStorage');
+  assert.equal(env.store.diagnostics().cart.length,0,'El historial persistente no recupera un carrito de otra pestaña');
+  trackedOrders[latest.order_id].fulfillment='delivered';env.click('refresh-order');
+  await until(()=>env.store.diagnostics().order?.fulfillment==='delivered','consultar una entrega actualizada por administración');
+ }finally{await env.close();trackedOrders[latest.order_id].fulfillment='shipped';}
+ const untrusted={...latest,status:'paid',fulfillment:'delivered',tracking_number:'GUIA-INVENTADA',tracking_url:'https://example.invalid/invented'};
+ env=await environment({saved:[[orderKey,JSON.stringify([untrusted]),'local']],buyerOrders:trackedOrders,delayStatus:true});try{
+  await until(()=>env.calls.some(c=>c.url==='status'),'comprobación del pedido guardado');
+  assert.equal(env.store.diagnostics().order,null,'Un registro del navegador no confirma el estado del pedido');
+  assert.ok(!env.window.document.body.textContent.includes('GUIA-INVENTADA'),'No mostrar una guía guardada como estado válido');
+  env.resolveStatuses();await until(()=>env.store.diagnostics().order?.fulfillment==='shipped','utilizar el estado confirmado por servidor');
+ }finally{env.resolveStatuses();await env.close();}
+ env=await environment({saved:[[orderKey,JSON.stringify([untrusted]),'local']],buyerOrders:trackedOrders,statusError:true});try{
+  await until(()=>env.calls.some(c=>c.url==='status')&&env.window.document.querySelector('.st224-order-status [role="alert"]'),'fallo al recuperar estado');
+  assert.equal(env.store.diagnostics().order,null,'La falta de conexión no inventa una confirmación');
+  assert.ok(!env.window.document.body.textContent.includes('GUIA-INVENTADA'));
+  env.setStatusError(false);env.click('refresh-order');
+  await until(()=>env.store.diagnostics().order?.id===latest.order_id,'reintentar consulta de seguimiento');
+  assert.equal(env.store.diagnostics().order.fulfillment,'shipped');
+ }finally{await env.close();}
+ env=await environment({saved:[['tsi224:orders:tantlgswituiwkxfgmsr',JSON.stringify([latest]),'local']]});try{
+  assert.equal(env.calls.filter(c=>c.url==='status').length,0,'Los pedidos de producción no se consultan en staging');
+  assert.equal(env.store.diagnostics().order,null);
+ }finally{await env.close();}
+ env=await environment({saved:[[orderKey,JSON.stringify([{...latest,cleared:false}]),'local'],[cartKey,JSON.stringify({version:1,items:returnCart})]],buyerOrders:{[latest.order_id]:{...trackedOrders[latest.order_id],status:'awaiting_payment',fulfillment:null,tracking_url:'',delivery_link:''}}});try{
+  await until(()=>env.store.diagnostics().order?.status==='awaiting_payment','recuperar un pago pendiente');
+  assert.equal(env.store.diagnostics().cart.length,1,'Recuperar un pago pendiente conserva el carrito');
+  assert.equal(env.window.document.querySelector('a[href="https://example.invalid/delivery"]'),null,'Un pago pendiente no habilita la entrega digital');
+ }finally{await env.close();}
+ env=await environment({saved:[[orderKey,JSON.stringify([older]),'local']],buyerOrders:trackedOrders});try{
+  await until(()=>env.store.diagnostics().order?.id===older.order_id,'historial inicial de la primera pestaña');
+  env.window.localStorage.setItem(orderKey,JSON.stringify([older,latest]));
+  env.click('photo','[data-id="701"]');await until(()=>env.store.diagnostics().quote,'conservar carrito tras un cambio en otra pestaña');
+  assert.deepEqual(JSON.parse(env.window.localStorage.getItem(orderKey)).map(record=>record.order_id),[older.order_id,latest.order_id],'Guardar desde una pestaña anterior no borra pedidos agregados en otra');
+ }finally{await env.close();}
+ env=await environment({saved:[[orderKey,JSON.stringify([{...latest,cart:returnCart,cleared:true,closed:true}]),'local'],[orderKey,JSON.stringify([{...latest,cart:returnCart,cleared:false,closed:false}])],[cartKey,JSON.stringify({version:1,items:returnCart})]],buyerOrders:trackedOrders});try{
+  await until(()=>env.store.diagnostics().order?.id===latest.order_id,'recuperar historial con respaldo de pestaña antiguo');
+  assert.equal(env.store.diagnostics().cart.length,1,'Un respaldo antiguo no vuelve a descontar una compra ya retirada del carrito');
+  const record=JSON.parse(env.window.localStorage.getItem(orderKey))[0];assert.equal(record.cleared,true);assert.equal(record.closed,true,'Un respaldo antiguo no reabre intentos cerrados');
+ }finally{await env.close();}
+ env=await environment({stripeReady:true,saved:[[orderKey,JSON.stringify([latest]),'local']],buyerOrders:JSON.parse(JSON.stringify(trackedOrders)),checkoutOrder:{reference:'TS-BUYER',status:'awaiting_payment',fulfillment:null,delivery_link:''}});try{
+  await until(()=>env.store.diagnostics().order?.id===latest.order_id,'pedido anterior confirmado antes de una nueva compra');
+  env.click('photo','[data-id="701"]');await until(()=>env.store.diagnostics().quote,'carrito de nueva compra');env.fill('st224-email','buyer@example.invalid');env.click('checkout');await until(()=>env.stripeCounts.mount===1&&!env.store.diagnostics().busy,'nuevo pago después del historial');
+  env.click('leave-payment');
+  assert.notEqual(env.store.diagnostics().order?.id,latest.order_id,'Una nueva compra no muestra la confirmación del pedido anterior');
+  assert.ok(!env.window.document.querySelector('.st224-order-status')?.textContent.includes('Pago confirmado'),'Salir de un pago pendiente no hereda el pago confirmado anterior');
+ }finally{await env.close();}
+ env=await environment({stripeReady:true,saved:[[orderKey,JSON.stringify([latest]),'local']],buyerOrders:JSON.parse(JSON.stringify(trackedOrders)),delayStatus:true,checkoutOrder:{reference:'TS-BUYER',status:'awaiting_payment',fulfillment:null,delivery_link:''}});try{
+  await until(()=>env.calls.some(c=>c.url==='status'),'consulta lenta del pedido anterior');
+  env.click('photo','[data-id="701"]');await until(()=>env.store.diagnostics().quote,'nuevo carrito durante consulta anterior');env.fill('st224-email','buyer@example.invalid');
+  const checkout=env.window.document.querySelector('[data-st-action="checkout"]');assert.ok(checkout);
+  if(checkout.disabled){await env.resolveStatuses();env.click('checkout');await until(()=>env.stripeCounts.mount===1,'abrir un nuevo pago al terminar el seguimiento');}
+  else{env.click('checkout');await until(()=>env.stripeCounts.mount===1,'abrir un nuevo pago con consulta anterior en curso');await env.resolveStatuses();}
+  assert.equal(env.store.diagnostics().paymentActive,true,'La respuesta del pedido anterior no cierra un pago nuevo');
+  assert.ok(env.window.document.querySelector('iframe[name="stripe-fixture"]'),'El formulario nuevo sigue montado');
+ }finally{await env.resolveStatuses();await env.close();}
  env=await environment({role:'admin',delayAdmin:true});try{const pending=env.store.adminLoad(true);await until(()=>env.calls.some(c=>c.url==='/rest/v1/rpc/tsi224_store_admin_state'),'solicitud privada');env.role('editora');env.resolveAdmin();await pending;assert.equal(env.store.diagnostics().admin,null);assert.ok(!env.window.document.body.textContent.includes('private@example.invalid'));}finally{await env.close();}
- console.log('Tienda 2.2.4: catálogo público/borradores, carrito mixto y precio servidor, pedido manual, entrega a domicilio, roles y privacidad, Stripe no listo, iframe estable y pago confirmado por servidor aprobados (API/Stripe simulados).');
+ console.log('Tienda 2.2.4: catálogo, carrito, roles, pagos y seguimiento persistente tras recarga/nueva pestaña, historial, guía, actualización servidor, reintentos y compras posteriores aprobados (API/Stripe simulados).');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});
