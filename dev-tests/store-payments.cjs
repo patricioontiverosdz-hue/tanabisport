@@ -10,8 +10,8 @@ let createHandler,verifyStripeSignature,STRIPE_API_VERSION,RETURN_URL;
 function fixture(overrides={}){
  let clock=Date.parse('2026-10-27T18:00:00Z'),enabled=true,stock=5,linkFailures=0,wrongAccount=false;
  const runtime={SUPABASE_URL:'https://'+PROJECT+'.supabase.co',SUPABASE_SERVICE_ROLE_KEY:crypto.randomBytes(32).toString('hex'),STRIPE_SECRET_KEY:'rk_test_'+crypto.randomBytes(24).toString('hex'),STRIPE_PUBLISHABLE_KEY:'pk_test_'+crypto.randomBytes(24).toString('hex'),STRIPE_WEBHOOK_SECRET:'whsec_'+crypto.randomBytes(24).toString('hex'),...overrides};
- const orders=new Map(),requests=new Map(),sessions=new Map(),idempotency=new Map(),events=new Set(),rpcCalls=[],stripeCalls=[],createErrors=[];
- let deniedRate=false,sessionMutation=null;
+ const orders=new Map(),requests=new Map(),sessions=new Map(),idempotency=new Map(),events=new Set(),rpcCalls=[],stripeCalls=[],createErrors=[],lookupHits=new Map();
+ let deniedRate=false,sessionMutation=null,lookupUnavailable=false;
  function quote(cart){
   const items=cart.map(row=>{
    const physical=row.kind==='variant'&&row.id===PHYSICAL,price=row.kind==='photo'&&row.id==='701'?5000:physical?25000:row.id===DIGITAL?10000:null;
@@ -30,12 +30,15 @@ function fixture(overrides={}){
   try{
    if(name==='tsi224_store_quote')return ok(quote(p.cart));
    if(name==='tsi224_store_checkout_rate')return ok({allowed:!deniedRate,retry_after_seconds:600});
-   if(name==='tsi224_store_checkout_prepare'){
-    const fingerprint=JSON.stringify({access:p.access_hash,cart:p.cart,email:p.email});
+   if(name==='tsi224_store_lookup_rate'){
+    let entry=lookupHits.get(p.key_hash);if(!entry||clock-entry.at>=600000){entry={at:clock,count:0};lookupHits.set(p.key_hash,entry);}entry.count++;return ok({allowed:!deniedRate&&entry.count<=20,retry_after:600});
+   }
+   if(name==='tsi224_store_checkout_prepare'||name==='tsi224_store_checkout_prepare_contact'){
+    const fingerprint=JSON.stringify({access:p.access_hash,cart:p.cart,email:p.email,phone:p.phone||''});
     if(requests.has(p.request_id)){const saved=requests.get(p.request_id);if(saved.fingerprint!==fingerprint)throw Error('request mismatch');return ok(clone(orders.get(saved.id)));}
     if(!enabled)throw Error('disabled');const value=quote(p.cart),id=crypto.randomUUID();
     stock-=value.items.filter(item=>item.physical).reduce((n,item)=>n+item.quantity,0);
-    const order={...value,id,reference:'TS-'+String(orders.size+1),status:'pending',fulfillment:'pending',email:p.email,access_hash:p.access_hash,stripe_session_id:null,created_at:new Date(clock).toISOString(),released:false};
+    const order={...value,id,reference:'TS-'+crypto.randomBytes(8).toString('hex').toUpperCase(),status:'pending',fulfillment:'unfulfilled',email:p.email,phone:p.phone||'',access_hash:p.access_hash,stripe_session_id:null,created_at:new Date(clock).toISOString(),released:false};
     orders.set(id,order);requests.set(p.request_id,{id,fingerprint});return ok(clone(order));
    }
    if(name==='tsi224_store_checkout_link'){
@@ -47,6 +50,11 @@ function fixture(overrides={}){
    }
    if(name==='tsi224_store_checkout_status'){
     const order=orders.get(p.order_id);if(!order||order.access_hash!==p.access_hash)throw Error('not owned');return ok({...clone(order),delivery_link:order.status==='paid'?'https://delivery.invalid/owned':'https://delivery.invalid/NOT-PAID'});
+   }
+   if(name==='tsi224_store_order_lookup'){
+    if(lookupUnavailable)return new Response('{}',{status:503});
+    const order=Array.from(orders.values()).find(o=>o.reference===p.order_reference&&o.email===p.email);
+    return ok(order?{...clone(order),delivery_link:order.status==='paid'?'https://delivery.invalid/owned':'https://delivery.invalid/NOT-PAID'}:null);
    }
    if(name==='tsi224_store_checkout_event'){
     const order=orders.get(p.order_id);if(!order||order.stripe_session_id!==p.session_id||order.total_cents!==p.amount_total||order.currency.toLowerCase()!==p.currency)throw Error('payment mismatch');
@@ -78,7 +86,7 @@ function fixture(overrides={}){
   }},
   webhooks:{constructEventAsync:async(raw,signature,secret)=>verifyStripeSignature(new TextEncoder().encode(raw),signature,secret,clock,crypto.webcrypto)}
  };
- const handler=createHandler({env:name=>runtime[name],fetch:fetcher,crypto:crypto.webcrypto,now:()=>clock,stripeFactory:(key,options)=>{assert.equal(key,runtime.STRIPE_SECRET_KEY);assert.equal(options.apiVersion,STRIPE_API_VERSION);return sdk;}});
+ const makeHandler=()=>createHandler({env:name=>runtime[name],fetch:fetcher,crypto:crypto.webcrypto,now:()=>clock,stripeFactory:(key,options)=>{assert.equal(key,runtime.STRIPE_SECRET_KEY);assert.equal(options.apiVersion,STRIPE_API_VERSION);return sdk;}});let handler=makeHandler();
  const endpoint='https://'+PROJECT+'.supabase.co/functions/v1/tsi-store-checkout';
  async function call(action,body={},options={}){
   const method=options.method||'POST',headers={Origin:ORIGIN,'CF-Connecting-IP':'192.0.2.10',...(method==='POST'?{'Content-Type':'application/json'}:{}),...options.headers};
@@ -92,7 +100,7 @@ function fixture(overrides={}){
   const header=options.signature??('t='+timestamp+','+(options.multiple?'v1='+'0'.repeat(64)+',':'')+'v1='+signature);
   const response=await handler(new Request(endpoint+'/webhook',{method:'POST',headers:{'Stripe-Signature':header},body:options.tamper?raw+' ':raw}));return {status:response.status,data:await response.json(),event};
  }
- return {runtime,orders,sessions,events,rpcCalls,stripeCalls,call,checkoutBody,webhook,get stock(){return stock;},advance(ms){clock+=ms;},setEnabled(value){enabled=value;},setWrongAccount(){wrongAccount=true;},failLink(){linkFailures++;},failCreate(error){createErrors.push(error);},denyRate(){deniedRate=true;},mutateSession(fn){sessionMutation=fn;}};
+ return {runtime,orders,sessions,events,rpcCalls,stripeCalls,call,checkoutBody,webhook,get stock(){return stock;},advance(ms){clock+=ms;},setEnabled(value){enabled=value;},setWrongAccount(){wrongAccount=true;},failLink(){linkFailures++;},failCreate(error){createErrors.push(error);},denyRate(){deniedRate=true;},mutateSession(fn){sessionMutation=fn;},coldStart(){handler=makeHandler();},failLookup(){lookupUnavailable=true;}};
 }
 
 async function main(){
@@ -130,7 +138,7 @@ async function main(){
   const order=f.orders.get(result.data.order_id);assert.equal(order.total_cents,45000);assert.equal(order.email,'buyer@example.invalid');assert.notEqual(order.access_hash,body.access_token);
   const unauthorized=await f.call('status',{order_id:order.id,access_token:crypto.randomBytes(32).toString('hex')});assert.equal(unauthorized.status,404);
   const own=await f.call('status',{order_id:order.id,access_token:body.access_token});assert.equal(own.status,200);assert.equal(own.data.order.access_hash,undefined);assert.equal(own.data.order.delivery_link,undefined,'Una redirección no habilita entrega sin pago');
-  assert.equal(own.data.order.fulfillment,'pending','El comprador recibe el campo real de seguimiento logístico');
+  assert.equal(own.data.order.fulfillment,'unfulfilled','El comprador recibe el campo real de seguimiento logístico');
  }
  {
   const f=fixture();await f.call('create-session',f.checkoutBody());await f.call('create-session',f.checkoutBody());
@@ -196,6 +204,50 @@ async function main(){
   assert.equal((await f.webhook('checkout.session.completed',session)).status,409);assert.notEqual(f.orders.get(created.data.order_id).status,'paid');
   session.amount_total=5001;assert.equal((await f.webhook('checkout.session.completed',session)).status,409);assert.notEqual(f.orders.get(created.data.order_id).status,'paid');
  }
- console.log('Pagos TSI staging: configuración cerrada sin claves/live, cuenta test, precios servidor, tokens, reservas, idempotencia, firmas, duplicados y eventos fuera de orden aprobados con red simulada.');
+ {
+  const f=fixture(),body={...f.checkoutBody(),phone:'+52 (81) 1234-5678'},created=await f.call('create-session',body);
+  assert.equal(created.status,200);assert.match(created.data.reference,/^TS-[0-9A-F]{16}$/,'Número generado en servidor, aleatorio y no secuencial');
+  const order=f.orders.get(created.data.order_id);assert.equal(order.phone,'+528112345678');
+  const prepared=f.rpcCalls.find(c=>c.name==='tsi224_store_checkout_prepare_contact');assert.equal(prepared.p.phone,'+528112345678');
+  assert.equal((await f.call('create-session',{...body,phone:'+52 81 1234 5678'})).data.order_id,order.id,'El formato del mismo teléfono no crea otro pedido');
+  assert.equal((await f.call('create-session',{...body,phone:'8111111111'})).status,409,'El mismo request no puede cambiar su contacto');
+  assert.equal(f.orders.size,1);assert.equal(f.stripeCalls.filter(c=>c.type==='create').length,1);
+  for(const phone of ['',null,'+123','8112345678901234','8112345678 ext 2','8'.repeat(41)]){const invalid=fixture();assert.equal((await invalid.call('create-session',{...invalid.checkoutBody(),phone})).status,400);assert.equal(invalid.orders.size,0);assert.equal(invalid.stripeCalls.length,0);}
+ }
+ {
+  const f=fixture(),body={...f.checkoutBody(),phone:'81 1234 5678'},created=await f.call('create-session',body),order=f.orders.get(created.data.order_id);
+  order.customer={email:'private@example.invalid',phone:'8111111111'};order.shipping={address:{line1:'Dirección privada'}};order.customer_id=crypto.randomUUID();order.request_id=body.request_id;
+  f.coldStart();const lookup={order_reference:' '+order.reference.toLowerCase()+' ',email:' BUYER@EXAMPLE.INVALID '};
+  let found=await f.call('lookup',lookup);assert.equal(found.status,200);assert.equal(found.data.order.id,order.id);assert.equal(found.data.order.status,'awaiting_payment');assert.equal(found.data.order.delivery_link,undefined);
+  assert.equal(found.headers.get('cache-control'),'no-store');assert.equal(f.stripeCalls.filter(c=>c.type==='create').length,1,'Consultar no crea pagos');
+  for(const key of ['email','phone','customer','customer_id','shipping','access_hash','request_id','stripe_session_id'])assert.equal(found.data.order[key],undefined,'Lookup no publica '+key);
+  const session=f.sessions.get(created.data.session_id);session.status='complete';session.payment_status='paid';
+  found=await f.call('lookup',lookup);assert.equal(found.status,200);assert.equal(found.data.order.status,'paid');assert.equal(found.data.order.delivery_link,'https://delivery.invalid/owned','Solo pago verificado habilita entrega digital');
+  const incorrect=await f.call('lookup',{order_reference:order.reference,email:'someone@example.invalid'}),missing=await f.call('lookup',{order_reference:'TS-0000000000000000',email:'buyer@example.invalid'});
+  assert.equal(incorrect.status,404);assert.deepEqual(incorrect.data,missing.data,'No revela si existe número o correo');assert.equal(f.orders.size,1);
+  f.setEnabled(false);f.runtime.STRIPE_SECRET_KEY='';assert.equal((await f.call('lookup',lookup)).data.order.status,'paid','El seguimiento existente funciona con nuevos pagos deshabilitados');
+ }
+ {
+  const f=fixture(),body={order_reference:'TS-0000000000000000',email:'buyer@example.invalid'};
+  for(const invalid of [{...body,order_reference:'TS-1'},{...body,email:'invalid'},{...body,order_id:crypto.randomUUID()},{...body,access_token:'a'.repeat(64)}])assert.equal((await f.call('lookup',invalid)).status,400);
+  assert.equal(f.rpcCalls.length,0,'Rechaza solicitudes malformadas antes de consultar la base');
+  assert.equal((await f.call('lookup',body,{method:'GET'})).status,405);
+  assert.equal((await f.call('lookup',body,{headers:{Origin:'https://other.invalid'}})).status,403);
+  assert.equal((await f.call('lookup',body,{raw:'{'})).status,400);
+ }
+ {
+  const f=fixture(),body={order_reference:'TS-0000000000000000',email:'buyer@example.invalid'};
+  for(let i=0;i<20;i++){f.coldStart();assert.equal((await f.call('lookup',body,{headers:{'CF-Connecting-IP':'192.0.2.'+(i+1)}})).status,404);}
+  f.coldStart();assert.equal((await f.call('lookup',body,{headers:{'CF-Connecting-IP':'192.0.2.200'}})).status,429,'El límite por pedido persiste al cambiar IP o reiniciar la función');
+  const rates=f.rpcCalls.filter(c=>c.name==='tsi224_store_lookup_rate');assert.ok(rates.length);for(const row of rates){assert.deepEqual(Object.keys(row.p),['key_hash']);assert.match(row.p.key_hash,/^[a-f0-9]{64}$/);assert.ok(!JSON.stringify(row.p).includes(body.email));assert.ok(!JSON.stringify(row.p).includes('192.0.2.'));}
+  assert.equal(f.rpcCalls.filter(c=>c.name==='tsi224_store_order_lookup').length,20,'La cuota se consume antes de buscar');
+  f.advance(600001);f.coldStart();assert.equal((await f.call('lookup',body)).status,404,'La ventana permite consultar después de la espera');
+ }
+ {
+  const f=fixture(),body={order_reference:'TS-0000000000000000',email:'buyer@example.invalid'};f.denyRate();assert.equal((await f.call('lookup',body)).status,429);assert.equal(f.rpcCalls.some(c=>c.name==='tsi224_store_order_lookup'),false,'Sin cuota no se consulta');
+  const unavailable=fixture();unavailable.failLookup();assert.equal((await unavailable.call('lookup',body)).status,503,'Fallo de la base no se presenta como correo incorrecto');
+  const disabled=fixture({SUPABASE_URL:'https://tantlgswituiwkxfgmsr.supabase.co'});assert.equal((await disabled.call('lookup',body)).status,503);assert.equal(disabled.rpcCalls.length,0,'Lookup nunca consulta producción');
+ }
+ console.log('Pagos TSI staging: pagos/idempotencia/webhooks, teléfono por pedido, consulta por número+correo sin tokens/contactos expuestos, reconciliación y límites persistentes aprobados con red simulada.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

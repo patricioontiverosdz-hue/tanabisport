@@ -6,6 +6,7 @@ export const STORE_ORIGIN = 'https://patricioontiverosdz-hue.github.io';
 export const RETURN_URL = STORE_ORIGIN + '/tanabisport/staging/?store_return=1&session_id={CHECKOUT_SESSION_ID}';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TOKEN = /^[0-9a-f]{64}$/;
+const ORDER_REFERENCE = /^TS-[0-9A-F]{16}$/;
 const SESSION = /^cs_test_[A-Za-z0-9_]{8,240}$/;
 const EVENTS = new Set(['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed','checkout.session.expired']);
 const encoder = new TextEncoder();
@@ -19,6 +20,12 @@ function record(value) { return !!value && typeof value === 'object' && !Array.i
 function only(value, names) { return record(value) && Object.keys(value).every(key => names.includes(key)); }
 function integer(value, min, max) { return Number.isSafeInteger(value) && value >= min && value <= max; }
 function text(value, max) { return typeof value === 'string' ? value.slice(0, max) : null; }
+function phoneNumber(value) {
+  if (typeof value !== 'string' || value.length > 40 || !/^\+?[\d\s().-]+$/.test(value.trim())) fail(400,'invalid_checkout','Escribe un teléfono de 10 a 15 dígitos para tu pedido.');
+  const trimmed = value.trim(), digits = trimmed.replace(/\D/g,'');
+  if (!/^\d{10,15}$/.test(digits)) fail(400,'invalid_checkout','Escribe un teléfono de 10 a 15 dígitos para tu pedido.');
+  return (trimmed.startsWith('+') ? '+' : '') + digits;
+}
 function hex(bytes) { return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join(''); }
 export async function sha256(value, cryptoApi = globalThis.crypto) { return hex(new Uint8Array(await cryptoApi.subtle.digest('SHA-256', encoder.encode(value)))); }
 
@@ -99,7 +106,7 @@ export function createHandler(options = {}) {
   }
   function limited(request, action) {
     const at = now(), address = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for')?.split(',').at(-1)?.trim() || 'unknown';
-    const key = address.slice(0,128) + ':' + action, limit = action === 'create-session' ? 8 : action === 'config' ? 120 : 60;
+    const key = address.slice(0,128) + ':' + action, limit = action === 'create-session' ? 8 : action === 'lookup' ? 20 : action === 'config' ? 120 : 60;
     let entry = rate.get(key); if (!entry || at - entry.at >= 60000) { entry = {at,count:0}; rate.set(key,entry); }
     entry.count++; if (entry.count > limit) fail(429,'rate_limit','Hay demasiadas solicitudes. Espera un momento e intenta de nuevo.');
     if (rate.size > 4096) { for (const [id,row] of rate) if (at - row.at > 60000) rate.delete(id); if (rate.size > 4096) rate.delete(rate.keys().next().value); }
@@ -110,6 +117,8 @@ export function createHandler(options = {}) {
     let response;
     try { response = await fetcher(cfg.url + '/rest/v1/rpc/' + name,{method:'POST',headers:{apikey:cfg.service,Authorization:'Bearer ' + cfg.service,'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(15000)}); }
     catch { fail(503,'store_unavailable','No se pudo conectar con la tienda. Intenta nuevamente.'); }
+    if (!response.ok && name === 'tsi224_store_order_lookup') fail(response.status >= 500 ? 503 : 404,'order_unavailable',response.status >= 500 ? 'No se pudo consultar el pedido. Intenta nuevamente.' : 'No encontramos un pedido con ese número y correo. Revisa ambos datos.');
+    if (!response.ok && name === 'tsi224_store_lookup_rate') fail(503,'store_unavailable','No se pudo consultar el pedido. Intenta nuevamente.');
     if (!response.ok) fail(errorStatus,'store_conflict',name === 'tsi224_store_checkout_status' ? 'No se encontró el pedido con esta autorización.' : 'Los artículos, sus precios o la disponibilidad cambiaron. Actualiza la tienda e intenta nuevamente.');
     try { return await response.json(); } catch { fail(502,'invalid_store_response','La tienda no pudo confirmar esta solicitud.'); }
   }
@@ -160,6 +169,28 @@ export function createHandler(options = {}) {
     }
     return {order:safeOrder(order)};
   }
+  async function lookup(body, address) {
+    if (!only(body,['action','order_reference','email']) || typeof body.order_reference !== 'string' || body.order_reference.length > 40 || typeof body.email !== 'string' || body.email.length > 254) fail(400,'invalid_order_lookup','Escribe el número de pedido completo y el correo de la compra.');
+    const reference = body.order_reference.trim().toUpperCase(), email = body.email.trim().toLowerCase();
+    if (!ORDER_REFERENCE.test(reference) || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)) fail(400,'invalid_order_lookup','Escribe el número de pedido completo y el correo de la compra.');
+    const day = new Date(now()).toISOString().slice(0,10), secret = credentials().service;
+    // Both scopes are durable across isolates; neither stores raw addresses or contact data.
+    for (const scope of ['ip:' + address, 'order:' + reference]) {
+      const key = await sha256(secret + ':tsi224-lookup:' + day + ':' + scope,cryptoApi);
+      const quota = await rpc('tsi224_store_lookup_rate',{key_hash:key});
+      if (!quota?.allowed) fail(429,'rate_limit','Hay demasiadas consultas. Espera unos minutos e intenta nuevamente.');
+    }
+    const identity = {order_reference:reference,email};
+    let order = await rpc('tsi224_store_order_lookup',identity,404);
+    if (!record(order) || order.reference !== reference) fail(404,'order_unavailable','No encontramos un pedido con ese número y correo. Revisa ambos datos.');
+    if (order.stripe_session_id && credentials().stripeReady) {
+      const session = await retrieve(order.stripe_session_id,order);
+      await recordSession(session,'reconcile:' + session.id + ':' + session.status + ':' + session.payment_status);
+      order = await rpc('tsi224_store_order_lookup',identity,404);
+      if (!record(order) || order.reference !== reference) fail(404,'order_unavailable','No encontramos un pedido con ese número y correo. Revisa ambos datos.');
+    }
+    return {order:safeOrder(order)};
+  }
   function snapshot(order) {
     if (!record(order) || !UUID.test(order.id || '') || !integer(order.total_cents,1000,99999999) || !integer(order.subtotal_cents,1,99999999) || !integer(order.shipping_cents,0,99999999) || order.total_cents !== order.subtotal_cents + order.shipping_cents || order.currency?.toLowerCase() !== 'mxn' || !Array.isArray(order.items) || !order.items.length || order.items.length > 50 || typeof order.requires_shipping !== 'boolean') fail(502,'invalid_store_response','La tienda no pudo confirmar el importe del pedido.');
     let subtotal = 0;
@@ -168,7 +199,9 @@ export function createHandler(options = {}) {
     return order;
   }
   async function createSession(body, address) {
-    if (!only(body,['action','cart','request_id','access_token','email']) || !UUID.test(body.request_id || '') || !TOKEN.test(body.access_token || '') || typeof body.email !== 'string' || body.email.length > 254 || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(body.email)) fail(400,'invalid_checkout','Revisa el correo y los artículos antes de pagar.');
+    if (!only(body,['action','cart','request_id','access_token','email','phone']) || !UUID.test(body.request_id || '') || !TOKEN.test(body.access_token || '') || typeof body.email !== 'string' || body.email.length > 254 || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(body.email.trim())) fail(400,'invalid_checkout','Revisa el correo y los artículos antes de pagar.');
+    // Older open checkout pages remain compatible while the new form is being deployed.
+    const phone = body.phone === undefined ? null : phoneNumber(body.phone);
     const cart = validateCart(body.cart), sdk = await accountReady(), config = await storeConfig();
     if (!config?.payments_enabled || config.country !== 'MX') fail(503,'payments_disabled','Los pagos están deshabilitados en esta tienda.');
     const accessHash = await sha256(body.access_token,cryptoApi);
@@ -176,7 +209,9 @@ export function createHandler(options = {}) {
     const rateKey = await sha256(credentials().service + ':tsi224-checkout:' + rateDay + ':' + address,cryptoApi);
     const quota = await rpc('tsi224_store_checkout_rate',{key_hash:rateKey});
     if (!quota?.allowed) fail(429,'rate_limit','Espera unos minutos antes de iniciar otro pedido.');
-    const order = snapshot(await rpc('tsi224_store_checkout_prepare',{request_id:body.request_id,access_hash:accessHash,cart,email:body.email.trim().toLowerCase()}));
+    const prepare = {request_id:body.request_id,access_hash:accessHash,cart,email:body.email.trim().toLowerCase()};
+    if (phone !== null) prepare.phone = phone;
+    const order = snapshot(await rpc(phone === null ? 'tsi224_store_checkout_prepare' : 'tsi224_store_checkout_prepare_contact',prepare));
     if (!order.stripe_session_id && !['pending','awaiting_payment'].includes(order.status)) fail(409,'checkout_closed','Este pedido ya no admite una nueva sesión de pago. Revisa su estado antes de iniciar otro.');
     let session;
     if (order.stripe_session_id) session = await retrieve(order.stripe_session_id,order);
@@ -223,7 +258,7 @@ export function createHandler(options = {}) {
     if (origin === STORE_ORIGIN) Object.assign(headers,{'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Authorization, apikey, X-Client-Info'});
     const json = (data,status=200) => new Response(JSON.stringify(data),{status,headers});
     try {
-      const url = new URL(request.url), leaf = url.pathname.split('/').filter(Boolean).at(-1), route = url.searchParams.get('action') || (['config','quote','create-session','status','webhook'].includes(leaf) ? leaf : '');
+      const url = new URL(request.url), leaf = url.pathname.split('/').filter(Boolean).at(-1), route = url.searchParams.get('action') || (['config','quote','create-session','status','lookup','webhook'].includes(leaf) ? leaf : '');
       if (request.method === 'OPTIONS') { if (origin !== STORE_ORIGIN) fail(403,'origin_not_allowed','Este origen no está autorizado.'); return new Response(null,{status:204,headers}); }
       if (route === 'webhook') { if (request.method !== 'POST') fail(405,'method_not_allowed','Método no permitido.'); return json(await webhook(request)); }
       if (origin !== STORE_ORIGIN) fail(403,'origin_not_allowed','Este origen no está autorizado.');
@@ -241,6 +276,7 @@ export function createHandler(options = {}) {
       if (action === 'quote') { if (!only(body,['action','cart'])) fail(400,'invalid_request','La solicitud no es válida.'); return json(await rpc('tsi224_store_quote',{cart:validateCart(body.cart)},400)); }
       if (action === 'create-session') return json(await createSession(body,address));
       if (action === 'status') return json(await status(body));
+      if (action === 'lookup') return json(await lookup(body,address));
       fail(404,'not_found','La operación no está disponible.');
     } catch (error) {
       if (error instanceof StoreError) return json({error:error.message,code:error.code},error.status);
