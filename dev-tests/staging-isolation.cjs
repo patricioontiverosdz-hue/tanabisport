@@ -1,6 +1,6 @@
 const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const path=require('node:path');
-const appVersion=require('../package.json').version;
+const appVersion=require('../staging/version.json').version;
 const html=fs.readFileSync(path.join(__dirname,'../staging/index.html'),'utf8');
 const source=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const tokens=['function tsi11Forecast','function tabRoleImport','function tabPhotoAvailability','function discountPayForm','dorsalesHtml'];

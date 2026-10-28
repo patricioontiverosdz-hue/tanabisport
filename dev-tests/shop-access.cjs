@@ -17,6 +17,8 @@ async function environment(staging,role,shop){
  window.fetch=async(input,options={})=>{
   const request=new URL(String(input)),method=options.method||'GET',body=options.body?JSON.parse(options.body):null;
   assert.equal(request.origin,base,'Cada entorno conserva su servidor');calls.push({path:request.pathname,method,body,headers:options.headers||{}});
+  if(request.pathname==='/rest/v1/tsi224_shop_preview')return response([{id:'shop',bw:true,motion:true,watermark:true,watermark_data:null,version:1}]);
+  if(request.pathname==='/rest/v1/rpc/tsi224_shop_state')return response({settings:{bw:true,motion:true,watermark:true,watermark_data:null,version:1},sources:[{id:String(item.id),img:item.img,legacy:true,version:0}]});
   if(request.pathname==='/rest/v1/settings')return response([{id:'cfg',data:{shop,reservasPublicas:false,loans:false,autoArchive:false,whatsapp:''}}]);
   if(request.pathname==='/rest/v1/shop_items')return response([{id:String(item.id),data:item}]);
   if(request.pathname==='/rest/v1/profiles')return response(Object.entries(ids).map(([r,id])=>({id,email:r+'@test.invalid',name:'Prueba '+r,role:r})));
@@ -30,16 +32,24 @@ async function environment(staging,role,shop){
   window.localStorage.setItem('tsi_'+(staging?'staging':'production')+'_'+project+'_auth',JSON.stringify({access,uid:ids[role],exp:Date.now()/1000+3600}));
  }
  const html=fs.readFileSync(path.join(root,staging?'staging/index.html':'index.html'),'utf8');
+ const previewFeature=/<script\b[^>]*src="[^\"]*tsi-shop-preview\.js(?:\?[^\"]*)?"/.test(html);
+ if(previewFeature){
+  const version=require(staging?'../staging/version.json':'../package.json').version;
+  const favicon=(staging?'../':'')+'assets/favicon-ts.svg?v='+version;
+  assert.ok([...html.matchAll(/<link rel="icon"[^>]+href="([^\"]+)"/g)].some(match=>match[1]===favicon),'El icono TS aprobado usa su versión de entorno');
+  assert.ok(fs.existsSync(path.join(root,'assets/favicon-ts.svg')));
+ }
  const scripts=[...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].map(match=>match[1]).filter(Boolean);
  let last=scripts.pop(),position=last.lastIndexOf('})();');assert.ok(position>0);
  last=last.slice(0,position)+'window.__shopTest={S:S,render:function(){render();}};\n'+last.slice(position);
+ if(previewFeature)window.eval(fs.readFileSync(path.join(root,'assets/tsi-shop-preview.js'),'utf8'));
  for(const script of [...scripts,last])window.eval(script);
  await until(()=>window.__shopTest&&!window.__shopTest.S.booting,'arranque '+(staging?'staging':'producción'));
  const api=window.__shopTest,doc=window.document;
  assert.equal(api.S.meId||null,role?ids[role]:null,'La sesión corresponde al visitante');
  function click(selector){const element=doc.querySelector(selector);assert.ok(element,'Control '+selector);element.click();}
  function go(tab){api.S.view='dash';api.S.tab=tab;api.render();}
- return {window,doc,api,calls,errors,item,click,go,close:async()=>{await window.happyDOM.cancelAsync();window.close();}};
+ return {window,doc,api,calls,errors,item,click,go,previewFeature,close:async()=>{await window.happyDOM.cancelAsync();window.close();}};
 }
 
 async function main(){
@@ -47,7 +57,7 @@ async function main(){
   for(const shop of [true,false])for(const role of ['admin','editora','foto']){
    const env=await environment(staging,role,shop);
    try{
-    env.go('resumen');const allowed=role==='admin'||role==='editora'&&shop;
+    env.go('resumen');const allowed=role==='admin'||role==='editora'&&(shop||env.previewFeature);
     assert.equal(!!env.doc.querySelector('[data-tab="tienda"]'),allowed,'Entrada Tienda: '+role+', shop='+shop);
     if(allowed){
      env.click('[data-tab="tienda"]');assert.equal(env.api.S.tab,'tienda');

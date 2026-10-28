@@ -1,0 +1,25 @@
+/* TSI 2.2.4: opciones globales y recorrido de un tercio nítido. */
+.s224-controls{background:var(--tsi-panel,var(--surface));color:var(--ink)}
+.s224-controls h3{margin-top:0}.s224-controls p{line-height:1.55;overflow-wrap:anywhere}
+.s224-options{border:0;padding:0;margin:18px 0;min-width:0}.s224-options legend{font-weight:600;margin-bottom:10px}
+.s224-option{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--tsi-border,var(--line));margin:0}
+.s224-option input{width:24px;min-width:24px;height:24px;min-height:24px;margin:2px 0 0;accent-color:var(--turf)}
+.s224-option span{display:block;min-width:0}.s224-option strong{display:block}.s224-option small{display:block;margin-top:5px;font-weight:400;line-height:1.5}
+.s224-mark{margin-top:18px}.s224-mark[hidden]{display:none}.s224-mark input{max-width:100%}
+.s224-mark-thumb{display:block;width:160px;max-height:110px;object-fit:contain;margin:14px 0;background:var(--tsi-soft,var(--bg));border:1px solid var(--tsi-border,var(--line));border-radius:8px;padding:8px}
+.s224-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.s224-actions .btn{min-height:44px}
+.s224-status:empty{display:none}.s224-status .btn{margin-top:7px}.s224-replace{padding:14px 0;border-top:1px solid var(--tsi-border,var(--line))}.s224-replace input{max-width:100%;min-height:44px}
+.s224-photo{min-width:0}.shop-preview.s224-preview{isolation:isolate}
+.shop-preview.s224-preview::after{display:none!important;content:none!important}
+.shop-preview.s224-preview img{filter:none!important;pointer-events:none!important;-webkit-user-drag:none;user-select:none}
+.shop-preview.s224-preview .shop-title{z-index:3;max-width:100%;overflow-wrap:anywhere}
+.shop-preview.s224-preview.s224-motion .s224-blurred{filter:blur(12px)!important;transform:scale(1.08);z-index:0}
+.shop-preview.s224-preview .s224-image{z-index:1}
+.shop-preview.s224-preview.s224-motion .s224-scan{animation:s224-scan 6s linear infinite alternate;clip-path:inset(0 0 66.6667% 0)}
+.shop-preview.s224-preview.s224-paused .s224-scan{animation-play-state:paused}
+.s224-motion-control{min-height:44px;margin-top:7px;max-width:100%;white-space:normal}
+@keyframes s224-scan{from{clip-path:inset(0 0 66.6667% 0)}to{clip-path:inset(66.6667% 0 0 0)}}
+@media(max-width:600px){.s224-actions .btn{flex:1 1 160px}.s224-controls{padding:18px}.shop-preview.s224-preview.s224-motion .s224-blurred{filter:blur(9px)!important}}
+@media(prefers-reduced-motion:reduce){.shop-preview.s224-preview.s224-motion .s224-scan{animation:none;clip-path:inset(33.3333% 0 33.3333% 0)}.shop-preview.s224-preview.s224-motion.s224-user-motion .s224-scan{animation:s224-scan 6s linear infinite alternate;animation-duration:6s!important}}
+@media print{.shop-preview.s224-preview img{visibility:hidden!important}.s224-motion-control{display:none}}
+.s224-shop-fields{border:0;padding:0;margin:0;min-width:0}
