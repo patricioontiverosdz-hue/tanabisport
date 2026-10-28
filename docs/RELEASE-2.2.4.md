@@ -6,7 +6,7 @@ Esta publicación es exclusivamente de pruebas, solicitada por Patricio para val
 
 - En Tienda, administración y editora pueden activar y desactivar Blanco y negro, Movimiento nítido y Marca de agua para todas las fotos. Los ajustes se guardan con el botón «Guardar y aplicar a toda la tienda».
 - La marca puede ser la de Tanabi o un PNG/JPEG propio de hasta 5 MB. Se normaliza a PNG y se graba en las miniaturas publicadas.
-- El movimiento deja nítido un tercio de la imagen y difumina los otros dos. Tiene pausa y respeta la preferencia de movimiento reducido del navegador.
+- El movimiento deja nítido un tercio de la imagen y difumina los otros dos. Solo administración y editora ven el botón de pausa. Se respeta la preferencia de movimiento reducido del navegador.
 - Las nuevas cargas conservan una copia de trabajo privada y reducida a 720 píxeles. El cliente recibe solamente la miniatura publicada; no se carga el original a la tienda.
 - Las fotos antiguas conservan el blanco y negro y la marca ya grabados. Para recuperar color o retirar esa marca se ofrece reemplazar la foto, conservando su carpeta, título y precio.
 - El favicon utiliza el monograma TS aprobado, con exportación de 192 píxeles en SVG y respaldo PNG de 32 píxeles. Los demás usos del logotipo se conservan.
@@ -25,6 +25,14 @@ La migración se aplica únicamente al proyecto de staging `nksqpoigywfegcbvfhoa
 - Revisión de Supabase posterior a la migración sin observaciones nuevas para los objetos de 2.2.4.
 
 ## Paso posterior a producción
+
+La tienda de staging incorpora Fotos, Merch y Diseños, búsqueda y carrito mixto. Administración dispone de Productos, Pedidos y Configuración; editora conserva Fotos y las protecciones globales. Se crean 18 productos y variantes como borradores, sin precios, imágenes ni existencias inventadas. Administración completa portadas, precios, opciones y stock antes de publicarlos. Los productos físicos se entregan exclusivamente a domicilio en México; el costo de envío debe configurarse expresamente, incluso si es cero.
+
+La migración `20261028033805_tsi224_store.sql` y la función `tsi-store-checkout` se aplican únicamente a staging. Los importes se calculan en el servidor y el inventario se reserva de forma atómica. Pedidos, datos de contacto y direcciones son privados. Solo una comprobación de Stripe en el servidor puede confirmar el pago; administración gestiona la entrega por separado. Continúa disponible el pedido manual de fotografías mientras los pagos en línea están desactivados.
+
+Stripe queda preparado para la cuenta TEST aprobada `acct_1UVH3OQ9WFCZJIYG`. El servicio publicado responde `ready=false` porque faltan las claves TEST y el secreto del webhook. Antes de activar pagos deben configurarse en los secretos del servidor, registrar el webhook firmado y validar una compra de sandbox completa. No se hizo un cargo ni se probó una tarjeta real. La cuenta oficial se creará por separado después; esta función rechaza claves live y el proyecto de producción. Instrucciones operativas: `supabase/functions/tsi-store-checkout/README.md`.
+
+La prueba SQL del catálogo, reservas, límites, estados y permisos pasó en staging real con reversión completa. Chrome verificó las tres colecciones, carrito mixto, personalización, roles y ausencia de pausa pública en 1224 y 320 píxeles. Las pruebas de Stripe usan un servicio simulado y el SDK real pasó la comprobación de tipos de Deno.
 
 Primero validar esta versión en staging. La promoción de producción debe comenzar a las 00:00 de `America/Monterrey`, conforme a `AGENTS.md`; no hay una excepción autorizada para 2.2.4. En ese momento aplicar la misma migración al proyecto de producción, repetir las verificaciones de permisos, actualizar el HTML y la versión del paquete de producción y comprobar el despliegue servido. La publicación en staging no programa ni adelanta por sí misma esa promoción.
 
