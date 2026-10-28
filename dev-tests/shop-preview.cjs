@@ -112,6 +112,13 @@ async function main(){
    const privateCalls=env.calls.filter(call=>call.url==='/rest/v1/rpc/tsi224_shop_state');assert.equal(privateCalls.length>0,staff,'Lectura privada según rol');
    if(!staff){assert.ok(!env.doc.body.innerHTML.includes('PRIVATE-COLOR-SOURCE'));assert.ok(!env.doc.body.innerHTML.includes(env.server.sources[0].img));}
    else{assert.ok(env.doc.body.textContent.toLocaleLowerCase('es').includes('antigua'),'Límite de la miniatura antigua visible');assert.ok(env.doc.querySelector('[data-224-replace="702"]'),'Reemplazo de la fuente antigua');}
+   env.state.view='shop';env.render();
+   assert.equal(env.doc.querySelectorAll('.s224-motion').length,env.server.items.length,'El efecto continúa activo para '+role);
+   assert.equal(env.doc.querySelectorAll('[data-224-motion]').length,staff?env.server.items.length:0,'Solo administración y editora ven el control de pausa: '+role);
+   if(staff){
+    env.click('[data-224-motion="701"]');assert.ok(env.doc.querySelector('[data-224-preview="701"]').classList.contains('s224-paused'),'El personal puede pausar su vista previa');
+    env.click('[data-224-motion="701"]');assert.ok(!env.doc.querySelector('[data-224-preview="701"]').classList.contains('s224-paused'),'El personal puede reanudar su vista previa');
+   }
   }finally{await env.close();}
  }
 
@@ -193,11 +200,16 @@ async function main(){
  // Una respuesta privada demorada no debe reaparecer después de cerrar sesión.
  const closing=await environment('admin');
  try{
+  closing.state.view='shop';closing.render();closing.click('[data-224-motion="701"]');
+  assert.ok(closing.doc.querySelector('[data-224-preview="701"]').classList.contains('s224-paused'),'La sesión del personal estaba pausada');
   const held=closing.holdPrivate(),pending=closing.mod.load(true);
   await until(()=>typeof held.resolve==='function','solicitud privada demorada');
   closing.setUser(null);held.resolve();await pending;
   assert.equal(closing.mod.diagnostics().sources.length,0,'Fuentes privadas eliminadas al cambiar de sesión');
   assert.ok(!closing.doc.body.innerHTML.includes(closing.server.sources[0].img),'La respuesta antigua no se coloca en la vista pública');
+  assert.equal(closing.doc.querySelector('[data-224-motion]'),null,'Cerrar sesión elimina el botón de pausa');
+  assert.ok(closing.doc.querySelector('[data-224-preview="701"]').classList.contains('s224-motion'),'El movimiento sigue habilitado para clientes');
+  assert.ok(!closing.doc.querySelector('[data-224-preview="701"]').classList.contains('s224-paused'),'El estado de pausa del personal no congela la vista pública');
  }finally{await closing.close();}
 
  console.log('TSI 2.2.4: roles, fuentes privadas, opciones globales, BW, marca propia, carga/reemplazo, movimiento, conflicto y cierre de sesión aprobados con servidor simulado.');

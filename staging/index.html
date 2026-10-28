@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://nksqpoigywfegcbvfhoa.supabase.co; connect-src https://nksqpoigywfegcbvfhoa.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'; worker-src 'self'; manifest-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://js.stripe.com https://*.js.stripe.com https://checkout.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://nksqpoigywfegcbvfhoa.supabase.co https://*.stripe.com; connect-src https://nksqpoigywfegcbvfhoa.supabase.co https://api.stripe.com https://checkout.stripe.com; frame-src https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com https://checkout.stripe.com; base-uri 'none'; form-action 'none'; object-src 'none'; worker-src 'self'; manifest-src 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tanabi Sports Intelligence 2.2.4 · STAGING</title>
 <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,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">
@@ -329,7 +329,9 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
 
 </script>
 <link rel="stylesheet" href="../assets/tsi-shop-preview.css?v=2.2.4">
-<script src="../assets/tsi-shop-preview.js?v=2.2.4"></script>
+<script src="../assets/tsi-shop-preview.js?v=2.2.4-staff-pause-1"></script>
+<link rel="stylesheet" href="../assets/tsi-store.css?v=2.2.4-store-1">
+<script src="../assets/tsi-store.js?v=2.2.4-store-1"></script>
 <link rel="stylesheet" href="../assets/tsi-210.css">
 <script src="../assets/tsi-210-model.js"></script>
 <script src="../assets/tsi-210-backup.js"></script>
@@ -3697,6 +3699,28 @@ if(window.TSIShopPreviewInstall){
  var sp224BaseRender=render;render=function(){var folder=document.getElementById('shopfolder'),price=document.getElementById('shopprice'),saved=folder?{folder:folder.value,price:price&&price.value}:null;SP224.beforeRender();sp224BaseRender();if(saved&&S.view==='dash'&&S.tab==='tienda'){var nextFolder=document.getElementById('shopfolder'),nextPrice=document.getElementById('shopprice');if(nextFolder)nextFolder.value=saved.folder;if(nextPrice&&saved.price!=null)nextPrice.value=saved.price;}SP224.afterRender();};
  var sp224GoShop=X.goShop;X.goShop=function(t,d){SP224.publicLoad(true);return sp224GoShop(t,d);};
  document.addEventListener('change',function(e){var input=e.target;if(!input||input.id!=='shopimg')return;e.stopImmediatePropagation();if(!canUploadShop())return;var folder=document.getElementById('shopfolder'),price=document.getElementById('shopprice'),files=Array.prototype.slice.call(input.files||[]);input.value='';var amount=isAdmin()?Math.max(0,Number(price&&price.value)||0):50;if(isAdmin())S.shopPrice=amount;SP224.upload(files,folder&&folder.value||'',amount);},true);
+}
+/* TSI 2.2.4: tienda y pagos aislados de producción. */
+var STORE224=null;
+if(window.TSIStore224Install){
+ STORE224=window.TSIStore224Install({state:S,me:me,esc:esc,sb:sb,server:SBU,topbar:function(){return topbar();},render:function(){render();},photoPreview:function(item){return shopPreview(item);},loadShop:async function(){var rows=await sb('GET','/rest/v1/shop_items?select=id,data');S.shop.items=rows.map(function(r){return r.data;});SYNC.snap.shop_items=snapOf({shop_items:buildRows().shop_items}).shop_items;},edge:function(method,path,payload){return sb(method,'/functions/v1/tsi-store-checkout/'+path,payload);},manualPhotoOrder:async function(request){
+  var name=String(request.name||'').trim(),contact=String(request.contact||'').trim(),note=String(request.note||'').trim();
+  if(!name||name.length>120||contact.length<8||contact.length>80||note.length>500)throw new Error('Revisa el nombre, teléfono y nota de tu pedido.');
+  if(!Array.isArray(request.items)||!request.items.length||request.items.length>50)throw new Error('Selecciona las fotografías de tu pedido.');
+  var quote=await sb('POST','/rest/v1/rpc/tsi224_store_quote',{cart:request.items.map(function(id){return {kind:'photo',id:String(id),quantity:1};})});
+  if(!quote||quote.currency!=='MXN'||!Array.isArray(quote.items)||quote.items.some(function(item){return item.kind!=='photo';}))throw new Error('No se pudo confirmar el importe de las fotografías.');
+  var key='tsi224-manual:'+SBU+':'+String(request.request_id||''),id;
+  try{id=Number(sessionStorage.getItem(key));}catch(e){}
+  if(!id){id=nid();try{sessionStorage.setItem(key,String(id));}catch(e){}}
+  var order={id:id,date:todayStr(),name:name,contact:contact,note:note,items:quote.items.map(function(item){var original=S.shop.items.find(function(p){return String(p.id)===String(item.id);});if(!original)throw new Error('Una fotografía ya no está disponible.');return {id:original.id,title:item.title,price:item.unit_price_cents/100};}),total:quote.total_cents/100,status:'nuevo',link:''};
+  await sb('POST','/rest/v1/orders?on_conflict=id',{id:String(id),data:order},{prefer:'resolution=ignore-duplicates,return=minimal'});
+  return {id:id,reference:String(id),total:order.total,status:'nuevo'};
+ }});
+ viewShop=function(){return STORE224.viewShop();};
+ var store224PhotosTab=tabTienda;tabTienda=function(){return STORE224.adminTab(store224PhotosTab());};
+ var store224Render=render;render=function(){STORE224.beforeRender();store224Render();STORE224.afterRender();};
+ var store224GoShop=X.goShop;X.goShop=function(t,d){STORE224.publicLoad(true);return store224GoShop(t,d);};
+ if(new URLSearchParams(location.search).has('store_return'))S.view='shop';
 }
 var configError=stagingConfigError();
 if(configError){

@@ -17,7 +17,7 @@
     }
     function beforeRender(capture) {
       var key = owner();
-      if (key !== D.owner) D = fresh(key, D.settings);
+      if (key !== D.owner) { D = fresh(key, D.settings); paused = Object.create(null); }
       else if (capture !== false && staff()) { var folder = document.getElementById('shopfolder'), price = document.getElementById('shopprice'); if (folder) D.form.folder = folder.value; if (price) D.form.price = price.value; }
     }
     function updateSettings(state, value) {
@@ -88,11 +88,11 @@
     }
     function reducedMotion() { return !!root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches; }
     function preview(item) {
-      var id = String(item.id), motion = D.settings.motion, isPaused = Object.prototype.hasOwnProperty.call(paused, id) ? paused[id] : reducedMotion();
+      var id = String(item.id), motion = D.settings.motion, isPaused = staff() && Object.prototype.hasOwnProperty.call(paused, id) ? paused[id] : reducedMotion();
       var image = item.img ? '<img loading="lazy" draggable="false" class="s224-image' + (motion ? ' s224-scan' : '') + '" src="' + esc(item.img) + '" alt="Vista previa de ' + esc(item.title) + '">' : '';
       var blurred = motion && item.img ? '<img loading="lazy" draggable="false" class="s224-blurred" src="' + esc(item.img) + '" alt="" aria-hidden="true">' : '';
       return '<div class="s224-photo"><div class="tile shop-preview s224-preview' + (motion ? ' s224-motion' : '') + (isPaused ? ' s224-paused' : ' s224-user-motion') + (!item.img ? ' t1' : '') + '" data-224-preview="' + esc(id) + '">' + blurred + image + '<span class="shop-title">' + esc(item.title) + '</span></div>' +
-        (motion && item.img ? '<button type="button" class="btn small s224-motion-control" data-224-motion="' + esc(id) + '" aria-pressed="' + String(isPaused) + '">' + (isPaused ? 'Reanudar movimiento' : 'Pausar movimiento') + '</button>' : '') + '</div>';
+        (staff() && motion && item.img ? '<button type="button" class="btn small s224-motion-control" data-224-motion="' + esc(id) + '" aria-pressed="' + String(isPaused) + '">' + (isPaused ? 'Reanudar movimiento' : 'Pausar movimiento') + '</button>' : '') + '</div>';
     }
     function imageFrom(source) {
       return new Promise(function (resolve, reject) {
@@ -236,6 +236,7 @@
       var button = event.target.closest && event.target.closest('[data-224-action],[data-224-motion]'); if (!button) return;
       beforeRender();
       if (button.hasAttribute('data-224-motion')) {
+        if (!staff()) return;
         var id = button.dataset['224Motion'], current = Object.prototype.hasOwnProperty.call(paused, id) ? paused[id] : reducedMotion(); paused[id] = !current;
         var tile = button.parentElement.querySelector('[data-224-preview]');
         if (tile) { tile.classList.toggle('s224-paused', paused[id]); tile.classList.toggle('s224-user-motion', !paused[id]); }
