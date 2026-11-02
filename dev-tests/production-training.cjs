@@ -27,7 +27,7 @@ async function environment(role,options={}){
  window.addEventListener('error',event=>errors.push(event.error||event.message));
  const response=(value,status=200)=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json'}});
  const state=()=>({server_now:'2026-10-23T05:00:00Z',model:{parameters:{min_completed_jobs:3}},capacity:[],estimates:[],sessions:[],matches:[],events:[],snapshots:[]});
- const readRPCs=new Set(['/rest/v1/rpc/tsi11_state','/rest/v1/rpc/tsi11_photographer_risks','/rest/v1/rpc/tsi11_photo_availability_state','/rest/v1/rpc/tsi210_state','/rest/v1/rpc/tsi_game_rankings']);
+ const readRPCs=new Set(['/rest/v1/rpc/tsi11_state','/rest/v1/rpc/tsi11_photographer_risks','/rest/v1/rpc/tsi11_photo_availability_state','/rest/v1/rpc/tsi225_availability_suspensions_state','/rest/v1/rpc/tsi210_state','/rest/v1/rpc/tsi_game_rankings']);
  window.fetch=async(input,request={})=>{
   const url=new URL(String(input)),method=request.method||'GET',body=request.body?JSON.parse(request.body):{};
   assert.equal(url.origin,PROD,'Producción nunca llama al servidor de staging');
@@ -44,6 +44,7 @@ async function environment(role,options={}){
   if(url.pathname==='/rest/v1/rpc/tsi11_state')return response(state());
   if(url.pathname==='/rest/v1/rpc/tsi11_photographer_risks')return response({risks:[]});
   if(url.pathname==='/rest/v1/rpc/tsi11_photo_availability_state')return response({server_now:state().server_now,photographers:[]});
+  if(url.pathname==='/rest/v1/rpc/tsi225_availability_suspensions_state')return response({server_now:state().server_now,suspensions:[]});
   if(url.pathname==='/rest/v1/rpc/tsi210_state')return response({version:'2.2.0',teams:[],team_matches:[],rates:[],quotes:[],quote_costs:[],costs:[],deliveries:[],audit:[]});
   return response([]);
  };

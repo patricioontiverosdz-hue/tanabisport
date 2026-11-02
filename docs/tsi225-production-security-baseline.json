@@ -1,0 +1,327 @@
+{
+  "observed_at": "2026-11-02T03:43:17Z",
+  "project_id": "tantlgswituiwkxfgmsr",
+  "lints": [
+    {
+      "name": "rls_enabled_no_policy",
+      "level": "INFO",
+      "count": 15,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+      "entities": [
+        {
+          "name": "editor_capacity_settings",
+          "type": "table",
+          "schema": "public"
+        },
+        {
+          "name": "editor_intelligence_alerts",
+          "type": "table",
+          "schema": "public"
+        },
+        {
+          "name": "editor_time_estimates",
+          "type": "table",
+          "schema": "public"
+        },
+        {
+          "name": "editor_time_events",
+          "type": "table",
+          "schema": "public"
+        },
+        {
+          "name": "editor_time_sessions",
+          "type": "table",
+          "schema": "public"
+        },
+        {
+          "name": "editor_workload_snapshots",
+          "type": "table",
+          "schema": "public"
+        },
+        {
+          "name": "intelligence_model_versions",
+          "type": "table",
+          "schema": "public"
+        },
+        {
+          "name": "photographer_availability",
+          "type": "table",
+          "schema": "public"
+        },
+        {
+          "name": "role_import_batches",
+          "type": "table",
+          "schema": "public"
+        },
+        {
+          "name": "tsi_push_receipts",
+          "type": "table",
+          "schema": "public"
+        },
+        {
+          "name": "tsi_push_subscriptions",
+          "type": "table",
+          "schema": "public"
+        },
+        {
+          "name": "receipts",
+          "type": "table",
+          "schema": "tsi210_private"
+        },
+        {
+          "name": "snapshots",
+          "type": "table",
+          "schema": "tsi210_release_safety"
+        },
+        {
+          "name": "best_results",
+          "type": "table",
+          "schema": "tsi_training"
+        },
+        {
+          "name": "challenges",
+          "type": "table",
+          "schema": "tsi_training"
+        }
+      ]
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "level": "WARN",
+      "count": 11,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable",
+      "entities": [
+        {
+          "name": "auto_assign_editora",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "guard_feedback_update",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "guard_matches",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "guard_pays",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "handle_new_user",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "is_admin",
+          "schema": "public",
+          "language": "sql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "is_staff",
+          "schema": "public",
+          "language": "sql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "my_role",
+          "schema": "public",
+          "language": "sql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "notify_new_order",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "notify_new_reservation",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "tsi203_guard_discount",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        }
+      ]
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "level": "WARN",
+      "count": 19,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+      "entities": [
+        {
+          "name": "app_status",
+          "schema": "public",
+          "language": "sql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "archive_stale_matches",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "dry boolean, force boolean",
+          "security_definer": true
+        },
+        {
+          "name": "auto_assign_editora",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "guard_feedback_update",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "guard_matches",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "guard_pays",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "handle_new_user",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "is_admin",
+          "schema": "public",
+          "language": "sql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "is_staff",
+          "schema": "public",
+          "language": "sql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "my_role",
+          "schema": "public",
+          "language": "sql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "notify_new_order",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "notify_new_reservation",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "tsi11_command",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "operation text, payload jsonb, request_id uuid",
+          "security_definer": true
+        },
+        {
+          "name": "tsi11_confirm_photo_availability_week",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "schedule jsonb, reason text, request_id uuid, p_week_start date",
+          "security_definer": true
+        },
+        {
+          "name": "tsi11_photo_availability_state",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "tsi11_photographer_risks",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        },
+        {
+          "name": "tsi11_state",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "eid uuid",
+          "security_definer": true
+        },
+        {
+          "name": "tsi12_import_role",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "p_request_id uuid, p_source jsonb, p_items jsonb",
+          "security_definer": true
+        },
+        {
+          "name": "tsi203_guard_discount",
+          "schema": "public",
+          "language": "plpgsql",
+          "arguments": "",
+          "security_definer": true
+        }
+      ]
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+      "entities": [
+        {
+          "type": "auth",
+          "entity": "Auth"
+        }
+      ]
+    }
+  ]
+}
