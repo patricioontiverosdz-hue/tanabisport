@@ -63,9 +63,11 @@ async function environment(role){
  return {window,doc,api,calls,errors,downloads,blobs,click,snapshot,close:async()=>{await window.happyDOM.cancelAsync();window.close();}};
 }
 
-function legalTerms(text){
- assert.match(text,/Patricio Ontiveros Díaz/,'Identidad del responsable');
- assert.match(text,/Scouts 681/,'Domicilio confirmado del responsable');
+function legalTerms(text,complete=true){
+ if(complete){
+  assert.match(text,/Patricio Ontiveros Díaz/,'Identidad del responsable en documento completo');
+  assert.match(text,/Scouts 681/,'Domicilio confirmado en documento completo');
+ }else assert.doesNotMatch(text,/Patricio|Ontiveros|Scouts|Ciudad Ideal|San Nicolás|66490/,'Resumen sin nombre ni domicilio');
  assert.match(text,/Datrilagency@gmail\.com/,'Canal para solicitudes');
  assert.match(text,/56 días/,'Máximo de ocho semanas');
  assert.match(text,/temporada/,'Límite de temporada');
@@ -76,6 +78,19 @@ function legalTerms(text){
  assert.match(text,/menor|niñas, niños y adolescentes/i,'Protección de menores');
  assert.match(text,/representación|representarla|representarlos|representante/,'Representación válida');
  assert.doesNotMatch(text,/(?:no (?:intervienen|participan)|sin) terceros/i,'No negar participación de terceros');
+}
+
+function downloadDocuments(env){
+ const count=env.downloads.length;
+ for(const [action,name]of [['download-consent','Tanabi-Sports-consentimiento-fotografias-2.2.6.pdf'],['download-integral','Tanabi-Sports-aviso-privacidad-integral-2.2.6.pdf']]){
+  env.click('#tsi-privacy-dialog [data-privacy="'+action+'"]');
+  const download=env.downloads.at(-1);assert.equal(download.name,name);
+  const url=new URL(download.href);assert.equal(url.origin,'https://patricioontiverosdz-hue.github.io');
+  assert.equal(url.pathname,'/tanabisport/assets/'+name);
+  assert.equal(fs.readFileSync(path.join(root,'assets',name)).subarray(0,5).toString(),'%PDF-','Documento PDF real: '+name);
+ }
+ assert.equal(env.downloads.length,count+2,'Dos descargas independientes');
+ assert.equal(env.blobs.length,0,'Documentos estáticos, sin TXT generado');
 }
 
 async function homeDocuments(){
@@ -92,13 +107,12 @@ async function homeDocuments(){
   assert.equal(env.doc.querySelectorAll('#tsi-privacy-contact-title').length,1,'Título de contacto sin duplicados');
   assert.equal(env.doc.querySelectorAll('#tsi-privacy-summary-title').length,0,'El contacto del pie no se presenta como aviso simplificado');
   const before=env.snapshot();
-  for(const selector of ['header [data-privacy="integral"]','footer [data-privacy="integral"]']){
+  for(const selector of ['header [data-privacy="simplified"]','footer [data-privacy="simplified"]']){
    const opener=env.doc.querySelector(selector);assert.ok(opener,'Acceso a Privacidad: '+selector);
    assert.equal(opener.textContent,'Privacidad');opener.focus();opener.click();
    const dialog=env.doc.getElementById('tsi-privacy-dialog');assert.ok(dialog.open);
-   legalTerms(dialog.textContent);
-   env.click('#tsi-privacy-dialog [data-privacy="consent"]');
-   assert.match(env.doc.getElementById('tsi-privacy-title').textContent,/Consentimiento independiente/);
+   assert.match(env.doc.getElementById('tsi-privacy-title').textContent,/Aviso de privacidad simplificado/);
+   legalTerms(dialog.textContent,false);downloadDocuments(env);
    env.click('#tsi-privacy-dialog [data-privacy="close"]');
    assert.equal(dialog.open,false);assert.equal(env.doc.activeElement,opener);
   }
@@ -119,21 +133,20 @@ async function loginDocuments(){
   for(const mode of ['in','up','forgot']){
    api.S.loginMode=mode;api.render();
    const summary=doc.querySelector('.tsi-privacy-summary');assert.ok(summary,'Aviso simplificado en modo '+mode);
-   legalTerms(summary.textContent);assert.match(summary.textContent,/Supabase/);
+   legalTerms(summary.textContent,false);assert.match(summary.textContent,/Supabase/);
    const user=doc.getElementById('u'),password=doc.getElementById('p'),name=doc.getElementById('nm');
    user.value='account.private@test.invalid';if(password)password.value='keep-private-password';if(name)name.value='Nombre privado';
    const stateBefore=env.snapshot();
-   const opener=doc.querySelector('.tsi-privacy-summary [data-privacy="integral"]');opener.focus();opener.click();
+   const opener=doc.querySelector('.tsi-privacy-summary [data-privacy="simplified"]');opener.focus();opener.click();
    const dialog=doc.getElementById('tsi-privacy-dialog');
    assert.ok(dialog.open,'Abrir documento en modo '+mode);
    assert.equal(doc.getElementById('app').contains(dialog),false,'El diálogo conserva el formulario detrás');
    assert.equal(dialog.getAttribute('aria-labelledby'),'tsi-privacy-title');
    assert.equal(doc.activeElement.id,'tsi-privacy-title','Foco en el documento');
-   legalTerms(dialog.textContent);
-   assert.match(dialog.textContent,/Supabase para autenticación, base de datos y almacenamiento/);
+   legalTerms(dialog.textContent,false);downloadDocuments(env);
+   assert.match(dialog.textContent,/Supabase/);
    assert.match(dialog.textContent,/GitHub Pages/);assert.match(dialog.textContent,/Google Fonts/);
-   assert.match(dialog.textContent,/20 días hábiles/);assert.match(dialog.textContent,/15 días hábiles/);
-   assert.match(dialog.textContent,/no implica que exista un borrado automático/);
+   assert.match(doc.getElementById('tsi-privacy-title').textContent,/Aviso de privacidad simplificado/);
    assert.equal(doc.getElementById('u'),user,'No reemplazar el formulario de acceso');
    assert.equal(user.value,'account.private@test.invalid');if(password)assert.equal(password.value,'keep-private-password');if(name)assert.equal(name.value,'Nombre privado');
    assert.equal(dialog.querySelector('input,textarea,select,form'),null,'Consultar no recoge ni concede autorización');
@@ -179,8 +192,9 @@ async function independentConsent(){
   assert.match(text,/plataformas externas/i);
   assert.match(text,/sin garantizar la eliminación de copias/);
   await pause(5);assert.deepEqual(env.snapshot(),before,'Descargar no autoriza, persiste, contrata ni llama al servicio de datos');
-  env.click('#tsi-privacy-dialog [data-privacy="integral"]');
-  assert.match(env.doc.getElementById('tsi-privacy-title').textContent,/Aviso de privacidad integral/);
+  env.click('#tsi-privacy-dialog [data-privacy="simplified"]');
+  assert.match(env.doc.getElementById('tsi-privacy-title').textContent,/Aviso de privacidad simplificado/);
+  legalTerms(env.doc.getElementById('tsi-privacy-dialog').textContent,false);downloadDocuments(env);
   assert.equal(env.doc.querySelectorAll('#tsi-privacy-dialog').length,1,'Reutilizar un solo diálogo');
   assert.deepEqual(env.errors,[]);
  }finally{await env.close();}
@@ -192,7 +206,7 @@ async function menuForEveryRole(){
   try{
    env.api.S.view='dash';env.api.S.tab='resumen';env.api.render();await pause(20);
    const menu=env.doc.querySelector('nav[aria-label="Menú del equipo"]');assert.ok(menu,'Menú '+role);
-   for(const kind of ['integral','consent']){
+   for(const kind of ['simplified','consent']){
     const button=menu.querySelector('[data-privacy="'+kind+'"]');assert.ok(button,'Documento '+kind+' para '+role);
     const before=env.snapshot();button.focus();button.click();
     const dialog=env.doc.getElementById('tsi-privacy-dialog');assert.ok(dialog.open);

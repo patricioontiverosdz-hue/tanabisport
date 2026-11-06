@@ -8,6 +8,11 @@
   },
   "production": [
     {
+      "path": "assets/Tanabi-Sports-aviso-privacidad-integral-2.2.6.pdf",
+      "sha256": "854fd9bd960db0b0646afca4e47ebe32a4167c787747d3a6fcaa2c5069c85b7f",
+      "git_blob": "3ce2ec4027974117d12511841ec127c1080cba67"
+    },
+    {
       "path": "assets/Tanabi-Sports-consentimiento-fotografias-2.2.6.pdf",
       "sha256": "58dc067480d86e1cd60f36d00b56063d9902e509c1cada1b32652cb17bd28565",
       "git_blob": "32cbb624eceb6cc7e2bc0d086219879f1beef331"
@@ -54,13 +59,13 @@
     },
     {
       "path": "assets/tsi-226-privacy.js",
-      "sha256": "1da709751c06863c8027e01c24267e881906bbbccb658893abf3cc76c933d73d",
-      "git_blob": "8ab0daffa994e7a7c792632a73cd93f62b854802"
+      "sha256": "36c803c8a722a29c78ce2336669622825259ec9c48568413afa3da309cdd3b86",
+      "git_blob": "43c63c1fe0958acb38b3c70a2a135d5ea9a16f4b"
     },
     {
       "path": "index.html",
-      "sha256": "02df2fce2be6e4182b148eb2bf661bb3b2dd8fc179beccdb9b311ec87dd77e15",
-      "git_blob": "18dac85530a90d15d11c05d525aaf3ca119520d5"
+      "sha256": "450411250eeb1f3f815c724d7f432b008f0e3fc367d8603c7138e04ad45b05d2",
+      "git_blob": "f4860a3c17271f581e65d26da3cd6578060044d8"
     },
     {
       "path": "training/editing-game-model.js",
