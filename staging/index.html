@@ -337,6 +337,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
 <script src="../assets/tsi-210-backup.js"></script>
 <script src="tsi-210.js?v=222-editora-lectura-1"></script>
 <script src="availability-suspensions.js?v=2.2.5"></script>
+<script src="../assets/tsi-225-incomplete-matches.js?v=225-admin-partials-1"></script>
 <!-- TSI_TRAINING_ASSETS_START -->
 <link rel="stylesheet" href="game-ranking.css?v=220">
 <script src="game-ranking.js?v=220"></script>
@@ -603,7 +604,7 @@ function tabsFor(role){
   if(role!=="admin"&&!S.cfg.loans)keys=keys.filter(function(k){return k!=="prestamos";});
   return keys.map(function(k){return [k,all[k]];});
 }
-function tabsBar(){var entries=tabsFor(me().role),groups=[['Operaciones',['resumen','calendario','partidos','importarrol','micalendario','cobertura','proceso','fotografos','ubicaciones']],['Negocio',['cotizador','rentabilidad','clientes','entregas','pendientes','borradores','registro','recuperacion']],['Finanzas',['pagos','mipago','gastos','prestamos']],['Página pública',['tienda','portafolio','envivo']],['Equipo',['suspensiones','disponibilidad','disponibilidadedicion','comentarios','avisos','notif','equipo']],['Entrenamiento',['fotojuego','edicionjuego','rankingjuegos']],['TSI y configuración',['intelligence','estadisticas','catalogo','datos','ajustes']]];return '<details class="ti-menu" id="ti-menu" '+(S.tiMenuOpen!==false&&window.innerWidth>=1100?'open':'')+'><summary class="btn">☰ Menú</summary><nav class="ti-navigation" aria-label="Menú del equipo"><strong>Tanabi Sports<br><small>INTELLIGENCE</small></strong>'+groups.map(function(g){var list=entries.filter(function(x){return g[1].indexOf(x[0])>=0;});return list.length?'<h3>'+g[0]+'</h3>'+list.map(function(x){return '<button data-tab="'+x[0]+'" '+(S.tab===x[0]?'aria-current="page"':'')+'>'+esc(x[1])+'</button>';}).join(''):'';}).join('')+'</nav></details>';}
+function tabsBar(){var entries=tabsFor(me().role),groups=[['Operaciones',['resumen','calendario','partidos','importarrol','incompletos','micalendario','cobertura','proceso','fotografos','ubicaciones']],['Negocio',['cotizador','rentabilidad','clientes','entregas','pendientes','borradores','registro','recuperacion']],['Finanzas',['pagos','mipago','gastos','prestamos']],['Página pública',['tienda','portafolio','envivo']],['Equipo',['suspensiones','disponibilidad','disponibilidadedicion','comentarios','avisos','notif','equipo']],['Entrenamiento',['fotojuego','edicionjuego','rankingjuegos']],['TSI y configuración',['intelligence','estadisticas','catalogo','datos','ajustes']]];return '<details class="ti-menu" id="ti-menu" '+(S.tiMenuOpen!==false&&window.innerWidth>=1100?'open':'')+'><summary class="btn">☰ Menú</summary><nav class="ti-navigation" aria-label="Menú del equipo"><strong>Tanabi Sports<br><small>INTELLIGENCE</small></strong>'+groups.map(function(g){var list=entries.filter(function(x){return g[1].indexOf(x[0])>=0;});return list.length?'<h3>'+g[0]+'</h3>'+list.map(function(x){return '<button data-tab="'+x[0]+'" '+(S.tab===x[0]?'aria-current="page"':'')+'>'+esc(x[1])+'</button>';}).join(''):'';}).join('')+'</nav></details>';}
 
 function tabResumen(){
   var u=me(),now=todayStr(),h="";
@@ -3737,6 +3738,29 @@ if(window.TSIAvailability225){
  }});
  var as225Tabs=tabsFor;tabsFor=function(role){var tabs=as225Tabs(role);if(role==='admin')tabs.push(['suspensiones','Suspensiones de disponibilidad']);return tabs;};
  var as225Render=render;render=function(){AS225.beforeRender();as225Render();AS225.afterRender();};
+}
+/* TSI 2.2.5: pendientes del rol, privados para ADMIN. */
+var PM225=null;
+if(window.TSIPartialMatches225){
+ PM225=window.TSIPartialMatches225.install({
+  server:SBU,me:me,esc:esc,uuid:tiUuid,
+  render:function(){render();},
+  importState:function(){return RI;},
+  syncIdle:function(){return !SYNC.busy&&!SYNC.dirty&&!SYNC.again;},
+  reloadMatches:async function(){await loadAll();},
+  request:async function(method,path,body,owner){
+   await ensureToken();
+   if(!me()||me().role!=='admin'||me().id!==owner||(AUTH.uid&&AUTH.uid!==owner))throw Error('La sesión de ADMIN cambió.');
+   return sb(method,path,body);
+  }
+ });
+ var pm225Tabs=tabsFor;tabsFor=function(role){var list=pm225Tabs(role);if(role==='admin')list.push(['incompletos','Juegos incompletos']);return list;};
+ var pm225View=viewDash;viewDash=function(){
+  if(S.tab!=='incompletos'||!me()||me().role!=='admin')return pm225View();
+  return topbar()+'<div class="ti-section-head">'+tabsBar()+'<h1>Juegos incompletos</h1></div>'+PM225.view()+'<footer>Versión '+APP_VERSION+'</footer>';
+ };
+ var pm225Role=tabRoleImport;tabRoleImport=function(){return pm225Role()+PM225.importer();};
+ var pm225Render=render;render=function(){PM225.beforeRender(S.tab);pm225Render();};
 }
 var configError=stagingConfigError();
 if(configError){
