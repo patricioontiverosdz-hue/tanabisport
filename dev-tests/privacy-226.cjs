@@ -154,10 +154,14 @@ async function independentConsent(){
   assert.match(env.doc.getElementById('tsi-privacy-title').textContent,/Consentimiento independiente/);
   assert.equal(dialog.querySelector('input,textarea,select,form,[data-privacy="save"]'),null,'No presentar un consentimiento digital no persistido');
   env.click('#tsi-privacy-dialog [data-privacy="download"]');
-  assert.equal(env.downloads.length,1);assert.equal(env.downloads[0].name,'Tanabi-Sports-consentimiento-fotografias-2.2.6.txt');
-  assert.match(env.downloads[0].href,/^blob:/);assert.equal(env.blobs.length,1);
-  const blob=env.blobs[0];assert.match(blob.type,/text\/plain/);
-  const text=await blob.text();legalTerms(text);
+  assert.equal(env.downloads.length,1);assert.equal(env.downloads[0].name,'Tanabi-Sports-consentimiento-fotografias-2.2.6.pdf');
+  const downloadURL=new URL(env.downloads[0].href);
+  assert.equal(downloadURL.origin,'https://patricioontiverosdz-hue.github.io');
+  assert.equal(downloadURL.pathname,'/tanabisport/assets/Tanabi-Sports-consentimiento-fotografias-2.2.6.pdf');
+  assert.equal(env.blobs.length,0,'No generar un TXT local');
+  const pdf=fs.readFileSync(path.join(root,'assets/Tanabi-Sports-consentimiento-fotografias-2.2.6.pdf'));
+  assert.equal(pdf.subarray(0,5).toString(),'%PDF-','El archivo descargable es un PDF real');
+  const text=dialog.querySelector('.tsi-privacy-consent').textContent;legalTerms(text);
   assert.equal((text.match(/\[ \] AUTORIZO  \[ \] NO AUTORIZO/g)||[]).length,2,'Decisiones independientes sin selección previa');
   assert.match(text,/Una opción en blanco no autoriza ese uso/);
   assert.match(text,/Cuentas, plataformas o portafolios autorizados: _+/);
@@ -170,7 +174,7 @@ async function independentConsent(){
   assert.match(text,/independiente.*galerías públicas/);
   assert.match(text,/plataformas externas/i);
   assert.match(text,/sin garantizar la eliminación de copias/);
-  await pause(5);assert.deepEqual(env.snapshot(),before,'Descargar no autoriza, persiste, contrata ni llama al servidor');
+  await pause(5);assert.deepEqual(env.snapshot(),before,'Descargar no autoriza, persiste, contrata ni llama al servicio de datos');
   env.click('#tsi-privacy-dialog [data-privacy="integral"]');
   assert.match(env.doc.getElementById('tsi-privacy-title').textContent,/Aviso de privacidad integral/);
   assert.equal(env.doc.querySelectorAll('#tsi-privacy-dialog').length,1,'Reutilizar un solo diálogo');

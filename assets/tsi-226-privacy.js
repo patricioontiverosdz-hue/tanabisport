@@ -110,7 +110,7 @@
     }
     if (source && !dialog.contains(source)) opener = source;
     var consent = kind === 'consent';
-    dialog.innerHTML = '<div class="tsi-privacy-header"><h2 id="tsi-privacy-title" tabindex="-1">' + (consent ? 'Consentimiento independiente de fotografías' : 'Aviso de privacidad integral') + '</h2><button type="button" class="btn small" data-privacy="close" aria-label="Cerrar documento de privacidad">Cerrar</button></div><p class="hint">Tanabi Sports · Versión ' + VERSION + ' · Revisión: 6 de noviembre de 2026.</p><div class="tsi-privacy-document">' + (consent ? '<p class="note">Completa y firma este formato. Descargarlo no registra tu consentimiento. Tanabi Sports deberá recibir y conservar la autorización antes de usar las imágenes.</p><pre class="tsi-privacy-consent">' + escapeHTML(consentText) + '</pre>' : integral) + '</div><div class="tsi-privacy-actions">' + (consent ? button('download', 'Descargar formato (.txt)') + button('integral', 'Consultar aviso integral') : button('consent', 'Consultar consentimiento de fotografías')) + button('close', 'Cerrar') + '</div>';
+    dialog.innerHTML = '<div class="tsi-privacy-header"><h2 id="tsi-privacy-title" tabindex="-1">' + (consent ? 'Consentimiento independiente de fotografías' : 'Aviso de privacidad integral') + '</h2><button type="button" class="btn small" data-privacy="close" aria-label="Cerrar documento de privacidad">Cerrar</button></div><p class="hint">Tanabi Sports · Versión ' + VERSION + ' · Revisión: 6 de noviembre de 2026.</p><div class="tsi-privacy-document">' + (consent ? '<p class="note">Completa y firma este formato. Descargarlo no registra tu consentimiento. Tanabi Sports deberá recibir y conservar la autorización antes de usar las imágenes.</p><pre class="tsi-privacy-consent">' + escapeHTML(consentText) + '</pre>' : integral) + '</div><div class="tsi-privacy-actions">' + (consent ? button('download', 'Descargar PDF') + button('integral', 'Consultar aviso integral') : button('consent', 'Consultar consentimiento de fotografías')) + button('close', 'Cerrar') + '</div>';
     if (!dialog.open) { if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); }
     dialog.scrollTop = 0; dialog.querySelector('h2').focus();
   }
@@ -119,10 +119,8 @@
     var action = target.getAttribute('data-privacy');
     if (action === 'close') close();
     else if (action === 'download') {
-      var url = URL.createObjectURL(new Blob(['\uFEFF' + consentText], {type:'text/plain;charset=utf-8'}));
-      var link = document.createElement('a'); link.href = url; link.download = 'Tanabi-Sports-consentimiento-fotografias-2.2.6.txt';
+      var link = document.createElement('a'); link.href = 'assets/Tanabi-Sports-consentimiento-fotografias-2.2.6.pdf?v=226-pdf'; link.download = 'Tanabi-Sports-consentimiento-fotografias-2.2.6.pdf'; link.type = 'application/pdf';
       document.body.appendChild(link); link.click(); link.remove();
-      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     } else open(action, target);
   });
   // Evita que Escape cierre también el menú que permanece detrás del documento.

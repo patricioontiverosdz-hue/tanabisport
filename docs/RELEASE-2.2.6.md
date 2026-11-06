@@ -12,13 +12,15 @@ Responsable: Patricio Ontiveros Díaz / Tanabi Sports. Domicilio confirmado por 
 - Menores: representación legal válida y protección de sus derechos e interés superior.
 - Proveedor confirmado por código: Supabase (Auth, REST y Storage) en producción `tantlgswituiwkxfgmsr`; GitHub Pages aloja la aplicación y Google Fonts sirve las tipografías. También pueden intervenir plataformas externas según el uso. No se afirma ausencia de terceros.
 
-Consultar, iniciar sesión o descargar el formato no otorga autorización. El formato debe completarse, firmarse, recibirse y conservarse antes del uso autorizado. No se añade un sistema de registro de consentimientos ni automatización de cierre o eliminación de fotografías. Las obligaciones documentales requieren atención operativa; no se promete borrado automático ni eliminación de copias independientes de terceros.
+Consultar, iniciar sesión o descargar el formato no otorga autorización. El formato se descarga en PDF con el logo actual de Tanabi Sports y la marca de agua TS en todas sus páginas. Debe completarse, firmarse, recibirse y conservarse antes del uso autorizado. No se añade un sistema de registro de consentimientos ni automatización de cierre o eliminación de fotografías. Las obligaciones documentales requieren atención operativa; no se promete borrado automático ni eliminación de copias independientes de terceros.
 
 ## Arquitectura y aislamiento
 
 Base exacta: `1d519e3974ea5a6e3a7f8003341224c615aeeea1`, HTML Git `03899481f6e81335faf797b2f18162dd8d4f0477`. El módulo `assets/tsi-226-privacy.js` solo presenta documentos en un diálogo fuera de `#app` y descarga el formato localmente. No hace solicitudes de red ni escribe almacenamiento. Sus estilos están limitados a clases propias y usan los temas existentes.
 
-Siete transformaciones en el HTML: título, `APP_VERSION`, carga CSS/JS y cuatro puntos de acceso (encabezado y pie del inicio público, login y menú). `scripts/prepare-release-226.cjs` exige la base exacta; `dev-tests/release-226.cjs` invierte esos cambios y comprueba que el resto del HTML es idéntico. Los recursos existentes, staging, servidor, sesiones, CSP y funciones permanecen intactos. No hay migraciones, modificaciones de Supabase ni promoción de la tienda/Stripe de staging. La etiqueta de caché `226-footer` fuerza la actualización de los recursos de privacidad revisados.
+Siete transformaciones en el HTML: título, `APP_VERSION`, carga CSS/JS y cuatro puntos de acceso (encabezado y pie del inicio público, login y menú). `scripts/prepare-release-226.cjs` exige la base exacta; `dev-tests/release-226.cjs` invierte esos cambios y comprueba que el resto del HTML es idéntico. Los recursos existentes, staging, servidor, sesiones, CSP y funciones permanecen intactos. No hay migraciones, modificaciones de Supabase ni promoción de la tienda/Stripe de staging. La etiqueta de caché `226-pdf` fuerza la actualización del recurso de privacidad y la descarga PDF.
+
+El PDF estático `assets/Tanabi-Sports-consentimiento-fotografias-2.2.6.pdf` se genera con `scripts/build-consent-pdf.py` a partir del texto de consentimiento existente. El logo principal procede de `LOGO` en `index.html` y la marca TS del PNG incorporado en `assets/favicon-ts.svg`; no se sustituyen por logos inventados. La descarga usa un enlace al mismo sitio con atributo `download`, sin recopilar datos ni registrar autorización.
 
 ## Verificación
 
@@ -28,6 +30,7 @@ Siete transformaciones en el HTML: título, `APP_VERSION`, carga CSS/JS y cuatro
 - `npm test` no aprueba globalmente: `ui-210.cjs:69` falla en `new-cost[data-mid="m1"]`. Al ejecutar las demás pruebas separadamente también fallan `partial-matches.cjs:25` (2 frente a 1) y `partial-matches-import.cjs:36` (propiedad `method`). Los tres fallos se reprodujeron idénticos sobre una exportación de la base exacta anterior a privacidad; no se modifican módulos ni pruebas heredadas para ocultarlos.
 - Revisión visual no completada: el navegador denegó acceso a la vista local. No se intentó otra vía de navegación. Las verificaciones de interfaz usan DOM simulado; no equivalen a capturas o prueba visual real.
 - HTTPS previo al lanzamiento: `node scripts/verify-release-226.cjs --baseline` aprobó HTML 2.2.5, los recursos actuales de producción y HTML de staging por huellas exactas.
+- PDF: tres páginas carta; las 42 líneas no vacías del consentimiento coinciden con el texto canónico. El logo principal y la marca TS al 4.8% aparecen en todas las páginas. Validado con pypdf en modo estricto, Poppler y revisión visual de las tres páginas, sin recortes ni superposiciones. Dos generaciones producen bytes idénticos. No contiene JavaScript, formularios electrónicos, cifrado ni autorizaciones registradas. La interfaz descarga el archivo PDF real del mismo sitio; la verificación HTTPS también comprueba su tipo de contenido y huella binaria.
 
 Las huellas de los archivos que debe servir Pages están en `docs/tsi226-artifacts.json`. Los recursos antiguos y staging no cambian.
 
