@@ -33,9 +33,9 @@ Las huellas de los archivos que debe servir Pages están en `docs/tsi226-artifac
 
 ## Publicación autorizada
 
-La autorización de implementación y despliegue está recibida. `AGENTS.md` fija producción a las **00:00 de America/Monterrey**, nunca antes. La próxima ventana es el **7 de noviembre de 2026 a las 00:00**, equivalentes a `2026-11-07T06:00:00Z`. GitHub Pages puede terminar minutos después. Preparar el PR durante el día no publica producción; no activar auto-merge anticipado.
+La autorización de implementación y despliegue está recibida. Después de revisar el PR preparado, el usuario autorizó expresamente el **6 de noviembre de 2026 publicar ahora como excepción** a la regla de las 00:00 de `AGENTS.md`. Su respuesta fue: «Sí, publicar ahora como excepción». Esta excepción se limita a TSI 2.2.6; no cambia el horario general de lanzamientos futuros. La programación automática no se creó: tanto creación como propuesta fueron rechazadas porque la herramienta exige aprobación y la sesión no puede solicitarla. Se continúa con la publicación inmediata expresamente autorizada.
 
-1. Leer `AGENTS.md` y este documento del commit fijado; comprobar hora UTC/Monterrey. Solo iniciar en los primeros minutos de la ventana; si pasó, informar y conservar el PR sin integrar durante el día.
+1. Leer `AGENTS.md` y este documento del commit fijado; comprobar la excepción expresa anterior y registrar la hora de la publicación. El horario general no limita este lanzamiento por la instrucción actual del usuario.
 2. Reconfirmar base `main`, head del PR y sus archivos. Ante deriva, conflicto, cambios de alcance o fallos nuevos, detener sin forzar referencias ni sobrescribir trabajo. La autorización no permite integrar otras ramas.
 3. No ejecutar migraciones ni modificar Supabase, datos operativos o configuraciones. Este lanzamiento no necesita cambios de backend.
 4. Fusionar exclusivamente el PR de privacidad con `expected_head_sha` fijado y método `merge`. Si ya se fusionó, verificar el merge antes de repetir.
