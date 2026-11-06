@@ -1,0 +1,106 @@
+{
+  "version": "2.2.6",
+  "base_main_sha": "1d519e3974ea5a6e3a7f8003341224c615aeeea1",
+  "base_index": {
+    "path": "index.html",
+    "sha256": "81a2ed6c388d6dd6be724191f38e07395d38a60becddcde52f5aa9c23e9f8f38",
+    "git_blob": "03899481f6e81335faf797b2f18162dd8d4f0477"
+  },
+  "production": [
+    {
+      "path": "assets/tsi-210-backup.js",
+      "sha256": "e82d2878aba771730da3122e7742b96e96ee134c71b61875915bd06c56caf462",
+      "git_blob": "18ad952f463e98d07b7739ed54c0fe54d83bf6de"
+    },
+    {
+      "path": "assets/tsi-210-model.js",
+      "sha256": "ba8e6eec58813da6efb48b395cb04221fadb487bf721a49e475eee061f472af1",
+      "git_blob": "f6e31e2fa5389f7caf9e7b7fad4ee1fd84f8b8e0"
+    },
+    {
+      "path": "assets/tsi-210.css",
+      "sha256": "ae5b541bc38cc5a7ecf1495fb528e30596442d442de7b5adcb69dcc65239ce98",
+      "git_blob": "3d89449fa98ee456bc3ebfcd9e3cf03e0168689f"
+    },
+    {
+      "path": "assets/tsi-210.js",
+      "sha256": "34f640e14051c18a1c41295cfaf43438f07a94887230b07c0eafef620045d95c",
+      "git_blob": "a0522774d0b61422426b11c0f0ba48d9e708f895"
+    },
+    {
+      "path": "assets/tsi-225-availability-suspensions.js",
+      "sha256": "9fac6a1fa153973220c3366d9714bb270dff8575acd10e6ea4e00c15c2a3f667",
+      "git_blob": "f14b2336968f97f03ab6d1361c27199c27a7360b"
+    },
+    {
+      "path": "assets/tsi-225-incomplete-matches.js",
+      "sha256": "baa1e739c03d6ad231cdcf3a602006b3889b2bc53e8d35183cca605530351050",
+      "git_blob": "6f2d42ce80c2e6036f4632c2721f05bef822c4ae"
+    },
+    {
+      "path": "assets/tsi-226-privacy.css",
+      "sha256": "0fb063fba7c6b95799b092612373b734e3d5892d7ece2e942821f3ac92438c2f",
+      "git_blob": "801de54eb2e01872ebc3f2c333011393a5df9a57"
+    },
+    {
+      "path": "assets/tsi-226-privacy.js",
+      "sha256": "d0aec8f36a14726f3e1704b97afa2b9d7d2c6c36fcb3b1095c440aab4c51b9c8",
+      "git_blob": "859cf99446b61e0dcace65c6c8647bcb939b555a"
+    },
+    {
+      "path": "index.html",
+      "sha256": "2d973b1af366ffade21cfe5227ce0706768ac9eba8e1460ee87197682fd3e683",
+      "git_blob": "a744d4859dd31e956182a55c11158a32d2ed9f55"
+    },
+    {
+      "path": "training/editing-game-model.js",
+      "sha256": "5ae689b0d793a1bd079f7ddadf9d71ba172cb8db88c40d890f3875ed62564564",
+      "git_blob": "a2eb17ecc77a284938579dd28d047e1fd9b1b274"
+    },
+    {
+      "path": "training/editing-game-renderer.js",
+      "sha256": "7e873d55d159cbc439291fb51403effbeb13035e32b272479a727ea4d9d75c96",
+      "git_blob": "88d51f6062966541018b4aa1cebd553742366f1d"
+    },
+    {
+      "path": "training/editing-game.css",
+      "sha256": "4cd464312be5669ccc6e3b205105dafc6f8445022a6211fa29e34a3c02e790ef",
+      "git_blob": "a786441067dd4cbe9822384011ea7b2941b88623"
+    },
+    {
+      "path": "training/editing-game.js",
+      "sha256": "b2c482bc43f434cdcd075000aeda2463063700f7165f6d86f19ba95160e73c77",
+      "git_blob": "9fec79765cacf4c7b394430d4684323cc95ee69a"
+    },
+    {
+      "path": "training/game-ranking.css",
+      "sha256": "6260a28a41d74e1e5c1838c2cb694d7c96767578a87ec19729ece2bdcfa94e8b",
+      "git_blob": "e570e28ba36ee663d9a2751dbbf4787a5c6abb17"
+    },
+    {
+      "path": "training/game-ranking.js",
+      "sha256": "5b555ad0baf822b048a8382725611f9217a969943c129d1b815db099f7fa4a33",
+      "git_blob": "d3fa97a15a8b58a89974c2ec7c1368d496c9c2eb"
+    },
+    {
+      "path": "training/photo-game-model.js",
+      "sha256": "717db9bb70ba5f1bab812d3e687992255b36f0228a794fd32069bd8749e35ec6",
+      "git_blob": "a83a2f1802a63e58c6a6ee5da0c56abb6ecae8af"
+    },
+    {
+      "path": "training/photo-game.css",
+      "sha256": "b15c0700ce5ce3d2d978f9fb65fbed04b553031f6e2ea8f18f453804f6102498",
+      "git_blob": "37b52536e8214d29dc933b969f8c5d222245488d"
+    },
+    {
+      "path": "training/photo-game.js",
+      "sha256": "de4ff8fde02bf25f3fd01d6902ffb65780fec8f3ad438791e51ac7a6a02214b1",
+      "git_blob": "5283ec06fca1b2d5a484ce5082184b58f989961c"
+    }
+  ],
+  "staging_index": {
+    "path": "staging/index.html",
+    "sha256": "c946f6ae9b269b269672e2983d7177e50bd69cbd688f106bedd178f132fe5541",
+    "git_blob": "501fdff2db6ff61bbdc3a237df0be648048679f2"
+  }
+}

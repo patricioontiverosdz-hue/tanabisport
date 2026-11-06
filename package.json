@@ -1,6 +1,6 @@
 {
   "name": "tanabi-sports-intelligence",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "private": true,
   "type": "commonjs",
   "scripts": {
@@ -16,7 +16,9 @@
     "test:store": "node dev-tests/store-ui.cjs && node dev-tests/store-payments.cjs",
     "test:release-225": "node dev-tests/release-225.cjs",
     "test:partial-matches": "node dev-tests/partial-matches.cjs --production && node dev-tests/partial-matches-import.cjs",
-    "test:role-import-coincidences": "node dev-tests/role-import-coincidences.cjs"
+    "test:role-import-coincidences": "node dev-tests/role-import-coincidences.cjs",
+    "test:privacy": "node dev-tests/privacy-226.cjs",
+    "test:release-226": "node dev-tests/release-226.cjs && node dev-tests/privacy-226.cjs"
   },
   "devDependencies": {
     "happy-dom": "21.0.4"

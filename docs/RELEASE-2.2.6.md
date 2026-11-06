@@ -1,0 +1,56 @@
+# TSI 2.2.6 · Privacidad y autorización de fotografías
+
+## Alcance y condiciones confirmadas
+
+Añade exclusivamente el aviso de privacidad simplificado al acceso, el aviso integral desde acceso y menú, y un formato independiente descargable para uso de fotografías en redes sociales, portafolios y publicidad. Mantiene los campos y acciones de autenticación, el diseño, permisos y módulos anteriores.
+
+Responsable: Patricio Ontiveros Díaz / Tanabi Sports. Domicilio confirmado por el usuario: Scouts 681, Ciudad Ideal, San Nicolás de los Garza, Nuevo León, C. P. 66490, México. Contacto: Datrilagency@gmail.com.
+
+- Galería pública: máximo ocho semanas (56 días) desde publicación o final de temporada, lo primero; retiro y eliminación cuando legalmente proceda, respetando conservación legal.
+- Redes sociales autorizadas: sin plazo fijo, sujetas a solicitudes de retiro y obligaciones legales; consentimiento revocable.
+- Publicidad: decisión específica independiente; canales, campaña y plazo por completar. Negarla excluye anuncios/campañas aunque se autorice difusión orgánica.
+- Menores: representación legal válida y protección de sus derechos e interés superior.
+- Proveedor confirmado por código: Supabase (Auth, REST y Storage) en producción `tantlgswituiwkxfgmsr`; GitHub Pages aloja la aplicación y Google Fonts sirve las tipografías. También pueden intervenir plataformas externas según el uso. No se afirma ausencia de terceros.
+
+Consultar, iniciar sesión o descargar el formato no otorga autorización. El formato debe completarse, firmarse, recibirse y conservarse antes del uso autorizado. No se añade un sistema de registro de consentimientos ni automatización de cierre o eliminación de fotografías. Las obligaciones documentales requieren atención operativa; no se promete borrado automático ni eliminación de copias independientes de terceros.
+
+## Arquitectura y aislamiento
+
+Base exacta: `1d519e3974ea5a6e3a7f8003341224c615aeeea1`, HTML Git `03899481f6e81335faf797b2f18162dd8d4f0477`. El módulo `assets/tsi-226-privacy.js` solo presenta documentos en un diálogo fuera de `#app` y descarga el formato localmente. No hace solicitudes de red ni escribe almacenamiento. Sus estilos están limitados a clases propias y usan los temas existentes.
+
+Cinco transformaciones en el HTML: título, `APP_VERSION`, carga CSS/JS y dos puntos de acceso (login y menú). `scripts/prepare-release-226.cjs` exige la base exacta; `dev-tests/release-226.cjs` invierte esos cambios y comprueba que el resto del HTML es idéntico. Los recursos existentes, staging, servidor, sesiones, CSP y funciones permanecen intactos. No hay migraciones, modificaciones de Supabase ni promoción de la tienda/Stripe de staging.
+
+## Verificación
+
+- `node dev-tests/release-226.cjs`: versión, reversión exacta de los cinco cambios, sintaxis y recursos/aislamiento.
+- `node dev-tests/privacy-226.cjs`: página completa con servidor simulado; avisos en los tres modos de acceso y en menú de administración, fotografía y edición; foco, cierre, conservación de campos/estado/sesión/red; descarga sin consentimiento implícito y condiciones jurídicas.
+- Regresiones aprobadas: modelo 2.1.0, avisos 2.0.9, push, aislamiento, disponibilidad de edición en ambos entornos, temporadas/directorio 2.2.2, acceso/carga de tienda, opciones de vista previa, suspensiones en ambos entornos, coincidencias de Importar rol y entrenamiento de producción.
+- `npm test` no aprueba globalmente: `ui-210.cjs:69` falla en `new-cost[data-mid="m1"]`. Al ejecutar las demás pruebas separadamente también fallan `partial-matches.cjs:25` (2 frente a 1) y `partial-matches-import.cjs:36` (propiedad `method`). Los tres fallos se reprodujeron idénticos sobre una exportación de la base exacta anterior a privacidad; no se modifican módulos ni pruebas heredadas para ocultarlos.
+- Revisión visual no completada: el navegador denegó acceso a la vista local. No se intentó otra vía de navegación. Las verificaciones de interfaz usan DOM simulado; no equivalen a capturas o prueba visual real.
+- HTTPS previo al lanzamiento: `node scripts/verify-release-226.cjs --baseline` aprobó HTML 2.2.5, los recursos actuales de producción y HTML de staging por huellas exactas.
+
+Las huellas de los archivos que debe servir Pages están en `docs/tsi226-artifacts.json`. Los recursos antiguos y staging no cambian.
+
+## Publicación autorizada
+
+La autorización de implementación y despliegue está recibida. `AGENTS.md` fija producción a las **00:00 de America/Monterrey**, nunca antes. La próxima ventana es el **7 de noviembre de 2026 a las 00:00**, equivalentes a `2026-11-07T06:00:00Z`. GitHub Pages puede terminar minutos después. Preparar el PR durante el día no publica producción; no activar auto-merge anticipado.
+
+1. Leer `AGENTS.md` y este documento del commit fijado; comprobar hora UTC/Monterrey. Solo iniciar en los primeros minutos de la ventana; si pasó, informar y conservar el PR sin integrar durante el día.
+2. Reconfirmar base `main`, head del PR y sus archivos. Ante deriva, conflicto, cambios de alcance o fallos nuevos, detener sin forzar referencias ni sobrescribir trabajo. La autorización no permite integrar otras ramas.
+3. No ejecutar migraciones ni modificar Supabase, datos operativos o configuraciones. Este lanzamiento no necesita cambios de backend.
+4. Fusionar exclusivamente el PR de privacidad con `expected_head_sha` fijado y método `merge`. Si ya se fusionó, verificar el merge antes de repetir.
+5. Esperar la finalización correcta de `pages build and deployment` para el SHA resultante. No declarar éxito por la sola fusión.
+6. Ejecutar `node scripts/verify-release-226.cjs` sin `--baseline`. Comprueba por HTTPS con caché evitada el HTML 2.2.6, recursos exactos, documentos y staging intacto. Si el entorno local no está disponible, recuperar los archivos del commit fijado mediante GitHub en un directorio temporal y ejecutar el mismo verificador, o comparar las mismas huellas con lectura HTTPS equivalente.
+7. Informar en este chat la versión real, enlace y resultado, distinguiendo cualquier límite de verificación. Desactivar la continuación programada al completar o requerir intervención. No enviar mensajes/correos a terceros.
+
+## Recuperación
+
+Si el cambio de privacidad provoca un fallo de producción, crear un commit nuevo sobre el tip verificado que restaure exclusivamente `index.html` al blob base `03899481f6e81335faf797b2f18162dd8d4f0477` y versiones de paquete/lock a 2.2.5. Conservar módulos, datos, staging e historial; los dos recursos nuevos pueden permanecer sin referencias. No usar reset ni force-push. Verificar Pages y bytes HTTPS tras la recuperación. Una falla heredada documentada no justifica revertir datos ni cambiar otros módulos.
+
+## Fuentes jurídicas primarias revisadas
+
+- [Ley Federal de Protección de Datos Personales en Posesión de los Particulares](https://www.diputados.gob.mx/LeyesBiblio/pdf/LFPDPPP.pdf), avisos y ARCO, texto vigente con reforma 14-11-2025.
+- [Ley General de los Derechos de Niñas, Niños y Adolescentes](https://www.diputados.gob.mx/LeyesBiblio/pdf/LGDNNA.pdf), privacidad y derechos de imagen, reforma 15-01-2026.
+- [Ley Federal del Derecho de Autor](https://www.diputados.gob.mx/LeyesBiblio/pdf/LFDA.pdf), artículos 86 y 87.
+- [Reglamento de la LFPDPPP](https://www.diputados.gob.mx/LeyesBiblio/regley/Reg_LFPDPPP.pdf), consentimiento y revocación en lo aplicable.
+- [Lineamientos del Aviso de Privacidad](https://sidof.segob.gob.mx/notas/docFuente/5284966), contenido y presentación, en lo compatible con la ley vigente.
