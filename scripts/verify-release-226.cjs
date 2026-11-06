@@ -5,7 +5,7 @@ const base='https://patricioontiverosdz-hue.github.io/tanabisport/';
 const hash=data=>crypto.createHash('sha256').update(data).digest('hex');
 async function main(){
  const baseline=process.argv.includes('--baseline');
- const files=baseline?[manifest.base_index,...manifest.production.filter(file=>file.path!=='index.html'&&!file.path.startsWith('assets/tsi-226-')&&!file.path.startsWith('assets/Tanabi-Sports-consentimiento-'))]:manifest.production;
+ const files=baseline?[manifest.base_index,...manifest.production.filter(file=>file.path!=='index.html'&&!file.path.startsWith('assets/tsi-226-')&&!file.path.startsWith('assets/Tanabi-Sports-'))]:manifest.production;
  for(const file of [...files,manifest.staging_index]){
   assert.ok(/^[\w./-]+$/.test(file.path)&&!file.path.includes('..'),'Safe fixed artifact path');
   const url=new URL(file.path,base);url.searchParams.set('verify226',Date.now().toString());

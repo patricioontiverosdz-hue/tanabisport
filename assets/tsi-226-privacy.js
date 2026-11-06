@@ -11,7 +11,7 @@
   var social = '<p>El uso de fotografías identificables en redes sociales oficiales, portafolios y publicidad o promoción comercial requiere una <strong>autorización específica e independiente</strong> de la cobertura y de la exhibición o venta en galerías públicas. Negarse no impide contratar el servicio ni acceder a TSI. Las fotografías autorizadas en redes sociales podrán permanecer <strong>sin plazo fijo, sujetas a solicitudes de retiro y obligaciones legales</strong>. La autorización es revocable; no permite conservar imágenes sin una finalidad legítima.</p>';
   var minors = '<p>Para imágenes de niñas, niños y adolescentes se requiere autorización legalmente válida de quien tenga facultades para representarlos, respetando su interés superior, privacidad, dignidad y opinión según su edad y madurez. La contratación por un equipo, entrenador o familiar no acredita por sí sola la representación de todas las personas fotografiadas.</p>';
   var requests = '<p>Para limitar el uso o divulgación, negar finalidades secundarias, solicitar retiro de imágenes, revocar el consentimiento o ejercer los derechos de acceso, rectificación, cancelación u oposición (ARCO), escribe a ' + contact + '. La revocación no tiene efectos retroactivos y puede estar sujeta a obligaciones legales de conservación.</p>';
-  var simplified = identity +
+  var simplified = '<p><strong>Contacto de privacidad:</strong> ' + contact + '.</p>' +
     '<p>Tratamos datos de identificación y contacto, cuenta y autenticación, actividad y disponibilidad del equipo, coberturas, pagos y fotografías identificables, según el servicio o relación con Tanabi Sports. No se solicitan datos personales sensibles para iniciar sesión.</p>' +
     '<p><strong>Finalidades necesarias:</strong> gestionar cuentas y acceso, coordinar al equipo y sus coberturas, atender servicios, entregas, pagos y solicitudes, y cumplir obligaciones legales. La exhibición y venta de fotografías en galerías públicas requiere las autorizaciones correspondientes.</p>' +
     '<p><strong>Finalidades secundarias y opcionales:</strong> usar imágenes en redes sociales, portafolios, publicidad y promoción, solo con autorización independiente. Puedes negarte sin afectar el servicio.</p>' +
@@ -90,10 +90,10 @@
   function escapeHTML(value) { return value.replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function button(kind, label) { return '<button type="button" class="btn small" data-privacy="' + kind + '">' + label + '</button>'; }
   function summaryHTML(home) {
-    if (home === true) return '<section class="tsi-privacy-summary" aria-labelledby="tsi-privacy-contact-title"><h3 id="tsi-privacy-contact-title">Contacto de privacidad</h3><p>' + contact + '</p><div class="tsi-privacy-actions">' + button('integral', 'Privacidad') + button('consent', 'Consentimiento de fotografías') + '</div></section>';
-    return '<section class="tsi-privacy-summary" aria-labelledby="tsi-privacy-summary-title"><h3 id="tsi-privacy-summary-title">Aviso de privacidad simplificado</h3>' + simplified + '<div class="tsi-privacy-actions">' + button('integral', 'Aviso de privacidad integral') + button('consent', 'Consentimiento de fotografías') + '</div><p class="hint">Versión ' + VERSION + ' · Revisión: 6 de noviembre de 2026.</p></section>';
+    if (home === true) return '<section class="tsi-privacy-summary" aria-labelledby="tsi-privacy-contact-title"><h3 id="tsi-privacy-contact-title">Contacto de privacidad</h3><p>' + contact + '</p><div class="tsi-privacy-actions">' + button('simplified', 'Privacidad') + button('consent', 'Consentimiento de fotografías') + '</div></section>';
+    return '<section class="tsi-privacy-summary" aria-labelledby="tsi-privacy-summary-title"><h3 id="tsi-privacy-summary-title">Aviso de privacidad simplificado</h3>' + simplified + '<div class="tsi-privacy-actions">' + button('simplified', 'Privacidad y documentos PDF') + button('consent', 'Consentimiento de fotografías') + '</div><p class="hint">Versión ' + VERSION + ' · Revisión: 6 de noviembre de 2026.</p></section>';
   }
-  function menuHTML() { return '<h3>Privacidad</h3><button type="button" data-privacy="integral">Aviso de privacidad integral</button><button type="button" data-privacy="consent">Consentimiento de fotografías</button>'; }
+  function menuHTML() { return '<h3>Privacidad</h3><button type="button" data-privacy="simplified">Privacidad y documentos PDF</button><button type="button" data-privacy="consent">Consentimiento de fotografías</button>'; }
   var dialog = null, opener = null;
   function close() {
     if (!dialog) return;
@@ -101,7 +101,7 @@
     if (opener && opener.isConnected) opener.focus();
   }
   function open(kind, source) {
-    if (kind !== 'integral' && kind !== 'consent') return;
+    if (kind !== 'simplified' && kind !== 'consent') return;
     if (!dialog) {
       dialog = document.createElement('dialog'); dialog.id = 'tsi-privacy-dialog'; dialog.className = 'tsi-privacy-dialog';
       dialog.setAttribute('aria-labelledby', 'tsi-privacy-title');
@@ -111,7 +111,7 @@
     }
     if (source && !dialog.contains(source)) opener = source;
     var consent = kind === 'consent';
-    dialog.innerHTML = '<div class="tsi-privacy-header"><h2 id="tsi-privacy-title" tabindex="-1">' + (consent ? 'Consentimiento independiente de fotografías' : 'Aviso de privacidad integral') + '</h2><button type="button" class="btn small" data-privacy="close" aria-label="Cerrar documento de privacidad">Cerrar</button></div><p class="hint">Tanabi Sports · Versión ' + VERSION + ' · Revisión: 6 de noviembre de 2026.</p><div class="tsi-privacy-document">' + (consent ? '<p class="note">Completa y firma este formato. Descargarlo no registra tu consentimiento. Tanabi Sports deberá recibir y conservar la autorización antes de usar las imágenes.</p><pre class="tsi-privacy-consent">' + escapeHTML(consentText) + '</pre>' : integral) + '</div><div class="tsi-privacy-actions">' + (consent ? button('download', 'Descargar PDF') + button('integral', 'Consultar aviso integral') : button('consent', 'Consultar consentimiento de fotografías')) + button('close', 'Cerrar') + '</div>';
+    dialog.innerHTML = '<div class="tsi-privacy-header"><h2 id="tsi-privacy-title" tabindex="-1">' + (consent ? 'Consentimiento independiente de fotografías' : 'Aviso de privacidad simplificado') + '</h2><button type="button" class="btn small" data-privacy="close" aria-label="Cerrar documento de privacidad">Cerrar</button></div><p class="hint">Tanabi Sports · Versión ' + VERSION + ' · Revisión: 6 de noviembre de 2026.</p><div class="tsi-privacy-document">' + (consent ? '<p class="note">Completa y firma este formato. Descargarlo no registra tu consentimiento. Tanabi Sports deberá recibir y conservar la autorización antes de usar las imágenes.</p><pre class="tsi-privacy-consent">' + escapeHTML(consentText) + '</pre>' : simplified) + '</div><div class="tsi-privacy-actions">' + (consent ? button('download', 'Descargar autorización (PDF)') + button('simplified', 'Volver a Privacidad') : button('download-consent', 'Descargar autorización (PDF)') + button('download-integral', 'Descargar aviso integral (PDF)')) + button('close', 'Cerrar') + '</div>';
     if (!dialog.open) { if (typeof dialog.showModal === 'function') dialog.showModal(); else dialog.setAttribute('open', ''); }
     dialog.scrollTop = 0; dialog.querySelector('h2').focus();
   }
@@ -119,8 +119,9 @@
     var target = event.target.closest('[data-privacy]'); if (!target) return;
     var action = target.getAttribute('data-privacy');
     if (action === 'close') close();
-    else if (action === 'download') {
-      var link = document.createElement('a'); link.href = 'assets/Tanabi-Sports-consentimiento-fotografias-2.2.6.pdf?v=226-pdf'; link.download = 'Tanabi-Sports-consentimiento-fotografias-2.2.6.pdf'; link.type = 'application/pdf';
+    else if (action === 'download' || action === 'download-consent' || action === 'download-integral') {
+      var filename = action === 'download-integral' ? 'Tanabi-Sports-aviso-privacidad-integral-2.2.6.pdf' : 'Tanabi-Sports-consentimiento-fotografias-2.2.6.pdf';
+      var link = document.createElement('a'); link.href = 'assets/' + filename + '?v=226-docs'; link.download = filename; link.type = 'application/pdf';
       document.body.appendChild(link); link.click(); link.remove();
     } else open(action, target);
   });
