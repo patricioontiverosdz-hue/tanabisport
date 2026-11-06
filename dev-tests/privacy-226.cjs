@@ -84,9 +84,13 @@ async function homeDocuments(){
   assert.equal(env.api.S.view,'home');
   assert.equal(env.doc.getElementById('u'),null,'Consultar desde inicio sin abrir acceso del equipo');
   const summary=env.doc.querySelector('footer .tsi-privacy-summary');
-  assert.ok(summary,'Aviso simplificado visible en la parte inferior del inicio');
-  legalTerms(summary.textContent);assert.match(summary.textContent,/Supabase/);
-  assert.equal(env.doc.querySelectorAll('#tsi-privacy-summary-title').length,1,'Título del aviso sin duplicados');
+  assert.ok(summary,'Contacto de privacidad visible en la parte inferior del inicio');
+  assert.equal(summary.querySelector('p').textContent,'Datrilagency@gmail.com','El pie solo muestra el correo como dato de contacto');
+  assert.equal(summary.querySelector('a').getAttribute('href'),'mailto:Datrilagency@gmail.com');
+  assert.equal(summary.querySelectorAll('p').length,1);
+  assert.doesNotMatch(env.doc.querySelector('footer').textContent,/Patricio|Ontiveros|Scouts|Ciudad Ideal|San Nicolás|66490/,'No mostrar nombre ni domicilio en el pie');
+  assert.equal(env.doc.querySelectorAll('#tsi-privacy-contact-title').length,1,'Título de contacto sin duplicados');
+  assert.equal(env.doc.querySelectorAll('#tsi-privacy-summary-title').length,0,'El contacto del pie no se presenta como aviso simplificado');
   const before=env.snapshot();
   for(const selector of ['header [data-privacy="integral"]','footer [data-privacy="integral"]']){
    const opener=env.doc.querySelector(selector);assert.ok(opener,'Acceso a Privacidad: '+selector);
