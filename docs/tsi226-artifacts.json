@@ -13,6 +13,11 @@
       "git_blob": "32cbb624eceb6cc7e2bc0d086219879f1beef331"
     },
     {
+      "path": "assets/favicon-ts.svg",
+      "sha256": "28827434531cbc6313c455f1a8b30a0a4438865ccb3f8063ca5f45a3a6aff60a",
+      "git_blob": "09a2244a7070697ad6dca1b3128bbfb2b987a597"
+    },
+    {
       "path": "assets/tsi-210-backup.js",
       "sha256": "e82d2878aba771730da3122e7742b96e96ee134c71b61875915bd06c56caf462",
       "git_blob": "18ad952f463e98d07b7739ed54c0fe54d83bf6de"
@@ -54,8 +59,8 @@
     },
     {
       "path": "index.html",
-      "sha256": "bb720f0010e1a0d50284b5d4779c3f8acf6fb76bf14c6eafd22e0ead36ffad0b",
-      "git_blob": "b9b911bc7bca9ed01fe5da58355daf1736f3bbc4"
+      "sha256": "b18e23a522e918c1217788bc38097e07a13364713c4e056e0ae7bb5cc6ce42ad",
+      "git_blob": "51d9538256387f3749fbd149005c7640e6e65cb6"
     },
     {
       "path": "training/editing-game-model.js",
