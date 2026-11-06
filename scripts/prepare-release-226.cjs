@@ -10,6 +10,7 @@ const replacements = [
   ["  return h+'</div></div>';\n}\nfunction viewPending(){", "  return h+'</div>'+(window.TSIPrivacy?window.TSIPrivacy.summaryHTML():'')+'</div>';\n}\nfunction viewPending(){"],
   ["'+tsiThemeControl()+right+'</div></header>';", "'+tsiThemeControl()+(S.view===\"home\"?'<button type=\"button\" class=\"btn small\" data-privacy=\"integral\" aria-haspopup=\"dialog\">Privacidad</button>':'')+right+'</div></header>';"],
   ["+live+'<footer>Tanabi Sport · Fotografía y video deportivo. · Versión '+APP_VERSION+'</footer>';", "+live+'<footer>'+(window.TSIPrivacy?window.TSIPrivacy.summaryHTML(true):'')+'<p>Tanabi Sport · Fotografía y video deportivo. · Versión '+APP_VERSION+'</p></footer>';"],
+  ['<title>Tanabi Sports Intelligence 2.2.6</title>', '<title>Tanabi Sports Intelligence 2.2.6</title>\n<link rel="icon" type="image/svg+xml" sizes="any" href="assets/favicon-ts.svg?v=2.2.6">'],
 ];
 function gitBlob(text) { const data = Buffer.from(text); return crypto.createHash('sha1').update('blob ' + data.length + '\0').update(data).digest('hex'); }
 if (require.main === module) {
