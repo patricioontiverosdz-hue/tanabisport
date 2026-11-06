@@ -567,7 +567,7 @@ function topbar(){
   if(u){
     right=shopBtn()+'<span class="who">'+esc(u.name)+' · '+ROLES[u.role]+'</span><button class="btn small" data-x="goNotif" aria-label="Notificaciones">🔔'+(unread()?" "+unread():"")+'</button> <button class="btn small" data-act="'+(S.view==="dash"?"goHome":"goDash")+'">'+(S.view==="dash"?"Ver portafolio":"Dashboard")+'</button> <button class="btn small" data-act="logout">Salir</button>';
   }else right=shopBtn()+'<button class="btn small" data-act="goLogin">Acceso del equipo</button>';
-  return '<header class="top"><div class="brand"><img class="logo" src="'+LOGO+'" alt="Tanabi Sport, fotografía y video"></div><div class="tsi-top-actions">'+tsiThemeControl()+right+'</div></header>';
+  return '<header class="top"><div class="brand"><img class="logo" src="'+LOGO+'" alt="Tanabi Sport, fotografía y video"></div><div class="tsi-top-actions">'+tsiThemeControl()+(S.view==="home"?'<button type="button" class="btn small" data-privacy="integral" aria-haspopup="dialog">Privacidad</button>':'')+right+'</div></header>';
 }
 
 function viewHome(){

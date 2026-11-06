@@ -2,7 +2,7 @@
 
 ## Alcance y condiciones confirmadas
 
-Añade exclusivamente el aviso de privacidad simplificado al acceso, el aviso integral desde acceso y menú, y un formato independiente descargable para uso de fotografías en redes sociales, portafolios y publicidad. Mantiene los campos y acciones de autenticación, el diseño, permisos y módulos anteriores.
+Añade exclusivamente el aviso de privacidad simplificado al acceso, el aviso integral desde inicio público, acceso y menú, y un formato independiente descargable para uso de fotografías en redes sociales, portafolios y publicidad. La pestaña «Privacidad» del encabezado de inicio abre los documentos sin entrar al acceso del equipo, conforme a la ampliación solicitada por el usuario en este mismo lanzamiento 2.2.6. Mantiene los campos y acciones de autenticación, el diseño, permisos y módulos anteriores.
 
 Responsable: Patricio Ontiveros Díaz / Tanabi Sports. Domicilio confirmado por el usuario: Scouts 681, Ciudad Ideal, San Nicolás de los Garza, Nuevo León, C. P. 66490, México. Contacto: Datrilagency@gmail.com.
 
@@ -18,12 +18,12 @@ Consultar, iniciar sesión o descargar el formato no otorga autorización. El fo
 
 Base exacta: `1d519e3974ea5a6e3a7f8003341224c615aeeea1`, HTML Git `03899481f6e81335faf797b2f18162dd8d4f0477`. El módulo `assets/tsi-226-privacy.js` solo presenta documentos en un diálogo fuera de `#app` y descarga el formato localmente. No hace solicitudes de red ni escribe almacenamiento. Sus estilos están limitados a clases propias y usan los temas existentes.
 
-Cinco transformaciones en el HTML: título, `APP_VERSION`, carga CSS/JS y dos puntos de acceso (login y menú). `scripts/prepare-release-226.cjs` exige la base exacta; `dev-tests/release-226.cjs` invierte esos cambios y comprueba que el resto del HTML es idéntico. Los recursos existentes, staging, servidor, sesiones, CSP y funciones permanecen intactos. No hay migraciones, modificaciones de Supabase ni promoción de la tienda/Stripe de staging.
+Seis transformaciones en el HTML: título, `APP_VERSION`, carga CSS/JS y tres puntos de acceso (inicio público, login y menú). `scripts/prepare-release-226.cjs` exige la base exacta; `dev-tests/release-226.cjs` invierte esos cambios y comprueba que el resto del HTML es idéntico. Los recursos existentes, staging, servidor, sesiones, CSP y funciones permanecen intactos. No hay migraciones, modificaciones de Supabase ni promoción de la tienda/Stripe de staging.
 
 ## Verificación
 
-- `node dev-tests/release-226.cjs`: versión, reversión exacta de los cinco cambios, sintaxis y recursos/aislamiento.
-- `node dev-tests/privacy-226.cjs`: página completa con servidor simulado; avisos en los tres modos de acceso y en menú de administración, fotografía y edición; foco, cierre, conservación de campos/estado/sesión/red; descarga sin consentimiento implícito y condiciones jurídicas.
+- `node dev-tests/release-226.cjs`: versión, reversión exacta de los seis cambios, sintaxis y recursos/aislamiento.
+- `node dev-tests/privacy-226.cjs`: página completa con servidor simulado; consulta desde inicio público sin sesión ni cambio de página, avisos en los tres modos de acceso y en menú de administración, fotografía y edición; foco, cierre, conservación de campos/estado/sesión/red; descarga sin consentimiento implícito y condiciones jurídicas.
 - Regresiones aprobadas: modelo 2.1.0, avisos 2.0.9, push, aislamiento, disponibilidad de edición en ambos entornos, temporadas/directorio 2.2.2, acceso/carga de tienda, opciones de vista previa, suspensiones en ambos entornos, coincidencias de Importar rol y entrenamiento de producción.
 - `npm test` no aprueba globalmente: `ui-210.cjs:69` falla en `new-cost[data-mid="m1"]`. Al ejecutar las demás pruebas separadamente también fallan `partial-matches.cjs:25` (2 frente a 1) y `partial-matches-import.cjs:36` (propiedad `method`). Los tres fallos se reprodujeron idénticos sobre una exportación de la base exacta anterior a privacidad; no se modifican módulos ni pruebas heredadas para ocultarlos.
 - Revisión visual no completada: el navegador denegó acceso a la vista local. No se intentó otra vía de navegación. Las verificaciones de interfaz usan DOM simulado; no equivalen a capturas o prueba visual real.

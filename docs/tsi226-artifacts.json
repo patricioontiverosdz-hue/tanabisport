@@ -49,8 +49,8 @@
     },
     {
       "path": "index.html",
-      "sha256": "2d973b1af366ffade21cfe5227ce0706768ac9eba8e1460ee87197682fd3e683",
-      "git_blob": "a744d4859dd31e956182a55c11158a32d2ed9f55"
+      "sha256": "3e56ffe0edc7f406c215a0276fe491e1863760949ffc59d3a1839de8faacbb24",
+      "git_blob": "b81002851b2335e6e9be9593ae66e720ae34b56b"
     },
     {
       "path": "training/editing-game-model.js",

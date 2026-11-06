@@ -8,6 +8,7 @@ const replacements = [
   ['<link rel="stylesheet" href="assets/tsi-210.css">', '<link rel="stylesheet" href="assets/tsi-226-privacy.css?v=226">\n<script src="assets/tsi-226-privacy.js?v=226"></script>\n<link rel="stylesheet" href="assets/tsi-210.css">'],
   ["}).join('')+'</nav></details>';}" , "}).join('')+(window.TSIPrivacy?window.TSIPrivacy.menuHTML():'')+'</nav></details>';}"],
   ["  return h+'</div></div>';\n}\nfunction viewPending(){", "  return h+'</div>'+(window.TSIPrivacy?window.TSIPrivacy.summaryHTML():'')+'</div>';\n}\nfunction viewPending(){"],
+  ["'+tsiThemeControl()+right+'</div></header>';", "'+tsiThemeControl()+(S.view===\"home\"?'<button type=\"button\" class=\"btn small\" data-privacy=\"integral\" aria-haspopup=\"dialog\">Privacidad</button>':'')+right+'</div></header>';"],
 ];
 function gitBlob(text) { const data = Buffer.from(text); return crypto.createHash('sha1').update('blob ' + data.length + '\0').update(data).digest('hex'); }
 if (require.main === module) {
