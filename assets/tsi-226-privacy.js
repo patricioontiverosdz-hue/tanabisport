@@ -90,7 +90,8 @@
   function escapeHTML(value) { return value.replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function button(kind, label) { return '<button type="button" class="btn small" data-privacy="' + kind + '">' + label + '</button>'; }
   function summaryHTML(home) {
-    return '<section class="tsi-privacy-summary" aria-labelledby="tsi-privacy-summary-title"><h3 id="tsi-privacy-summary-title">Aviso de privacidad simplificado</h3>' + simplified + '<div class="tsi-privacy-actions">' + button('integral', home === true ? 'Privacidad' : 'Aviso de privacidad integral') + button('consent', 'Consentimiento de fotografías') + '</div><p class="hint">Versión ' + VERSION + ' · Revisión: 6 de noviembre de 2026.</p></section>';
+    if (home === true) return '<section class="tsi-privacy-summary" aria-labelledby="tsi-privacy-contact-title"><h3 id="tsi-privacy-contact-title">Contacto de privacidad</h3><p>' + contact + '</p><div class="tsi-privacy-actions">' + button('integral', 'Privacidad') + button('consent', 'Consentimiento de fotografías') + '</div></section>';
+    return '<section class="tsi-privacy-summary" aria-labelledby="tsi-privacy-summary-title"><h3 id="tsi-privacy-summary-title">Aviso de privacidad simplificado</h3>' + simplified + '<div class="tsi-privacy-actions">' + button('integral', 'Aviso de privacidad integral') + button('consent', 'Consentimiento de fotografías') + '</div><p class="hint">Versión ' + VERSION + ' · Revisión: 6 de noviembre de 2026.</p></section>';
   }
   function menuHTML() { return '<h3>Privacidad</h3><button type="button" data-privacy="integral">Aviso de privacidad integral</button><button type="button" data-privacy="consent">Consentimiento de fotografías</button>'; }
   var dialog = null, opener = null;
