@@ -1,6 +1,6 @@
 {
   "name": "tanabi-sports-intelligence",
-  "version": "2.2.3",
+  "version": "2.2.5",
   "private": true,
   "type": "commonjs",
   "scripts": {
@@ -13,7 +13,8 @@
     "test:release-222": "node dev-tests/release-222.cjs",
     "test:shop": "node dev-tests/shop-access.cjs",
     "test:shop-preview": "node dev-tests/shop-preview.cjs",
-    "test:store": "node dev-tests/store-ui.cjs && node dev-tests/store-payments.cjs"
+    "test:store": "node dev-tests/store-ui.cjs && node dev-tests/store-payments.cjs",
+    "test:release-225": "node dev-tests/release-225.cjs"
   },
   "devDependencies": {
     "happy-dom": "21.0.4"

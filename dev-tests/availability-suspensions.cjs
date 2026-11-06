@@ -1,5 +1,6 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),vm=require('node:vm'),crypto=require('node:crypto');
-const root=path.join(__dirname,'..'),moduleSource=fs.readFileSync(path.join(root,'staging/availability-suspensions.js'),'utf8'),html=fs.readFileSync(path.join(root,'staging/index.html'),'utf8');
+const root=path.join(__dirname,'..'),production=process.argv[2]==='production',pageRoot=path.join(root,production?'':'staging');
+const modulePath=production?'assets/tsi-225-availability-suspensions.js':'availability-suspensions.js',moduleSource=fs.readFileSync(path.join(pageRoot,modulePath),'utf8'),html=fs.readFileSync(path.join(pageRoot,'index.html'),'utf8');
 const now='2026-11-02T18:00:00.000Z';
 const users=[{id:'admin',name:'Administración',role:'admin'},{id:'photo',name:'Fotógrafa de prueba',role:'foto'},{id:'editor',name:'Editora de prueba',role:'editora'}];
 const copy=value=>JSON.parse(JSON.stringify(value));
@@ -162,23 +163,23 @@ function forecastAndCoverage(){
  assert.equal(context.riStartAllowed(person,{date:'2026-11-02',time:'16:00'}),true,'Conservar propuestas fuera del periodo');assert.equal(context.riStartAllowed(person,{date:'2026-11-04',time:'16:00'}),false,'El fin del periodo está incluido');
  person.suspensions[0].released_at=now;assert.equal(context.riStartAllowed(person,match),true);assert.equal(context.d29Availability(person,match).allowed,true);
  assert.equal(person.history[0].schedule[1].available,true,'La suspensión no borra el horario original');
- assert.ok(html.includes('<script src="availability-suspensions.js?v=2.2.5"></script>'),'La página carga el módulo de suspensiones');assert.ok(html.includes('suspensiones:tabAvailabilitySuspensions'),'La ruta de administración está conectada');
+  assert.ok(new RegExp('<script src="'+modulePath.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\?v=(?:225|2\\.2\\.5)"></script>').test(html),'La página carga el módulo de suspensiones');assert.ok(html.includes('suspensiones:tabAvailabilitySuspensions'),'La ruta de administración está conectada');
 }
 
 async function pageIntegration(){
  const {Window}=await import('happy-dom'),server=html.match(/var SBU="([^"]+)"/)[1],key=html.match(/localStorage\.setItem\(["']([^"']+_auth)["']/)[1];
  const profiles=users.map((u,i)=>({...u,id:'00000000-0000-4000-8000-00000000000'+(i+1),email:u.role+'@test.invalid'}));
  for(const role of ['admin','foto','editora']){
-  const window=new Window({url:'https://patricioontiverosdz-hue.github.io/tanabisport/staging/',settings:{disableJavaScriptFileLoading:true,disableCSSFileLoading:true}}),uid=profiles.find(p=>p.role===role).id;
+  const window=new Window({url:'https://patricioontiverosdz-hue.github.io/tanabisport/'+(production?'':'staging/'),settings:{disableJavaScriptFileLoading:true,disableCSSFileLoading:true}}),uid=profiles.find(p=>p.role===role).id;
   Object.defineProperty(window,'crypto',{value:crypto.webcrypto});window.setInterval=()=>0;window.clearInterval=()=>{};window.document.body.innerHTML='<main id="app"></main>';
   const rows=[{id:'s1',user_id:uid,start_date:'2026-11-02',end_date:'2026-11-04',reason:'Aviso de suspensión de prueba',created_at:now,created_by:profiles[0].id,released_at:null}];
   const intelligence={server_now:now,model:{id:'test',parameters:{min_completed_jobs:3}},capacity:[],sessions:[],estimates:[],matches:[],events:[],snapshots:[],suspensions:[]};
   const response=value=>new Response(JSON.stringify(value),{status:200,headers:{'Content-Type':'application/json'}});
-  window.fetch=async input=>{const url=new URL(String(input));assert.equal(url.origin,server,'Aislamiento del proyecto de staging');if(url.pathname==='/rest/v1/profiles')return response(profiles);if(url.pathname==='/rest/v1/settings')return response([{id:'cfg',data:{shop:false,reservasPublicas:false,autoArchive:false}}]);if(url.pathname==='/rest/v1/rpc/tsi11_state')return response(intelligence);if(url.pathname==='/rest/v1/rpc/tsi11_photographer_risks')return response({risks:[]});if(url.pathname==='/rest/v1/rpc/tsi11_photo_availability_state')return response({server_now:now,photographers:profiles.filter(p=>p.role==='foto').map(p=>({...p,history:[]}))});if(url.pathname==='/rest/v1/rpc/tsi225_availability_suspensions_state')return response({server_now:now,suspensions:rows});if(url.pathname==='/rest/v1/rpc/tsi210_state')return response({version:'2.1.0',teams:[],team_matches:[],rates:[],quotes:[],quote_costs:[],costs:[],deliveries:[],audit:[]});return response([]);};
+  window.fetch=async input=>{const url=new URL(String(input));assert.equal(url.origin,server,'La página solo llama al proyecto de su entorno');if(url.pathname==='/rest/v1/profiles')return response(profiles);if(url.pathname==='/rest/v1/settings')return response([{id:'cfg',data:{shop:false,reservasPublicas:false,autoArchive:false}}]);if(url.pathname==='/rest/v1/rpc/tsi11_state')return response(intelligence);if(url.pathname==='/rest/v1/rpc/tsi11_photographer_risks')return response({risks:[]});if(url.pathname==='/rest/v1/rpc/tsi11_photo_availability_state')return response({server_now:now,photographers:profiles.filter(p=>p.role==='foto').map(p=>({...p,history:[]}))});if(url.pathname==='/rest/v1/rpc/tsi225_availability_suspensions_state')return response({server_now:now,suspensions:rows});if(url.pathname==='/rest/v1/rpc/tsi210_state')return response({version:'2.1.0',teams:[],team_matches:[],rates:[],quotes:[],quote_costs:[],costs:[],deliveries:[],audit:[]});return response([]);};
   const token='test.'+Buffer.from(JSON.stringify({iss:server+'/auth/v1'})).toString('base64url')+'.test';window.localStorage.setItem(key,JSON.stringify({access:token,uid,exp:Date.now()/1000+3600}));
   try{
    for(const match of html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)){
-    const src=match[1].match(/\bsrc="([^"]+)"/);let code=src?fs.readFileSync(path.resolve(root,'staging',src[1].split('?')[0]),'utf8'):match[2];
+    const src=match[1].match(/\bsrc="([^"]+)"/);let code=src?fs.readFileSync(path.resolve(pageRoot,src[1].split('?')[0]),'utf8'):match[2];
     if(code.includes('var SBU=')){const end=code.lastIndexOf('})();');code=code.slice(0,end)+'window.__suspensionPage={S:S,AS:AS225,render:function(){render();}};\n'+code.slice(end);}
     if(code.trim())window.eval(code);
    }
