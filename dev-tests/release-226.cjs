@@ -13,11 +13,11 @@ for(const [before,after] of [...replacements].reverse()){
  assert.equal(restored.split(after).length,2,'Solo un punto de integración: '+after.slice(0,75));
  restored=restored.replace(after,before);
 }
-assert.equal(gitBlob(restored),baseBlob,'El HTML existente es idéntico al retirar los cinco cambios de privacidad/versión');
+assert.equal(gitBlob(restored),baseBlob,'El HTML existente es idéntico al retirar los puntos de acceso y versión de privacidad');
 for(const match of html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/g)){
  const source=match[1].split('?')[0];assert.ok(!/^(?:https?:|\/)|\.\./i.test(source));
  assert.ok(fs.statSync(path.join(root,source)).isFile(),'Recurso disponible: '+source);
  new vm.Script(fs.readFileSync(path.join(root,source),'utf8'),{filename:source});
 }
 for(const [index,match] of [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)].entries())if(match[1].trim())new vm.Script(match[1],{filename:'inline-'+index});
-console.log('2.2.6: identidad, cinco cambios acotados, sintaxis, recursos locales y aislamiento aprobados.');
+console.log('2.2.6: identidad, '+replacements.length+' cambios acotados, sintaxis, recursos locales y aislamiento aprobados.');

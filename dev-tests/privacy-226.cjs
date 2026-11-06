@@ -78,6 +78,28 @@ function legalTerms(text){
  assert.doesNotMatch(text,/(?:no (?:intervienen|participan)|sin) terceros/i,'No negar participación de terceros');
 }
 
+async function homeDocuments(){
+ const env=await environment(null);
+ try{
+  assert.equal(env.api.S.view,'home');
+  assert.equal(env.doc.getElementById('u'),null,'Consultar desde inicio sin abrir acceso del equipo');
+  const opener=env.doc.querySelector('header [data-privacy="integral"]');
+  assert.ok(opener,'Acceso público a Privacidad en el encabezado de inicio');
+  assert.equal(opener.textContent,'Privacidad');
+  const before=env.snapshot();opener.focus();opener.click();
+  const dialog=env.doc.getElementById('tsi-privacy-dialog');assert.ok(dialog.open);
+  legalTerms(dialog.textContent);
+  env.click('#tsi-privacy-dialog [data-privacy="consent"]');
+  assert.match(env.doc.getElementById('tsi-privacy-title').textContent,/Consentimiento independiente/);
+  env.click('#tsi-privacy-dialog [data-privacy="close"]');
+  assert.equal(dialog.open,false);assert.equal(env.doc.activeElement,opener);
+  assert.equal(env.api.S.view,'home');assert.equal(env.api.S.meId,null);
+  assert.equal(env.doc.getElementById('u'),null);
+  await pause(5);assert.deepEqual(env.snapshot(),before,'Acceso público conserva página, sesión, almacenamiento y red');
+  assert.deepEqual(env.errors,[]);
+ }finally{await env.close();}
+}
+
 async function loginDocuments(){
  const env=await environment(null);
  try{
@@ -171,6 +193,6 @@ async function menuForEveryRole(){
 }
 
 (async()=>{
- await loginDocuments();await independentConsent();await menuForEveryRole();
- console.log('TSI 2.2.6: privacidad en acceso y tres roles; formulario, sesión y datos intactos; formato independiente descargable sin autorización implícita.');
+ await homeDocuments();await loginDocuments();await independentConsent();await menuForEveryRole();
+ console.log('TSI 2.2.6: privacidad desde inicio público, acceso y tres roles; formulario, sesión y datos intactos; formato independiente descargable sin autorización implícita.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
