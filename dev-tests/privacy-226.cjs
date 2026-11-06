@@ -83,16 +83,21 @@ async function homeDocuments(){
  try{
   assert.equal(env.api.S.view,'home');
   assert.equal(env.doc.getElementById('u'),null,'Consultar desde inicio sin abrir acceso del equipo');
-  const opener=env.doc.querySelector('header [data-privacy="integral"]');
-  assert.ok(opener,'Acceso público a Privacidad en el encabezado de inicio');
-  assert.equal(opener.textContent,'Privacidad');
-  const before=env.snapshot();opener.focus();opener.click();
-  const dialog=env.doc.getElementById('tsi-privacy-dialog');assert.ok(dialog.open);
-  legalTerms(dialog.textContent);
-  env.click('#tsi-privacy-dialog [data-privacy="consent"]');
-  assert.match(env.doc.getElementById('tsi-privacy-title').textContent,/Consentimiento independiente/);
-  env.click('#tsi-privacy-dialog [data-privacy="close"]');
-  assert.equal(dialog.open,false);assert.equal(env.doc.activeElement,opener);
+  const summary=env.doc.querySelector('footer .tsi-privacy-summary');
+  assert.ok(summary,'Aviso simplificado visible en la parte inferior del inicio');
+  legalTerms(summary.textContent);assert.match(summary.textContent,/Supabase/);
+  assert.equal(env.doc.querySelectorAll('#tsi-privacy-summary-title').length,1,'Título del aviso sin duplicados');
+  const before=env.snapshot();
+  for(const selector of ['header [data-privacy="integral"]','footer [data-privacy="integral"]']){
+   const opener=env.doc.querySelector(selector);assert.ok(opener,'Acceso a Privacidad: '+selector);
+   assert.equal(opener.textContent,'Privacidad');opener.focus();opener.click();
+   const dialog=env.doc.getElementById('tsi-privacy-dialog');assert.ok(dialog.open);
+   legalTerms(dialog.textContent);
+   env.click('#tsi-privacy-dialog [data-privacy="consent"]');
+   assert.match(env.doc.getElementById('tsi-privacy-title').textContent,/Consentimiento independiente/);
+   env.click('#tsi-privacy-dialog [data-privacy="close"]');
+   assert.equal(dialog.open,false);assert.equal(env.doc.activeElement,opener);
+  }
   assert.equal(env.api.S.view,'home');assert.equal(env.api.S.meId,null);
   assert.equal(env.doc.getElementById('u'),null);
   await pause(5);assert.deepEqual(env.snapshot(),before,'Acceso público conserva página, sesión, almacenamiento y red');

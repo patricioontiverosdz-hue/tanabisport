@@ -39,18 +39,18 @@
     },
     {
       "path": "assets/tsi-226-privacy.css",
-      "sha256": "0fb063fba7c6b95799b092612373b734e3d5892d7ece2e942821f3ac92438c2f",
-      "git_blob": "801de54eb2e01872ebc3f2c333011393a5df9a57"
+      "sha256": "752180ed64adb74c10b429b71b8b52c97cee55e5229f308da39d966e77c537a1",
+      "git_blob": "1e2580a8da55d405c9d56d91e97ee31af2a5ef1c"
     },
     {
       "path": "assets/tsi-226-privacy.js",
-      "sha256": "d0aec8f36a14726f3e1704b97afa2b9d7d2c6c36fcb3b1095c440aab4c51b9c8",
-      "git_blob": "859cf99446b61e0dcace65c6c8647bcb939b555a"
+      "sha256": "84dfd6e8ada26c19f7665003d87eb7b2da66de0dee67e7cd4f54f4c87ac05251",
+      "git_blob": "70259133194d43e5c988d78e21161108cda93275"
     },
     {
       "path": "index.html",
-      "sha256": "3e56ffe0edc7f406c215a0276fe491e1863760949ffc59d3a1839de8faacbb24",
-      "git_blob": "b81002851b2335e6e9be9593ae66e720ae34b56b"
+      "sha256": "cd66343c6da490881ce2cbfa91f2aef6cbe0f44516cd03e9f3c4483210e41be2",
+      "git_blob": "1eaf7caac952e3050150597eb5a819c2bdfee3ec"
     },
     {
       "path": "training/editing-game-model.js",

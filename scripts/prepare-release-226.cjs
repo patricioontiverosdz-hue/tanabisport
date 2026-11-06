@@ -5,10 +5,11 @@ const baseBlob = '03899481f6e81335faf797b2f18162dd8d4f0477';
 const replacements = [
   ['<title>Tanabi Sports Intelligence 2.2.5</title>', '<title>Tanabi Sports Intelligence 2.2.6</title>'],
   ['var APP_VERSION="2.2.5";', 'var APP_VERSION="2.2.6";'],
-  ['<link rel="stylesheet" href="assets/tsi-210.css">', '<link rel="stylesheet" href="assets/tsi-226-privacy.css?v=226">\n<script src="assets/tsi-226-privacy.js?v=226"></script>\n<link rel="stylesheet" href="assets/tsi-210.css">'],
+  ['<link rel="stylesheet" href="assets/tsi-210.css">', '<link rel="stylesheet" href="assets/tsi-226-privacy.css?v=226-footer">\n<script src="assets/tsi-226-privacy.js?v=226-footer"></script>\n<link rel="stylesheet" href="assets/tsi-210.css">'],
   ["}).join('')+'</nav></details>';}" , "}).join('')+(window.TSIPrivacy?window.TSIPrivacy.menuHTML():'')+'</nav></details>';}"],
   ["  return h+'</div></div>';\n}\nfunction viewPending(){", "  return h+'</div>'+(window.TSIPrivacy?window.TSIPrivacy.summaryHTML():'')+'</div>';\n}\nfunction viewPending(){"],
   ["'+tsiThemeControl()+right+'</div></header>';", "'+tsiThemeControl()+(S.view===\"home\"?'<button type=\"button\" class=\"btn small\" data-privacy=\"integral\" aria-haspopup=\"dialog\">Privacidad</button>':'')+right+'</div></header>';"],
+  ["+live+'<footer>Tanabi Sport · Fotografía y video deportivo. · Versión '+APP_VERSION+'</footer>';", "+live+'<footer>'+(window.TSIPrivacy?window.TSIPrivacy.summaryHTML(true):'')+'<p>Tanabi Sport · Fotografía y video deportivo. · Versión '+APP_VERSION+'</p></footer>';"],
 ];
 function gitBlob(text) { const data = Buffer.from(text); return crypto.createHash('sha1').update('blob ' + data.length + '\0').update(data).digest('hex'); }
 if (require.main === module) {
