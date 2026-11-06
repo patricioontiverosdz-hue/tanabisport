@@ -19,8 +19,13 @@ function missing(d){
 }
 function candidates(ri){
  if(!ri||!ri.file||!Array.isArray(ri.rows))return [];
- return ri.rows.filter(function(row){var d=row.data||{},rol=d.rol||{};
-  return row.error&&!/duplicado exacto|fórmula con error/i.test(row.error)&&!!(d.date||d.time||d.cat||d.venue||rol.local||rol.visitor);
+ return ri.rows.filter(function(row){
+  var d=row.data||{},rol=d.rol||{},reason=String(row.error||"");
+  if(/fórmula con error/i.test(reason))return false;
+  if(![d.date,d.time,d.cat,d.venue,rol.local,rol.visitor].some(function(v){return String(v||"").trim();}))return false;
+  // No confiar en 'duplicado exacto' del importador ordinario:
+  // su clave provisional colapsa partidos diferentes cuando faltan datos.
+  return missing(fromRow(row,ri.file)).length>0;
  });
 }
 function fromRow(row,file){
@@ -41,7 +46,7 @@ function install(api){
  function ok(id){return !!id&&admin()&&uid()===id&&st.owner===id;}
  async function request(verb,path,body,id){
   if(!ok(id))throw Error("La sesión cambió.");
-  var r=await api.request(verb,path,body,id);
+  var r=await api.request(verb,path,verb==="GET"?undefined:body,id);
   if(!ok(id))throw Error("La sesión cambió.");
   return r;
  }
@@ -86,11 +91,29 @@ function install(api){
  function importer(){
   if(!admin())return "";
   var ri=api.importState(),rows=candidates(ri);if(!ri||!ri.file)return "";
-  var html='<section class="card"><h3>Guardar filas incompletas (solo ADMIN)</h3><p class="hint">Las filas incompletas del Excel se guardan como borradores privados, no como partidos operativos. No se guardan las filas duplicadas ni fórmulas con error.</p>';
-  if(!rows.length)return html+'<p>No se detectaron filas recuperables.</p></section>';
-  html+='<p>'+rows.length+' fila(s) incompleta(s) recuperable(s).</p><div class="ti-table"><table><thead><tr><th>Guardar</th><th>Fila</th><th>Equipos</th><th>Faltantes</th></tr></thead><tbody>';
-  rows.forEach(function(r){var d=fromRow(r,ri.file),key=ri.file.sha256+":"+r.row;html+='<tr><td><input type="checkbox" data-pm-row="'+api.esc(key)+'" '+(st.selected[key]===false?'':'checked')+'></td><td>'+r.row+'</td><td>'+api.esc((d.home||"Local ?")+" vs "+(d.away||"Visitante ?"))+'</td><td>'+api.esc(missing(d).join(", "))+'</td></tr>';});
-  return html+'</tbody></table></div><button class="btn" data-pm="import" '+(st.busy?'disabled':'')+'>'+(st.batch?"Reintentar guardado de filas":"Guardar juegos incompletos")+'</button></section>';
+  var selected=rows.filter(function(r){return st.selected[ri.file.sha256+":"+r.row]!==false;}).length;
+  var unavailable=st.busy||st.loading||!st.loaded;
+  var html='<section class="card" id="pm-importer" aria-label="Importar juegos incompletos">'+
+   '<h3>Importar juegos incompletos · Solo ADMIN</h3>'+
+   '<p>Desde <strong>Importar rol</strong> puedes guardar filas sin fecha, hora, categoría, campo o equipos. No se publican: quedan como pendientes privados de ADMIN para completar después.</p>'+
+   (st.error?'<p class="err" role="alert">'+api.esc(st.error)+'</p>':'')+
+   (st.message?'<p class="note" role="status">'+api.esc(st.message)+'</p>':'')+
+   (st.loading?'<p role="status">Consultando registros guardados…</p>':'')+
+   (!st.loaded&&!st.loading?'<p class="hint">No se pudo consultar la lista de pendientes. Actualiza la consulta antes de guardar.</p>':'')+
+   '<div class="row"><button class="btn small" data-pm="refresh" '+(st.loading||st.busy?'disabled':'')+'>Actualizar pendientes</button></div>';
+  if(!rows.length)return html+'<p>No hay filas incompletas recuperables en el archivo. Las filas con fórmulas dañadas se excluyen.</p></section>';
+  html+='<p><strong>'+rows.length+' filas incompletas</strong> · '+selected+' seleccionadas. Las filas completas se importan por separado con el botón habitual.</p>'+
+   '<div class="ti-table"><table><thead><tr><th>Guardar</th><th>Fila</th><th>Equipos</th><th>Falta completar</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+   var d=fromRow(r,ri.file),key=ri.file.sha256+":"+r.row,duplicate=/duplicado exacto/i.test(String(r.error||""));
+   html+='<tr><td><input type="checkbox" aria-label="Guardar fila incompleta '+r.row+'" data-pm-row="'+api.esc(key)+'" '+(st.selected[key]===false?'':'checked')+' '+(st.batch||unavailable?'disabled':'')+'></td>'+
+    '<td>'+r.row+'</td><td>'+api.esc((d.home||"Local pendiente")+" vs "+(d.away||"Visitante pendiente"))+'</td>'+
+    '<td>'+api.esc(missing(d).join(", "))+(duplicate?'<small> · Posible duplicado, verifica el archivo</small>':'')+'</td></tr>';
+  });
+  return html+'</tbody></table></div>'+
+   '<button class="btn primary" data-pm="import" '+(unavailable||!st.batch&&selected===0?'disabled':'')+'>'+
+   (st.batch?'Reintentar el mismo lote de pendientes':'Guardar '+selected+' juegos incompletos (solo ADMIN)')+'</button>'+
+   '<p class="hint">No añade partidos al calendario ni asigna fotógrafos. La publicación posterior requiere aprobación de ADMIN.</p></section>';
  }
  function open(row){
   st.error="";st.message="";st.pending=null;
@@ -127,6 +150,7 @@ function install(api){
  async function importAll(){
   if(!admin()||st.busy)return;var ri=api.importState();
   if(!ri||!ri.file)return;
+  if(!st.loaded){st.error="Primero carga la lista actualizada de pendientes con el botón Actualizar pendientes.";api.render();return;}
   if(!api.syncIdle()){st.error="Termina primero la sincronización de cambios.";api.render();return;}
   var owner=uid();st.busy=true;st.error="";
   try{

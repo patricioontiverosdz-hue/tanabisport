@@ -337,7 +337,7 @@ t.sheetStubs=true}if(t.type=="array"){t.type="binary";var a=xk(e,t);t.type="arra
 <script src="../assets/tsi-210-backup.js"></script>
 <script src="tsi-210.js?v=222-editora-lectura-1"></script>
 <script src="availability-suspensions.js?v=2.2.5"></script>
-<script src="../assets/tsi-225-incomplete-matches.js?v=225-admin-partials-1"></script>
+<script src="../assets/tsi-225-incomplete-matches.js?v=225-admin-partials-2"></script>
 <!-- TSI_TRAINING_ASSETS_START -->
 <link rel="stylesheet" href="game-ranking.css?v=220">
 <script src="game-ranking.js?v=220"></script>
@@ -3759,7 +3759,12 @@ if(window.TSIPartialMatches225){
   if(S.tab!=='incompletos'||!me()||me().role!=='admin')return pm225View();
   return topbar()+'<div class="ti-section-head">'+tabsBar()+'<h1>Juegos incompletos</h1></div>'+PM225.view()+'<footer>Versión '+APP_VERSION+'</footer>';
  };
- var pm225Role=tabRoleImport;tabRoleImport=function(){return pm225Role()+PM225.importer();};
+ var pm225Role=tabRoleImport;tabRoleImport=function(){
+  var page=pm225Role(),panel=PM225.importer();
+  if(!panel)return page;
+  var anchor='<section class="card"><h3>Propuesta por campo y día';
+  return page.indexOf(anchor)>=0?page.replace(anchor,panel+anchor):page+panel;
+ };
  var pm225Render=render;render=function(){PM225.beforeRender(S.tab);pm225Render();};
 }
 var configError=stagingConfigError();
