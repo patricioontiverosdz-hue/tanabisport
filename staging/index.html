@@ -3759,7 +3759,12 @@ if(window.TSIPartialMatches225){
   if(S.tab!=='incompletos'||!me()||me().role!=='admin')return pm225View();
   return topbar()+'<div class="ti-section-head">'+tabsBar()+'<h1>Juegos incompletos</h1></div>'+PM225.view()+'<footer>Versión '+APP_VERSION+'</footer>';
  };
- var pm225Role=tabRoleImport;tabRoleImport=function(){return pm225Role()+PM225.importer();};
+ var pm225Role=tabRoleImport;tabRoleImport=function(){
+  var page=pm225Role(),panel=PM225.importer();
+  if(!panel)return page;
+  var anchor='<section class="card"><h3>Propuesta por campo y día';
+  return page.indexOf(anchor)>=0?page.replace(anchor,panel+anchor):page+panel;
+ };
  var pm225Render=render;render=function(){PM225.beforeRender(S.tab);pm225Render();};
 }
 var configError=stagingConfigError();
