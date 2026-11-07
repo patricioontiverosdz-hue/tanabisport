@@ -21,6 +21,18 @@ Deploy `tsi-store-checkout` only to staging `nksqpoigywfegcbvfhoa` with `verify_
 
 Equivalent `/config`, `/quote`, `/create-session` and `/status` paths are accepted. Browser `action` in the JSON body is also accepted. Secrets and access tokens must never appear in URLs, logs, analytics or error messages. Embedded Checkout uses `redirect_on_completion=if_required`: card payments complete in the embedded form, while methods requiring a redirect return to the fixed TSI staging URL carrying only Stripe's session ID. Stripe rejects a `return_url` combined with `redirect_on_completion=never`.
 
+## TSI 2.3.0 guest authorization
+
+All catalog, quote, checkout, status, lookup, manual-order and photo-download requests require the `x-tsi-guest-token` header. The current staging guest session, contact approval, invitation, folder expiration and revocation are checked in the database, including variant-only carts. Browsers cannot read catalog tables or call legacy preparation RPCs directly.
+
+New orders bind atomically to the approved contact. A valid order token or matching email cannot move an order to another contact, even when contacts share an email or photograph. Checkout email must match the approved contact. Historical unbound orders remain available to administration and cannot be claimed through the guest portal.
+
+Paid photo orders return `downloadable_photos` metadata instead of an external delivery link. `POST /download-photo` verifies the current contact binding, paid state, purchased item and current gallery scope before returning the JPEG. A supplied order token must match; recovery without it requires the same approved contact and all remaining checks. Expired or revoked gallery access blocks delivery. `POST /manual-order` uses the same scoped permission and server pricing when Stripe is disabled.
+
+The staging browser keeps carts and order credentials only in memory and removes legacy browser storage. After reload, buyers use their order reference and email with a renewed permission for the same approved contact. No guest Auth account is created.
+
+`node dev-tests/store-payments-230.cjs` replaces the earlier payments test for this gated staging contract. `node dev-tests/store-ui-230-security.cjs` checks visible paid downloads, family switching, storage cleanup and responses arriving after a permission or staff-account change. Both use simulated network services. A deployed Checkout session was also created with the existing approved Stripe test account, without submitting a card or completing payment; this does not establish a successful charge.
+
 ## Reservations and reconciliation
 
 The database computes amounts and reserves physical inventory atomically. Stripe receives only that stored snapshot. Home delivery is limited to Mexico; shipping price comes from database configuration. Photo/digital-only orders do not collect shipping addresses or add shipping charges.

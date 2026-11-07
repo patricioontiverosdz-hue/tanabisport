@@ -1,0 +1,46 @@
+-- LOCAL ONLY: synthetic portfolio fixtures, no Auth users or remote execution.
+begin;
+do $$
+declare actor uuid:=gen_random_uuid(); editor uuid:=gen_random_uuid(); photographer uuid:=gen_random_uuid(); request uuid:=gen_random_uuid();
+ payload jsonb; result jsonb; photo uuid; count_before int; ttl timestamptz;
+begin
+ insert into public.profiles(id,role) values(actor,'admin'),(editor,'editora'),(photographer,'foto');
+ if has_table_privilege('anon','public.portfolio','select') or has_table_privilege('authenticated','public.portfolio','select') then raise exception 'legacy portfolio remains exposed';end if;
+ if has_table_privilege('anon','public.tsi230_portfolio','select') or has_table_privilege('authenticated','public.tsi230_portfolio_receipts','select') then raise exception 'private portfolio remains exposed';end if;
+ if has_function_privilege('anon','public.tsi230_portfolio_read(uuid)','execute') or has_function_privilege('authenticated','public.tsi230_portfolio_admin(uuid,text,jsonb)','execute') then raise exception 'portfolio RPC exposed';end if;
+ if (select public from storage.buckets where id='portafolio') then raise exception 'legacy bucket remains public';end if;
+ execute 'set local role service_role';
+ payload:=jsonb_build_object('request_id',request,'title','Synthetic public title','image','data:image/jpeg;base64,/9j/AAAA','season_end',now()+interval '100 days','consent_until',now()+interval '100 days','consent_reference','AUT-LOCAL-001','contains_minors',false,'consent_confirmed',true,'guardian_confirmed',false);
+ begin perform public.tsi230_portfolio_admin(photographer,'publish',payload);raise exception 'photo role published';exception when insufficient_privilege then null;end;
+ begin perform public.tsi230_portfolio_admin(actor,'publish',payload||'{"consent_confirmed":false}');raise exception 'missing consent accepted';exception when invalid_parameter_value then null;end;
+ begin perform public.tsi230_portfolio_admin(actor,'publish',payload||'{"contains_minors":true}');raise exception 'missing guardian accepted';exception when invalid_parameter_value then null;end;
+ result:=public.tsi230_portfolio_admin(actor,'publish',payload);photo:=(result->'items'->0->>'id')::uuid;
+ if photo is null or result::text like '%/9j/%' or result::text like '%payload_hash%' then raise exception 'admin projection invalid';end if;
+ select expires_at into ttl from public.tsi230_portfolio where id=photo;
+ if ttl<>now()+interval '56 days' then raise exception '56-day cap failed';end if;
+ perform public.tsi230_portfolio_admin(actor,'publish',payload);
+ if (select count(*) from public.tsi230_portfolio)<>1 then raise exception 'publish retry duplicated';end if;
+ begin perform public.tsi230_portfolio_admin(actor,'publish',payload||'{"title":"Changed"}');raise exception 'same request mutated';exception when insufficient_privilege then null;end;
+ result:=public.tsi230_portfolio_read(null);
+ if jsonb_array_length(result->'items')<>1 or result::text like '%image%' or result::text like '%AUT-LOCAL%' or result::text like '%contains_minors%' or result::text like '%created_by%' then raise exception 'public metadata leak';end if;
+ result:=public.tsi230_portfolio_read(photo);
+ if result->>'image'<>'data:image/jpeg;base64,/9j/AAAA' or result::text like '%AUT-LOCAL%' then raise exception 'image projection invalid';end if;
+ perform public.tsi230_portfolio_admin(actor,'revoke',jsonb_build_object('id',photo));
+ if not (public.tsi230_portfolio_read(photo)->>'unavailable')::boolean or exists(select 1 from public.tsi230_portfolio where id=photo) then raise exception 'withdrawal did not remove bytes';end if;
+ begin perform public.tsi230_portfolio_admin(actor,'publish',payload);raise exception 'withdrawn publication resurrected';exception when insufficient_privilege then null;end;
+ if not exists(select 1 from public.tsi230_portfolio_receipts where photo_id=photo and retired_at is not null) then raise exception 'withdrawal tombstone missing';end if;
+ payload:=payload||jsonb_build_object('request_id',gen_random_uuid(),'season_end',now()+interval '8 days','consent_until',now()+interval '5 days','contains_minors',true,'guardian_confirmed',true,'guardian_reference','TUTOR-LOCAL-001');
+ result:=public.tsi230_portfolio_admin(editor,'publish',payload);photo:=(result->'items'->0->>'id')::uuid;
+ if (select expires_at from public.tsi230_portfolio where id=photo)<>now()+interval '5 days' then raise exception 'consent minimum failed';end if;
+ if not exists(select 1 from public.tsi230_portfolio where id=photo and guardian_checked_at is not null) then raise exception 'guardian evidence missing';end if;
+ update public.tsi230_portfolio set expires_at=now()-interval '1 second' where id=photo;
+ update public.tsi230_portfolio_receipts set expires_at=now()-interval '1 second' where photo_id=photo;
+ if not (public.tsi230_portfolio_read(photo)->>'unavailable')::boolean then raise exception 'expired image readable before purge';end if;
+ if public.tsi230_portfolio_purge()<>1 then raise exception 'purge did not remove expired image';end if;
+ begin perform public.tsi230_portfolio_admin(editor,'publish',payload);raise exception 'purged publication resurrected';exception when insufficient_privilege then null;end;
+ payload:=payload||jsonb_build_object('request_id',gen_random_uuid(),'season_end',now()+interval '2 days');
+ result:=public.tsi230_portfolio_admin(actor,'publish',payload);photo:=(result->'items'->0->>'id')::uuid;
+ if (select expires_at from public.tsi230_portfolio where id=photo)<>now()+interval '2 days' then raise exception 'season minimum failed';end if;
+ raise notice 'PASS portfolio actual SQL consent, roles, projection, guardian, TTL, replay, revocation and purge';
+end $$;
+rollback;
