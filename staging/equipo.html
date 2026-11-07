@@ -2126,6 +2126,7 @@ async function boot(){
     else S.banner="No se pudo conectar con el servidor: "+(e&&e.message?e.message:"");
     try{await loadAll();}catch(e2){}
   }
+  if(S.view!=="recover"){var entryUser=me();S.view=entryUser&&["admin","foto","editora"].indexOf(entryUser.role)>=0?"dash":"login";}
   await maybeAutoArchive();
   S.booting=false;render();startPolling();
 }
