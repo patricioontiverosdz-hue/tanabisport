@@ -11,6 +11,14 @@ const profiles=Object.keys(ids).map(key=>({id:ids[key],email:key+'@test.invalid'
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const plain=value=>JSON.parse(JSON.stringify(value));
 const progressKey=/editing.?game|edici[oó]n.?juego/i;
+const readRPCs=new Set(['/rest/v1/rpc/tsi11_state','/rest/v1/rpc/tsi11_photographer_risks','/rest/v1/rpc/tsi11_photo_availability_state','/rest/v1/rpc/tsi210_state','/rest/v1/rpc/tsi225_availability_suspensions_state','/rest/v1/rpc/tsi230_rules_state']);
+function allowedRequest(method,path,body){
+ if(method==='GET')return true;if(method!=='POST')return false;
+ if(path==='/functions/v1/training-game')return true;
+ if(path==='/functions/v1/tsi-guest-access')return Object.keys(body).length===1&&['portfolio/list','portfolio/admin-state'].includes(body.action);
+ if(path==='/rest/v1/rpc/tsi11_state')return Object.keys(body).every(key=>key==='eid')&&(!body.eid||Object.values(ids).includes(body.eid));
+ return (readRPCs.has(path)||path==='/functions/v1/tsi-support/profile')&&Object.keys(body).length===0;
+}
 async function until(check,message){for(let i=0;i<200;i++){if(check())return;await delay(10);}throw Error('No se completó: '+message);}
 
 async function environment(role,options={}){
@@ -24,19 +32,23 @@ async function environment(role,options={}){
  window.addEventListener('error',event=>errors.push(event.error||event.message));
  const response=value=>new Response(JSON.stringify(value),{status:200,headers:{'Content-Type':'application/json'}});
  const state=()=>({server_now:'2026-10-22T18:00:00.000Z',model:{parameters:{min_completed_jobs:3}},capacity:[],estimates:[],sessions:[],matches:[],events:[],snapshots:[]});
- const readRPCs=new Set(['/rest/v1/rpc/tsi11_state','/rest/v1/rpc/tsi11_photographer_risks','/rest/v1/rpc/tsi11_photo_availability_state','/rest/v1/rpc/tsi210_state']);
  window.fetch=async(input,request={})=>{
   const url=new URL(String(input)),method=request.method||'GET',body=request.body?JSON.parse(request.body):{};
   assert.equal(url.origin,serverUrl,'El portal probado solo consulta el proyecto staging');
   calls.push({path:url.pathname,method,body});
-  assert.ok(method==='GET'||method==='POST'&&(readRPCs.has(url.pathname)||url.pathname==='/functions/v1/training-game'),'El juego no debe generar escrituras operativas: '+method+' '+url.pathname);
+  assert.ok(allowedRequest(method,url.pathname,body),'El juego no debe generar escrituras operativas: '+method+' '+url.pathname);
   if(url.pathname==='/functions/v1/training-game')return response({accepted:true});
+  if(url.pathname==='/functions/v1/tsi-guest-access'&&body.action==='portfolio/list')return response({items:[]});
+  if(url.pathname==='/functions/v1/tsi-guest-access'&&body.action==='portfolio/admin-state')return ['admin','editora'].includes(role)&&request.headers.Authorization?response({items:[]}):new Response('{"message":"Sin permiso"}',{status:403});
   if(url.pathname==='/rest/v1/settings')return response([{id:'cfg',data:{shop:false,reservasPublicas:false,autoArchive:false}}]);
   if(url.pathname==='/rest/v1/profiles')return response(profiles);
   if(url.pathname==='/rest/v1/rpc/tsi11_state')return response(state());
   if(url.pathname==='/rest/v1/rpc/tsi11_photographer_risks')return response({risks:[]});
   if(url.pathname==='/rest/v1/rpc/tsi11_photo_availability_state')return response({server_now:state().server_now,photographers:[]});
   if(url.pathname==='/rest/v1/rpc/tsi210_state')return response({version:'2.1.0',teams:[],team_matches:[],rates:[],quotes:[],quote_costs:[],costs:[],deliveries:[],audit:[]});
+  if(url.pathname==='/rest/v1/rpc/tsi230_rules_state')return response({availability:[],clock:[],suspensions:[]});
+  if(url.pathname==='/rest/v1/rpc/tsi225_availability_suspensions_state')return response({server_now:state().server_now,suspensions:[]});
+  if(url.pathname==='/functions/v1/tsi-support/profile')return response({avatar:''});
   return response([]);
  };
  for(const [key,value] of options.saved||[])window.localStorage.setItem(key,value);
@@ -93,7 +105,8 @@ async function environment(role,options={}){
 }
 
 function noWrites(env){
- assert.ok(env.calls.every(call=>call.method==='GET'||call.method==='POST'&&(/\/rpc\/(tsi11_state|tsi11_photographer_risks|tsi11_photo_availability_state|tsi210_state)$/.test(call.path)||call.path==='/functions/v1/training-game')),'El entrenamiento no modifica datos operativos del equipo');
+ const forbidden=env.calls.filter(call=>!allowedRequest(call.method,call.path,call.body));
+ assert.deepEqual(forbidden,[],'El entrenamiento no modifica datos operativos del equipo');
  for(const call of env.calls.filter(call=>call.path==='/functions/v1/training-game'))assert.deepEqual(Object.keys(call.body).sort(),['game','sceneId','settings'],'El intento no incluye puntuación ni identidad elegida por el cliente');
  assert.deepEqual(env.errors,[],'Sin errores de ejecución en el navegador');
 }
@@ -140,12 +153,17 @@ async function main(){
   try{
    const {window,api,click}=env,doc=window.document;
    assert.ok(api.tabsFor(role).some(entry=>entry[0]===tab),role+': pestaña permitida');
-   const menu=doc.querySelector('.ti-navigation [data-tab="'+tab+'"]');assert.ok(menu,role+': entrada del menú');
-   assert.match(menu.parentElement.textContent,/Entrenamiento/,'El menú tiene un grupo de entrenamiento');
+   const more=doc.querySelector('[data-ui230-action="tools"]');if(more)more.click();
+   const menu=doc.querySelector(more?'#ui230-tools [data-ui230-module="'+tab+'"]':'.ti-navigation [data-tab="'+tab+'"]');assert.ok(menu,role+': entrada del menú');
+   assert.match((more?menu.closest('.ui230-tool-group'):menu.parentElement).textContent,/Entrenamiento/,'El menú tiene un grupo de entrenamiento');
+   if(more)click('#ui230-tools [data-ui230-action="closeTools"]');
+   const recommendations=doc.querySelector('.ui230-legacy-summary');if(recommendations&&!recommendations.open)click('.ui230-legacy-summary>summary');
    click('.d29-actions [data-tab="'+tab+'"]');
    assert.equal(api.S.tab,tab,role+': navegación desde el inicio');
    assert.ok(doc.querySelector('.eg-shell'),role+': vista del juego');
-   click('.ti-navigation [data-tab="resumen"]');click('.ti-navigation [data-tab="'+tab+'"]');
+   click(more?'.ui230-nav [data-tab="resumen"]':'.ti-navigation [data-tab="resumen"]');
+   if(more){click('[data-ui230-action="tools"]');click('#ui230-tools [data-ui230-module="'+tab+'"]');}
+   else click('.ti-navigation [data-tab="'+tab+'"]');
    assert.equal(api.S.tab,tab,role+': navegación desde el menú');
    const model=window.TSIEditingGameModel,initial=env.snapshot(),sceneId=initial.sceneId;
    assert.equal(doc.querySelector('.eg-shell').getAttribute('data-scene-id'),sceneId);

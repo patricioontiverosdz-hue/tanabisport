@@ -79,7 +79,9 @@ function safeOrder(order) {
   if (!record(order)) fail(404,'order_unavailable','No se encontró el pedido con esta autorización.');
   const result = {};
   for (const key of ['id','reference','status','fulfillment','fulfillment_status','items','subtotal_cents','shipping_cents','total_cents','currency','requires_shipping','created_at','tracking','tracking_carrier','tracking_number','tracking_url','needs_review']) if (order[key] !== undefined) result[key] = order[key];
-  if (order.status === 'paid' && typeof order.delivery_link === 'string' && /^https:\/\//.test(order.delivery_link)) result.delivery_link = order.delivery_link;
+  const photos=Array.isArray(order.items)?order.items.filter(item=>item.kind==='photo'):[];
+  if(order.status==='paid'&&photos.length)result.downloadable_photos=photos.map(item=>({id:String(item.id),title:String(item.title||'Fotografía')}));
+  if (order.status === 'paid' && !photos.length && typeof order.delivery_link === 'string' && /^https:\/\//.test(order.delivery_link)) result.delivery_link = order.delivery_link;
   return result;
 }
 function customerFrom(session) {
@@ -126,6 +128,28 @@ export function createHandler(options = {}) {
     const cfg = credentials(); if (!cfg.databaseReady) return null;
     try { const response = await fetcher(cfg.url + '/rest/v1/tsi224_store_config?id=eq.shop&select=payments_enabled,country,shipping_fee_cents',{headers:{apikey:cfg.service,Authorization:'Bearer ' + cfg.service},signal:AbortSignal.timeout(15000)}); if (!response.ok) return null; const rows = await response.json(); return Array.isArray(rows) ? rows[0] || null : null; } catch { return null; }
   }
+  async function guest(request, ids = []) {
+    const token = request.headers.get('x-tsi-guest-token') || '';
+    if (!TOKEN.test(token)) fail(403,'guest_required','Entra con tu invitación para acceder a la tienda.');
+    const sessionHash = await sha256(token,cryptoApi);
+    const permission = await rpc('tsi230_guest_verify_items',{session_hash:sessionHash,item_ids:ids},403);
+    if (permission?.allowed !== true) fail(403,'guest_required','Tu permiso venció o no incluye estas fotografías. Solicita acceso a administración.');
+    return {sessionHash,permission};
+  }
+  async function catalog(request) {
+    await guest(request);
+    const cfg=credentials();
+    const paths=['tsi224_store_products?active=eq.true&select=*&order=created_at.desc&limit=1000','tsi224_store_variants?active=eq.true&select=*&limit=1000','tsi224_store_config?id=eq.shop&select=*'];
+    const rows=await Promise.all(paths.map(async path=>{
+      const response=await fetcher(cfg.url+'/rest/v1/'+path,{headers:{apikey:cfg.service,Authorization:'Bearer '+cfg.service},signal:AbortSignal.timeout(15000)});
+      if(!response.ok)fail(503,'catalog_unavailable','No se pudo cargar el catálogo autorizado.');const value=await response.json();if(!Array.isArray(value))fail(503,'catalog_unavailable','No se pudo cargar el catálogo autorizado.');return value;
+    }));
+    return {products:rows[0],variants:rows[1],config:rows[2][0]||null};
+  }
+  async function orderPermission(authorization,orderId){
+    const allowed=await rpc('tsi230_store_guest_order_allowed',{session_hash:authorization.sessionHash,order_id:orderId},404);
+    if(allowed!==true)fail(404,'order_unavailable','No se encontró el pedido con esta autorización.');
+  }
   function stripe() {
     const cfg = credentials(); if (!cfg.stripeReady || typeof options.stripeFactory !== 'function') fail(503,'payments_not_configured','Los pagos de prueba todavía no están configurados.');
     if (!client) client = options.stripeFactory(cfg.secret,{apiVersion:STRIPE_API_VERSION}); return client;
@@ -158,8 +182,9 @@ export function createHandler(options = {}) {
   function identity(body) {
     if (!UUID.test(body.order_id || '') || !TOKEN.test(body.access_token || '')) fail(400,'invalid_order_access','Falta la autorización para consultar el pedido.');
   }
-  async function status(body) {
+  async function status(body,authorization) {
     if (!only(body,['action','order_id','access_token'])) fail(400,'invalid_request','La solicitud no es válida.'); identity(body);
+    await orderPermission(authorization,body.order_id);
     const accessHash = await sha256(body.access_token,cryptoApi);
     let order = await rpc('tsi224_store_checkout_status',{order_id:body.order_id,access_hash:accessHash},404);
     if (order?.stripe_session_id && credentials().stripeReady) {
@@ -169,7 +194,7 @@ export function createHandler(options = {}) {
     }
     return {order:safeOrder(order)};
   }
-  async function lookup(body, address) {
+  async function lookup(body, address,authorization) {
     if (!only(body,['action','order_reference','email']) || typeof body.order_reference !== 'string' || body.order_reference.length > 40 || typeof body.email !== 'string' || body.email.length > 254) fail(400,'invalid_order_lookup','Escribe el número de pedido completo y el correo de la compra.');
     const reference = body.order_reference.trim().toUpperCase(), email = body.email.trim().toLowerCase();
     if (!ORDER_REFERENCE.test(reference) || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)) fail(400,'invalid_order_lookup','Escribe el número de pedido completo y el correo de la compra.');
@@ -183,6 +208,7 @@ export function createHandler(options = {}) {
     const identity = {order_reference:reference,email};
     let order = await rpc('tsi224_store_order_lookup',identity,404);
     if (!record(order) || order.reference !== reference) fail(404,'order_unavailable','No encontramos un pedido con ese número y correo. Revisa ambos datos.');
+    await orderPermission(authorization,order.id);
     if (order.stripe_session_id && credentials().stripeReady) {
       const session = await retrieve(order.stripe_session_id,order);
       await recordSession(session,'reconcile:' + session.id + ':' + session.status + ':' + session.payment_status);
@@ -198,7 +224,7 @@ export function createHandler(options = {}) {
     if (subtotal !== order.subtotal_cents || !order.requires_shipping && order.shipping_cents !== 0) fail(502,'invalid_store_response','La tienda no pudo confirmar los importes.');
     return order;
   }
-  async function createSession(body, address) {
+  async function createSession(body, address,authorization) {
     if (!only(body,['action','cart','request_id','access_token','email','phone']) || !UUID.test(body.request_id || '') || !TOKEN.test(body.access_token || '') || typeof body.email !== 'string' || body.email.length > 254 || !/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(body.email.trim())) fail(400,'invalid_checkout','Revisa el correo y los artículos antes de pagar.');
     // Older open checkout pages remain compatible while the new form is being deployed.
     const phone = body.phone === undefined ? null : phoneNumber(body.phone);
@@ -209,9 +235,8 @@ export function createHandler(options = {}) {
     const rateKey = await sha256(credentials().service + ':tsi224-checkout:' + rateDay + ':' + address,cryptoApi);
     const quota = await rpc('tsi224_store_checkout_rate',{key_hash:rateKey});
     if (!quota?.allowed) fail(429,'rate_limit','Espera unos minutos antes de iniciar otro pedido.');
-    const prepare = {request_id:body.request_id,access_hash:accessHash,cart,email:body.email.trim().toLowerCase()};
-    if (phone !== null) prepare.phone = phone;
-    const order = snapshot(await rpc(phone === null ? 'tsi224_store_checkout_prepare' : 'tsi224_store_checkout_prepare_contact',prepare));
+    const prepare = {session_hash:authorization.sessionHash,request_id:body.request_id,access_hash:accessHash,cart,email:body.email.trim().toLowerCase(),phone:phone||''};
+    const order = snapshot(await rpc('tsi230_store_prepare_guest',prepare));
     if (!order.stripe_session_id && !['pending','awaiting_payment'].includes(order.status)) fail(409,'checkout_closed','Este pedido ya no admite una nueva sesión de pago. Revisa su estado antes de iniciar otro.');
     let session;
     if (order.stripe_session_id) session = await retrieve(order.stripe_session_id,order);
@@ -255,10 +280,10 @@ export function createHandler(options = {}) {
   }
   return async function handler(request) {
     const origin = request.headers.get('origin'), headers = {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin'};
-    if (origin === STORE_ORIGIN) Object.assign(headers,{'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Authorization, apikey, X-Client-Info'});
+    if (origin === STORE_ORIGIN) Object.assign(headers,{'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Allow-Headers':'Content-Type, Authorization, apikey, X-Client-Info, x-tsi-guest-token'});
     const json = (data,status=200) => new Response(JSON.stringify(data),{status,headers});
     try {
-      const url = new URL(request.url), leaf = url.pathname.split('/').filter(Boolean).at(-1), route = url.searchParams.get('action') || (['config','quote','create-session','status','lookup','webhook'].includes(leaf) ? leaf : '');
+      const url = new URL(request.url), leaf = url.pathname.split('/').filter(Boolean).at(-1), route = url.searchParams.get('action') || (['config','catalog','quote','create-session','status','lookup','manual-order','download-photo','webhook'].includes(leaf) ? leaf : '');
       if (request.method === 'OPTIONS') { if (origin !== STORE_ORIGIN) fail(403,'origin_not_allowed','Este origen no está autorizado.'); return new Response(null,{status:204,headers}); }
       if (route === 'webhook') { if (request.method !== 'POST') fail(405,'method_not_allowed','Método no permitido.'); return json(await webhook(request)); }
       if (origin !== STORE_ORIGIN) fail(403,'origin_not_allowed','Este origen no está autorizado.');
@@ -268,15 +293,27 @@ export function createHandler(options = {}) {
         const config = await storeConfig(), ready = !!config?.payments_enabled && config.country === 'MX';
         return json({provider:'stripe',environment:'staging',currency:'MXN',ready,publishable_key:ready ? cfg.publishable : null,reason:ready ? '' : 'Los pagos están deshabilitados o pendientes de configurar en la tienda.'});
       }
+      if(request.method==='GET'&&route==='catalog'){limited(request,'catalog');return json(await catalog(request));}
       if (request.method !== 'POST') fail(405,'method_not_allowed','Método no permitido.');
       if (!(request.headers.get('content-type') || '').toLowerCase().startsWith('application/json')) fail(415,'json_required','Envía una solicitud válida.');
       const body = parseJSON(decode(await readBytes(request,65536))), action = route || body.action;
       if (route && body.action && body.action !== route) fail(400,'invalid_action','La solicitud no es válida.');
       const address = limited(request,action);
-      if (action === 'quote') { if (!only(body,['action','cart'])) fail(400,'invalid_request','La solicitud no es válida.'); return json(await rpc('tsi224_store_quote',{cart:validateCart(body.cart)},400)); }
-      if (action === 'create-session') return json(await createSession(body,address));
-      if (action === 'status') return json(await status(body));
-      if (action === 'lookup') return json(await lookup(body,address));
+      if (action === 'quote') { if (!only(body,['action','cart'])) fail(400,'invalid_request','La solicitud no es válida.');const cart=validateCart(body.cart);await guest(request,cart.filter(row=>row.kind==='photo').map(row=>row.id));return json(await rpc('tsi224_store_quote',{cart},400)); }
+      if (action === 'create-session') {const cart=validateCart(body.cart);const authorization=await guest(request,cart.filter(row=>row.kind==='photo').map(row=>row.id));return json(await createSession(body,address,authorization));}
+      if (action === 'status') return json(await status(body,await guest(request)));
+      if (action === 'lookup') return json(await lookup(body,address,await guest(request)));
+      if(action==='manual-order'){
+        if(!only(body,['action','name','contact','note','items','request_id'])||!UUID.test(body.request_id||'')||typeof body.name!=='string'||!body.name.trim()||body.name.length>120||typeof body.contact!=='string'||body.contact.length<8||body.contact.length>80||typeof body.note!=='string'||body.note.length>500||!Array.isArray(body.items)||!body.items.length||body.items.length>50)fail(400,'invalid_order','Revisa tu nombre, contacto y fotografías.');
+        const items=body.items.map(id=>String(id));if(items.some(id=>!id||id.length>128)||new Set(items).size!==items.length)fail(400,'invalid_order','Revisa las fotografías de tu pedido.');const authorization=await guest(request,items);
+        return json(await rpc('tsi230_store_manual_guest',{session_hash:authorization.sessionHash,request_id:body.request_id,items,name:body.name.trim(),contact:body.contact.trim(),note:body.note.trim()}));
+      }
+      if(action==='download-photo'){
+        if(!only(body,['action','order_id','access_token','item_id'])||typeof body.item_id!=='string'||!body.item_id||body.item_id.length>128||!UUID.test(body.order_id||'')||body.access_token!==undefined&&!TOKEN.test(body.access_token))fail(400,'invalid_request','Revisa la fotografía solicitada.');const authorization=await guest(request,[body.item_id]);
+        const photo=await rpc('tsi230_store_guest_photo',{session_hash:authorization.sessionHash,order_id:body.order_id,access_hash:body.access_token?await sha256(body.access_token,cryptoApi):null,item_id:body.item_id},403);
+        if(photo?.allowed!==true||typeof photo.image!=='string'||!/^data:image\/jpeg;base64,\/9j/.test(photo.image)||photo.image.length>700000)fail(403,'photo_unavailable','La fotografía no está disponible con este pedido y permiso.');
+        return json({image:photo.image,filename:'Tanabi-Sports-'+body.item_id.replace(/[^a-z0-9_-]/gi,'').slice(0,80)+'.jpg'});
+      }
       fail(404,'not_found','La operación no está disponible.');
     } catch (error) {
       if (error instanceof StoreError) return json({error:error.message,code:error.code},error.status);

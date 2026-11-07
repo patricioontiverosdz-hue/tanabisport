@@ -1,0 +1,326 @@
+const assert=require('node:assert/strict'),crypto=require('node:crypto'),path=require('node:path');
+const {pathToFileURL}=require('node:url');
+const clone=value=>JSON.parse(JSON.stringify(value));
+const ORIGIN='https://patricioontiverosdz-hue.github.io',PROJECT='nksqpoigywfegcbvfhoa';
+const PHYSICAL='11111111-1111-4111-8111-111111111111',DIGITAL='22222222-2222-4222-8222-222222222222';
+const shippingDetails=()=>({name:'Comprador',address:{country:'MX',line1:'Calle de prueba',city:'Monterrey',state:'NL',postal_code:'64000'}});
+const validCart=[{kind:'photo',id:'701',quantity:1}],mixedCart=[{kind:'variant',id:PHYSICAL,quantity:1},{kind:'variant',id:DIGITAL,quantity:1}];
+let createHandler,verifyStripeSignature,STRIPE_API_VERSION,RETURN_URL;
+
+function fixture(overrides={}){
+ let clock=Date.parse('2026-10-27T18:00:00Z'),enabled=true,stock=5,linkFailures=0,wrongAccount=false;
+ const runtime={SUPABASE_URL:'https://'+PROJECT+'.supabase.co',SUPABASE_SERVICE_ROLE_KEY:crypto.randomBytes(32).toString('hex'),STRIPE_SECRET_KEY:'rk_test_'+crypto.randomBytes(24).toString('hex'),STRIPE_PUBLISHABLE_KEY:'pk_test_'+crypto.randomBytes(24).toString('hex'),STRIPE_WEBHOOK_SECRET:'whsec_'+crypto.randomBytes(24).toString('hex'),...overrides};
+ const orders=new Map(),requests=new Map(),sessions=new Map(),idempotency=new Map(),events=new Set(),rpcCalls=[],stripeCalls=[],createErrors=[],lookupHits=new Map();
+ let deniedRate=false,sessionMutation=null,lookupUnavailable=false;
+ const guestA=crypto.randomBytes(32).toString('hex'),guestB=crypto.randomBytes(32).toString('hex'),guestC=crypto.randomBytes(32).toString('hex');
+ const digest=value=>crypto.createHash('sha256').update(value).digest('hex');
+ const guests=new Map([[digest(guestA),{contact:'contact-a',ids:new Set(['701']),revoked:false}],[digest(guestB),{contact:'contact-b',ids:new Set(['701']),revoked:false}],[digest(guestC),{contact:'contact-c',ids:new Set(['702']),revoked:false}]]),bindings=new Map(),manualRequests=new Map();
+ function guestAllowed(hash,ids=[]){const g=guests.get(hash);return !!g&&!g.revoked&&ids.every(id=>g.ids.has(id));}
+ function orderAllowed(hash,id){const o=orders.get(id),g=guests.get(hash);return !!o&&!!g&&bindings.get(id)===g.contact&&guestAllowed(hash,o.items.filter(i=>i.kind==='photo').map(i=>i.id));}
+ function quote(cart){
+  const items=cart.map(row=>{
+   const physical=row.kind==='variant'&&row.id===PHYSICAL,price=row.kind==='photo'&&row.id==='701'?5000:physical?25000:row.id===DIGITAL?10000:null;
+   if(!price||physical&&row.quantity>stock)throw Error('unavailable');
+   return {kind:row.kind,id:row.id,title:physical?'Playera TS':row.kind==='photo'?'Foto del jugador':'Diseño digital',variant:physical?'Mediana':'',quantity:row.quantity,unit_price_cents:price,line_total_cents:price*row.quantity,physical,customization:row.customization||''};
+  });
+  const requires_shipping=items.some(item=>item.physical),subtotal_cents=items.reduce((n,item)=>n+item.line_total_cents,0),shipping_cents=requires_shipping?10000:0;
+  return {items,subtotal_cents,shipping_cents,total_cents:subtotal_cents+shipping_cents,currency:'MXN',requires_shipping,shipping_configured:true,payments_enabled:enabled};
+ }
+ function release(order){if(!order.released){stock+=order.items.filter(item=>item.physical).reduce((n,item)=>n+item.quantity,0);order.released=true;}}
+ const ok=value=>new Response(JSON.stringify(value),{status:200,headers:{'Content-Type':'application/json'}});
+ const fetcher=async(url,options={})=>{
+  const target=new URL(url);assert.equal(target.origin,'https://'+PROJECT+'.supabase.co','La función nunca envía secretos a otro proyecto');assert.equal(options.headers.Authorization,'Bearer '+runtime.SUPABASE_SERVICE_ROLE_KEY);
+  if(target.pathname==='/rest/v1/tsi224_store_config')return ok([{payments_enabled:enabled,country:'MX',shipping_fee_cents:10000}]);
+  if(target.pathname==='/rest/v1/tsi224_store_products')return ok([{id:'catalog-product',title:'Catálogo autorizado',active:true}]);
+  if(target.pathname==='/rest/v1/tsi224_store_variants')return ok([{id:PHYSICAL,product_id:'catalog-product',active:true}]);
+  const name=target.pathname.split('/').at(-1),p=JSON.parse(options.body);rpcCalls.push({name,p:clone(p)});
+  try{
+   if(name==='tsi230_guest_verify_items'){assert.deepEqual(Object.keys(p).sort(),['item_ids','session_hash']);assert.match(p.session_hash,/^[0-9a-f]{64}$/);return ok({allowed:guestAllowed(p.session_hash,p.item_ids),contact_id:guests.get(p.session_hash)?.contact,expires_at:new Date(clock+600000).toISOString()});}
+   if(name==='tsi230_store_guest_order_allowed')return ok(orderAllowed(p.session_hash,p.order_id));
+   if(name==='tsi230_store_guest_photo'){
+    const o=orders.get(p.order_id);if(!orderAllowed(p.session_hash,p.order_id)||!o||o.status!=='paid'||p.access_hash!==null&&p.access_hash!==o.access_hash||!o.items.some(i=>i.kind==='photo'&&i.id===p.item_id)||!guestAllowed(p.session_hash,[p.item_id]))return new Response('{}',{status:403});
+    return ok({allowed:true,image:'data:image/jpeg;base64,/9j/RE9XTkxPQUQ=',title:'Foto pagada'});
+   }
+   if(name==='tsi230_store_manual_guest'){
+    if(!guestAllowed(p.session_hash,p.items))return new Response('{}',{status:403});const fingerprint=JSON.stringify({...p,session_hash:guests.get(p.session_hash).contact});
+    if(manualRequests.has(p.request_id)){const prior=manualRequests.get(p.request_id);if(prior.fingerprint!==fingerprint)throw Error('changed manual request');return ok(prior.result);}
+    const result={id:1234567890123,reference:'1234567890123',total:50*p.items.length,status:'nuevo'};manualRequests.set(p.request_id,{fingerprint,result});return ok(result);
+   }
+   if(name==='tsi224_store_quote')return ok(quote(p.cart));
+   if(name==='tsi224_store_checkout_rate')return ok({allowed:!deniedRate,retry_after_seconds:600});
+   if(name==='tsi224_store_lookup_rate'){
+    let entry=lookupHits.get(p.key_hash);if(!entry||clock-entry.at>=600000){entry={at:clock,count:0};lookupHits.set(p.key_hash,entry);}entry.count++;return ok({allowed:!deniedRate&&entry.count<=20,retry_after:600});
+   }
+   if(name==='tsi230_store_prepare_guest'){
+    assert.deepEqual(Object.keys(p).sort(),['access_hash','cart','email','phone','request_id','session_hash']);if(!guestAllowed(p.session_hash,p.cart.filter(i=>i.kind==='photo').map(i=>i.id)))throw Error('guest cart outside scope');
+    const fingerprint=JSON.stringify({guest:guests.get(p.session_hash).contact,access:p.access_hash,cart:p.cart,email:p.email,phone:p.phone||''});
+    if(requests.has(p.request_id)){const saved=requests.get(p.request_id);if(saved.fingerprint!==fingerprint)throw Error('request mismatch');return ok(clone(orders.get(saved.id)));}
+    if(!enabled)throw Error('disabled');const value=quote(p.cart),id=crypto.randomUUID();
+    stock-=value.items.filter(item=>item.physical).reduce((n,item)=>n+item.quantity,0);
+    const order={...value,id,reference:'TS-'+crypto.randomBytes(8).toString('hex').toUpperCase(),status:'pending',fulfillment:'unfulfilled',email:p.email,phone:p.phone||'',access_hash:p.access_hash,stripe_session_id:null,created_at:new Date(clock).toISOString(),released:false};
+    orders.set(id,order);bindings.set(id,guests.get(p.session_hash).contact);requests.set(p.request_id,{id,fingerprint});return ok(clone(order));
+   }
+   if(name==='tsi224_store_checkout_link'){
+    if(linkFailures){linkFailures--;return new Response('{}',{status:503});}
+    const order=orders.get(p.order_id);if(!order||order.stripe_session_id&&order.stripe_session_id!==p.session_id)throw Error('link mismatch');order.stripe_session_id=p.session_id;order.status='awaiting_payment';return ok({linked:true});
+   }
+   if(name==='tsi224_store_checkout_abort'){
+    const order=orders.get(p.order_id);if(!order||order.access_hash!==p.access_hash||order.stripe_session_id)throw Error('cannot abort');if(order.status==='pending'){order.status='failed';release(order);}return ok({aborted:true});
+   }
+   if(name==='tsi224_store_checkout_status'){
+    const order=orders.get(p.order_id);if(!order||order.access_hash!==p.access_hash)throw Error('not owned');return ok({...clone(order),delivery_link:order.status==='paid'?'https://delivery.invalid/owned':'https://delivery.invalid/NOT-PAID'});
+   }
+   if(name==='tsi224_store_order_lookup'){
+    if(lookupUnavailable)return new Response('{}',{status:503});
+    const order=Array.from(orders.values()).find(o=>o.reference===p.order_reference&&o.email===p.email);
+    return ok(order?{...clone(order),delivery_link:order.status==='paid'?'https://delivery.invalid/owned':'https://delivery.invalid/NOT-PAID'}:null);
+   }
+   if(name==='tsi224_store_checkout_event'){
+    const order=orders.get(p.order_id);if(!order||order.stripe_session_id!==p.session_id||order.total_cents!==p.amount_total||order.currency.toLowerCase()!==p.currency)throw Error('payment mismatch');
+    if(p.payment_status==='paid'&&order.requires_shipping){const a=p.shipping?.address;if(a?.country!=='MX'||!a.line1||!a.city||!a.state||!/^\d{5}$/.test(a.postal_code||''))throw Error('shipping incomplete');}
+    if(events.has(p.event_id))return ok({duplicate:true});events.add(p.event_id);
+    if(p.payment_status==='paid'){if(order.released)order.needs_review=true;order.status='paid';}
+    else if(order.status!=='paid'&&p.session_status==='expired'){order.status='expired';release(order);}
+    else if(order.status!=='paid'&&p.payment_status==='failed'){order.status='failed';release(order);}
+    return ok({processed:true,status:order.status});
+   }
+   throw Error('Unexpected RPC '+name);
+  }catch{return new Response('{}',{status:409});}
+ };
+ const sdk={
+  accounts:{retrieve:async()=>{stripeCalls.push({type:'account'});return {id:wrongAccount?'acct_unapproved':'acct_1UVH3OQ9WFCZJIYG'};}},
+  checkout:{sessions:{
+   create:async(params,options)=>{
+    stripeCalls.push({type:'create',params:clone(params),options:clone(options)});
+    assert.equal(params.payment_method_types,undefined,'Métodos dinámicos, sin listas manuales');assert.equal(params.ui_mode,'embedded_page');assert.equal(params.redirect_on_completion,'if_required','El retorno fijo permite métodos que requieren redirección sin sacar las tarjetas del pago embebido');assert.equal(params.return_url,RETURN_URL);
+    assert.match(params.integration_identifier,/^tsi_store_staging_[a-z]{8}$/);assert.equal(params.expires_at,Math.floor(Date.parse(orders.get(params.client_reference_id).created_at)/1000)+45*60);
+    if(createErrors.length)throw createErrors.shift();
+    const fingerprint=JSON.stringify(params),saved=idempotency.get(options.idempotencyKey);
+    if(saved){assert.equal(fingerprint,saved.fingerprint,'El reintento conserva exactamente los parámetros');return clone(sessions.get(saved.id));}
+    const id='cs_test_'+crypto.randomBytes(16).toString('hex'),amount=params.line_items.reduce((n,item)=>n+item.quantity*item.price_data.unit_amount,0)+(params.shipping_options?.[0]?.shipping_rate_data.fixed_amount.amount||0);
+    const session={id,object:'checkout.session',mode:'payment',livemode:false,currency:'mxn',amount_total:amount,status:'open',payment_status:'unpaid',metadata:params.metadata,client_reference_id:params.client_reference_id,client_secret:id+'_secret_'+crypto.randomBytes(16).toString('hex'),customer_email:params.customer_email};
+    if(sessionMutation)sessionMutation(session);sessions.set(id,session);idempotency.set(options.idempotencyKey,{id,fingerprint});return clone(session);
+   },
+   retrieve:async id=>{stripeCalls.push({type:'retrieve',id});if(!sessions.has(id))throw Error('Missing session');return clone(sessions.get(id));}
+  }},
+  webhooks:{constructEventAsync:async(raw,signature,secret)=>verifyStripeSignature(new TextEncoder().encode(raw),signature,secret,clock,crypto.webcrypto)}
+ };
+ const makeHandler=()=>createHandler({env:name=>runtime[name],fetch:fetcher,crypto:crypto.webcrypto,now:()=>clock,stripeFactory:(key,options)=>{assert.equal(key,runtime.STRIPE_SECRET_KEY);assert.equal(options.apiVersion,STRIPE_API_VERSION);return sdk;}});let handler=makeHandler();
+ const endpoint='https://'+PROJECT+'.supabase.co/functions/v1/tsi-store-checkout';
+ async function call(action,body={},options={}){
+  const method=options.method||'POST',headers={Origin:ORIGIN,'CF-Connecting-IP':'192.0.2.10','x-tsi-guest-token':guestA,...(method==='POST'?{'Content-Type':'application/json'}:{}),...options.headers};
+  const request=new Request(endpoint+'?action='+action,{method,headers,...(method==='POST'?{body:options.raw??JSON.stringify(body)}:{})});
+  const response=await handler(request),data=await response.json();return {status:response.status,data,headers:response.headers};
+ }
+ const checkoutBody=(cart=validCart)=>({cart:clone(cart),request_id:crypto.randomUUID(),access_token:crypto.randomBytes(32).toString('hex'),email:'buyer@example.invalid'});
+ async function webhook(type,session,options={}){
+  const event={id:options.event_id||'evt_'+crypto.randomBytes(12).toString('hex'),object:'event',type,livemode:options.live??false,data:{object:{id:session.id}}};
+  const raw=JSON.stringify(event),timestamp=Math.floor(clock/1000)+(options.age||0),signature=crypto.createHmac('sha256',runtime.STRIPE_WEBHOOK_SECRET).update(timestamp+'.'+raw).digest('hex');
+  const header=options.signature??('t='+timestamp+','+(options.multiple?'v1='+'0'.repeat(64)+',':'')+'v1='+signature);
+  const response=await handler(new Request(endpoint+'/webhook',{method:'POST',headers:{'Stripe-Signature':header},body:options.tamper?raw+' ':raw}));return {status:response.status,data:await response.json(),event};
+ }
+ return {runtime,orders,sessions,events,rpcCalls,stripeCalls,call,checkoutBody,webhook,guestA,guestB,guestC,guests,bindings,manualRequests,digest,get stock(){return stock;},advance(ms){clock+=ms;},setEnabled(value){enabled=value;},setWrongAccount(){wrongAccount=true;},failLink(){linkFailures++;},failCreate(error){createErrors.push(error);},denyRate(){deniedRate=true;},mutateSession(fn){sessionMutation=fn;},coldStart(){handler=makeHandler();},failLookup(){lookupUnavailable=true;}};
+}
+
+async function guestCases(){
+ // The opaque guest session is separate from order possession and never sent to Stripe.
+ {
+  const f=fixture();
+  for(const action of ['quote','create-session','status','lookup','download-photo','catalog','manual-order']){
+   const body=action==='quote'?{cart:validCart}:action==='create-session'?f.checkoutBody():action==='status'?{order_id:crypto.randomUUID(),access_token:crypto.randomBytes(32).toString('hex')}:action==='lookup'?{order_reference:'TS-0000000000000000',email:'buyer@example.invalid'}:action==='download-photo'?{order_id:crypto.randomUUID(),item_id:'701'}:action==='manual-order'?{items:['701'],name:'Prueba',contact:'8112345678',note:'',request_id:crypto.randomUUID()}:{};
+   const r=await f.call(action,body,{method:action==='catalog'?'GET':'POST',headers:{'x-tsi-guest-token':''}});assert.equal(r.status,403,'Requiere invitado: '+action);
+  }
+  assert.equal(f.orders.size,0);assert.equal(f.stripeCalls.length,0);assert.equal(f.rpcCalls.length,0,'Token ausente se rechaza antes de contactar la base');
+  for(const invalid of ['not-a-token','g'.repeat(64),'a'.repeat(63),'a'.repeat(65)])assert.equal((await f.call('quote',{cart:validCart},{headers:{'x-tsi-guest-token':invalid}})).status,403);
+  assert.equal((await f.call('quote',{cart:validCart},{headers:{'x-tsi-guest-token':f.guestC}})).status,403,'Galería ajena no cotiza fotos');
+  assert.equal((await f.call('create-session',f.checkoutBody(),{headers:{'x-tsi-guest-token':f.guestC}})).status,403,'Galería ajena no crea pagos');
+  assert.equal(f.orders.size,0);assert.equal(f.stripeCalls.length,0,'Permiso foto se verifica antes de Stripe');
+ }
+ {
+  const f=fixture(),catalog=await f.call('catalog',{}, {method:'GET'});assert.equal(catalog.status,200);assert.equal(catalog.data.products[0].id,'catalog-product');assert.equal(catalog.data.variants[0].id,PHYSICAL);assert.equal(catalog.data.config.country,'MX');
+  assert.equal((await f.call('quote',{cart:mixedCart},{headers:{'x-tsi-guest-token':f.guestC}})).status,200,'Variantes sin fotografías admiten cualquier invitado vigente');
+  assert.equal((await f.call('create-session',f.checkoutBody(mixedCart),{headers:{'x-tsi-guest-token':f.guestC}})).status,200);
+  const verification=f.rpcCalls.filter(c=>c.name==='tsi230_guest_verify_items');assert.ok(verification.every(c=>c.p.item_ids.length===0));assert.ok(!JSON.stringify(f.stripeCalls).includes(f.guestC));assert.ok(!JSON.stringify(f.stripeCalls).includes(f.digest(f.guestC)));
+  f.guests.get(f.digest(f.guestA)).revoked=true;assert.equal((await f.call('catalog',{}, {method:'GET'})).status,403);assert.equal((await f.call('quote',{cart:mixedCart})).status,403,'Revocación también cierra variantes');
+ }
+ {
+  const f=fixture(),body=f.checkoutBody(),created=await f.call('create-session',body),order=f.orders.get(created.data.order_id),lookup={order_reference:order.reference,email:body.email},access={order_id:order.id,access_token:body.access_token};
+  for(const action of ['status','lookup']){
+   const before=f.stripeCalls.length,res=await f.call(action,action==='status'?access:lookup,{headers:{'x-tsi-guest-token':f.guestB}});assert.equal(res.status,404,'Otro contacto no recupera pedido aun con '+action);assert.equal(res.data.order,undefined);assert.equal(f.stripeCalls.length,before,'Pedido ajeno no se reconcilia ni altera');
+  }
+  assert.equal((await f.call('create-session',body,{headers:{'x-tsi-guest-token':f.guestB}})).status,409,'El request id de A no se reasigna a B');assert.equal(f.orders.size,1);
+  const bodyB=f.checkoutBody(),createdB=await f.call('create-session',bodyB,{headers:{'x-tsi-guest-token':f.guestB}});assert.equal(createdB.status,200);assert.notEqual(createdB.data.order_id,order.id);assert.equal(f.orders.get(createdB.data.order_id).email,order.email,'Mismo correo no mezcla contactos invitados');
+  assert.equal((await f.call('status',{order_id:createdB.data.order_id,access_token:bodyB.access_token})).status,404,'A no lee el pedido de B aun con token correcto y correo compartido');
+  assert.equal((await f.call('status',{order_id:createdB.data.order_id,access_token:bodyB.access_token},{headers:{'x-tsi-guest-token':f.guestB}})).status,200,'B conserva acceso a su pedido');
+  // An invitation renewed for the same contact can recover its own order.
+  const renewed=crypto.randomBytes(32).toString('hex');f.guests.set(f.digest(renewed),{contact:'contact-a',ids:new Set(['701']),revoked:false});assert.equal((await f.call('lookup',lookup,{headers:{'x-tsi-guest-token':renewed}})).status,200);
+  const session=f.sessions.get(created.data.session_id);session.status='complete';session.payment_status='paid';assert.equal((await f.webhook('checkout.session.completed',session)).status,200);
+  const paid=await f.call('status',access);assert.equal(paid.data.order.delivery_link,undefined);assert.deepEqual(paid.data.order.downloadable_photos,[{id:'701',title:'Foto del jugador'}]);
+  const ownDownload=await f.call('download-photo',{...access,item_id:'701'});assert.equal(ownDownload.status,200);assert.match(ownDownload.data.image,/^data:image\/jpeg;base64,\/9j/);assert.equal(ownDownload.data.filename,'Tanabi-Sports-701.jpg');
+  const withoutOldPossession=await f.call('download-photo',{order_id:order.id,item_id:'701'},{headers:{'x-tsi-guest-token':renewed}});assert.equal(withoutOldPossession.status,200,'Invitación del mismo contacto recupera descarga sin token viejo');
+  assert.equal((await f.call('download-photo',{...access,item_id:'701',access_token:'f'.repeat(64)})).status,403,'Hash de posesión incorrecto impide descarga');
+  assert.equal((await f.call('download-photo',{...access,item_id:'701'},{headers:{'x-tsi-guest-token':f.guestB}})).status,403,'Otro contacto con misma foto no puede usar pedido A');
+  assert.equal((await f.call('download-photo',{...access,item_id:'702'})).status,403,'Foto fuera del alcance impide descarga');
+  f.guests.get(f.digest(f.guestA)).ids.add('702');assert.equal((await f.call('download-photo',{...access,item_id:'702'})).status,403,'Foto autorizada pero no comprada no se descarga');
+  f.guests.get(f.digest(f.guestA)).ids.delete('701');assert.equal((await f.call('status',access)).status,404,'Reducir alcance impide recuperar pedido con fotos excluidas');
+  f.guests.get(f.digest(f.guestA)).ids.add('701');f.guests.get(f.digest(f.guestA)).revoked=true;assert.equal((await f.call('download-photo',{...access,item_id:'701'})).status,403,'Revocación cierra descargas pagadas');assert.equal((await f.call('lookup',lookup)).status,403);
+  const download=f.rpcCalls.find(c=>c.name==='tsi230_store_guest_photo');assert.equal(download.p.session_hash,f.digest(f.guestA));assert.equal(download.p.access_hash,f.digest(body.access_token));assert.ok(!JSON.stringify(f.rpcCalls).includes(f.guestA),'La base recibe hash del invitado');
+ }
+ {
+  const f=fixture(),body=f.checkoutBody(),created=await f.call('create-session',body);assert.equal((await f.call('download-photo',{order_id:created.data.order_id,access_token:body.access_token,item_id:'701'})).status,403,'Pedido sin pago nunca descarga');
+  const request={name:' Prueba sintética ',contact:' 8112345678 ',note:' Nota sintética ',items:['701'],request_id:crypto.randomUUID()};let r=await f.call('manual-order',request);assert.equal(r.status,200);assert.equal(r.data.status,'nuevo');assert.equal(f.manualRequests.size,1);r=await f.call('manual-order',request);assert.equal(r.status,200);assert.equal(f.manualRequests.size,1);
+  assert.equal((await f.call('manual-order',request,{headers:{'x-tsi-guest-token':f.guestC}})).status,403);assert.equal((await f.call('manual-order',request,{headers:{'x-tsi-guest-token':f.guestB}})).status,409,'Manual request no se reasigna a otro contacto');
+  const manual=f.rpcCalls.find(c=>c.name==='tsi230_store_manual_guest');assert.deepEqual(Object.keys(manual.p).sort(),['contact','items','name','note','request_id','session_hash']);assert.equal(manual.p.name,'Prueba sintética');assert.equal(manual.p.contact,'8112345678');assert.equal(manual.p.note,'Nota sintética');
+  for(const p of [{...request,items:['701','701']},{...request,items:[]},{...request,name:''},{...request,price:1}])assert.equal((await f.call('manual-order',p)).status,400);
+ }
+}
+
+async function main(){
+ ({createHandler,verifyStripeSignature,STRIPE_API_VERSION,RETURN_URL}=await import(pathToFileURL(path.join(__dirname,'../supabase/functions/tsi-store-checkout/handler.mjs'))));
+ // Configuration absence and the production boundary stop before reservations or Stripe calls.
+ for(const overrides of [{STRIPE_SECRET_KEY:''},{STRIPE_WEBHOOK_SECRET:''},{STRIPE_PUBLISHABLE_KEY:''},{STRIPE_SECRET_KEY:'sk_live_'+crypto.randomBytes(18).toString('hex')},{SUPABASE_URL:'https://tantlgswituiwkxfgmsr.supabase.co'}]){
+  const f=fixture(overrides),config=await f.call('config',{}, {method:'GET'});assert.equal(config.status,200);assert.equal(config.data.ready,false);assert.equal(config.data.publishable_key,null);
+  const result=await f.call('create-session',f.checkoutBody());assert.equal(result.status,503);assert.equal(f.orders.size,0);assert.equal(f.stripeCalls.length,0);
+  assert.ok(!JSON.stringify(result.data).includes(f.runtime.SUPABASE_SERVICE_ROLE_KEY));
+ }
+ {
+  const f=fixture({STRIPE_SECRET_KEY:''}),quote=await f.call('quote',{cart:validCart});assert.equal(quote.status,200);assert.equal(quote.data.total_cents,5000,'Los precios se pueden consultar sin habilitar pagos');
+ }
+ {
+  const f=fixture(),body=f.checkoutBody();f.setEnabled(false);assert.equal((await f.call('create-session',body)).status,503);assert.equal(f.orders.size,0);
+  const wrong=fixture();wrong.setWrongAccount();assert.equal((await wrong.call('create-session',wrong.checkoutBody())).status,503);assert.equal(wrong.orders.size,0);
+  const rate=fixture();rate.denyRate();assert.equal((await rate.call('create-session',rate.checkoutBody())).status,429);assert.equal(rate.orders.size,0);
+ }
+ // Only bounded item identities, quantities and personalization are accepted from the browser.
+ {
+  const f=fixture();
+  for(const cart of [[{...validCart[0],price:1}],[{...validCart[0],quantity:2}],[{...validCart[0],quantity:-1}],[validCart[0],validCart[0]],[],Array.from({length:51},(_,i)=>({kind:'photo',id:String(i),quantity:1}))])assert.equal((await f.call('quote',{cart})).status,400);
+  const specialized=[{kind:'variant',id:PHYSICAL,quantity:1,customization:'Ana'},{kind:'variant',id:PHYSICAL,quantity:1,customization:'Luis'}];assert.equal((await f.call('quote',{cart:specialized})).status,200);
+  assert.equal((await f.call('quote',{cart:specialized.map(row=>({...row,quantity:11}))})).status,400);
+  assert.equal((await f.call('create-session',{...f.checkoutBody(),total_cents:1})).status,400);assert.equal(f.orders.size,0);
+  assert.equal((await f.call('status',{order_id:crypto.randomUUID()})).status,400);
+  assert.equal((await f.call('quote',{cart:validCart},{headers:{Origin:'https://untrusted.invalid'}})).status,403);
+  assert.equal((await f.call('quote',{}, {raw:'{"x":"'+'a'.repeat(70000)+'"}'})).status,413);
+ }
+ // Prices, shipping and every Stripe amount come from the server snapshot.
+ {
+  const f=fixture(),body=f.checkoutBody(mixedCart),result=await f.call('create-session',body);assert.equal(result.status,200);assert.equal(f.stock,4);
+  const create=f.stripeCalls.find(row=>row.type==='create');assert.equal(create.params.line_items[0].price_data.unit_amount,25000);assert.deepEqual(create.params.shipping_address_collection,{allowed_countries:['MX']});assert.equal(create.params.shipping_options[0].shipping_rate_data.fixed_amount.amount,10000);
+  assert.equal(result.data.status,'awaiting_payment');assert.ok(result.data.client_secret);assert.equal(result.data.access_token,undefined);
+  const order=f.orders.get(result.data.order_id);assert.equal(order.total_cents,45000);assert.equal(order.email,'buyer@example.invalid');assert.notEqual(order.access_hash,body.access_token);
+  const unauthorized=await f.call('status',{order_id:order.id,access_token:crypto.randomBytes(32).toString('hex')});assert.equal(unauthorized.status,404);
+  const own=await f.call('status',{order_id:order.id,access_token:body.access_token});assert.equal(own.status,200);assert.equal(own.data.order.access_hash,undefined);assert.equal(own.data.order.delivery_link,undefined,'Una redirección no habilita entrega sin pago');
+  assert.equal(own.data.order.fulfillment,'unfulfilled','El comprador recibe el campo real de seguimiento logístico');
+ }
+ {
+  const f=fixture();await f.call('create-session',f.checkoutBody());await f.call('create-session',f.checkoutBody());
+  const sameDay=f.rpcCalls.filter(row=>row.name==='tsi224_store_checkout_rate').map(row=>row.p.key_hash);
+  assert.match(sameDay[0],/^[0-9a-f]{64}$/);assert.equal(sameDay[0],sameDay[1],'El límite agrupa solicitudes del mismo origen durante el día UTC');
+  f.advance(24*60*60000);await f.call('create-session',f.checkoutBody());
+  const nextDay=f.rpcCalls.filter(row=>row.name==='tsi224_store_checkout_rate').at(-1).p.key_hash;
+  assert.notEqual(nextDay,sameDay[0],'El identificador no persiste entre días UTC');
+  const anotherSecret=fixture();await anotherSecret.call('create-session',anotherSecret.checkoutBody());
+  assert.notEqual(anotherSecret.rpcCalls.find(row=>row.name==='tsi224_store_checkout_rate').p.key_hash,sameDay[0],'La sal secreta del servidor impide hashes de IP globales predecibles');
+ }
+ {
+  const f=fixture(),result=await f.call('create-session',f.checkoutBody()),create=f.stripeCalls.find(row=>row.type==='create');assert.equal(result.status,200);assert.equal(create.params.shipping_options,undefined);assert.equal(create.params.shipping_address_collection,undefined);assert.equal(create.params.phone_number_collection,undefined);
+ }
+ // An ambiguous link failure is retried against the same Stripe session and reservation.
+ {
+  const f=fixture(),body=f.checkoutBody(mixedCart);f.failLink();assert.equal((await f.call('create-session',body)).status,409);f.advance(120000);
+  const retry=await f.call('create-session',body);assert.equal(retry.status,200);assert.equal(f.orders.size,1);assert.equal(f.sessions.size,1);assert.equal(f.stock,4);
+  assert.equal(f.stripeCalls.filter(row=>row.type==='create').length,2);
+  assert.equal((await f.call('create-session',{...body,email:'different@example.invalid'})).status,409,'No se reutiliza el request_id para otro comprador');
+ }
+ {
+  const f=fixture(),body=f.checkoutBody(mixedCart);f.failCreate({type:'StripeConnectionError'});assert.equal((await f.call('create-session',body)).status,503);assert.equal(f.stock,4);
+  f.advance(16*60000);assert.equal((await f.call('create-session',body)).status,409);assert.equal(f.sessions.size,0);assert.equal(f.stock,4,'La incertidumbre no libera reservas por un temporizador local');
+  const rejected=fixture(),rejectedBody=rejected.checkoutBody(mixedCart);rejected.failCreate({type:'StripeInvalidRequestError',statusCode:400});assert.equal((await rejected.call('create-session',rejectedBody)).status,409);assert.equal(rejected.stock,5,'Rechazo definitivo anterior a una sesión libera la reserva');
+  assert.equal((await rejected.call('create-session',rejectedBody)).status,409);assert.equal(rejected.sessions.size,0,'Una orden cancelada no recrea un pago después de liberar sus existencias');
+ }
+ // Webhooks are authenticated before retrieval/writes; duplicate and reordered events stay safe.
+ {
+  const f=fixture(),body=f.checkoutBody(mixedCart),created=await f.call('create-session',body),session=f.sessions.get(created.data.session_id),before=f.rpcCalls.filter(row=>row.name==='tsi224_store_checkout_event').length;
+  for(const options of [{signature:'t=1,v1='+'0'.repeat(64)},{age:-301},{age:301},{tamper:true},{live:true}])assert.equal((await f.webhook('checkout.session.completed',session,options)).status,400);
+  assert.equal(f.rpcCalls.filter(row=>row.name==='tsi224_store_checkout_event').length,before);
+  session.status='complete';session.payment_status='paid';session.customer_details={email:body.email,name:'Comprador',phone:'8112345678'};session.collected_information={shipping_details:shippingDetails()};
+  const paid=await f.webhook('checkout.session.completed',session,{multiple:true,event_id:'evt_paid_once'});assert.equal(paid.status,200);assert.equal(f.orders.get(created.data.order_id).status,'paid');
+  assert.equal((await f.webhook('checkout.session.completed',session,{event_id:'evt_paid_once'})).status,200);assert.equal(f.events.size,1);
+  assert.equal((await f.webhook('checkout.session.expired',session)).status,200,'Un evento de expiración atrasado consulta el estado actual pagado');assert.equal(f.orders.get(created.data.order_id).status,'paid');assert.equal(f.stock,4);
+  const owned=await f.call('status',{order_id:created.data.order_id,access_token:body.access_token});assert.equal(owned.data.order.status,'paid');assert.equal(owned.data.order.delivery_link,'https://delivery.invalid/owned');
+ }
+ {
+  const f=fixture(),body=f.checkoutBody([{kind:'variant',id:PHYSICAL,quantity:1,customization:'Nombre privado del jugador'}]),created=await f.call('create-session',body),session=f.sessions.get(created.data.session_id);
+  const params=f.stripeCalls.find(row=>row.type==='create').params;
+  assert.ok(!JSON.stringify(params.line_items).includes('Nombre privado'));assert.ok(!JSON.stringify(params.metadata).includes('Nombre privado'));
+  session.status='complete';session.payment_status='paid';session.collected_information={shipping_details:shippingDetails()};session.presentment_details={presentment_amount:1700,presentment_currency:'usd'};
+  assert.equal((await f.webhook('checkout.session.completed',session)).status,200,'Adaptive Pricing conserva el total y moneda MXN de integración');assert.equal(f.orders.get(created.data.order_id).status,'paid');
+ }
+ {
+  const f=fixture(),created=await f.call('create-session',f.checkoutBody(mixedCart)),session=f.sessions.get(created.data.session_id);
+  session.status='complete';session.payment_status='unpaid';assert.equal((await f.webhook('checkout.session.async_payment_failed',session)).status,200);assert.equal(f.orders.get(created.data.order_id).status,'failed');assert.equal(f.stock,5);
+  assert.equal((await f.webhook('checkout.session.async_payment_failed',session)).status,200);assert.equal(f.stock,5);
+  session.payment_status='paid';session.collected_information={shipping_details:shippingDetails()};assert.equal((await f.webhook('checkout.session.async_payment_succeeded',session)).status,200);assert.equal(f.orders.get(created.data.order_id).status,'paid');assert.equal(f.orders.get(created.data.order_id).needs_review,true);
+ }
+ {
+  const f=fixture(),created=await f.call('create-session',f.checkoutBody(mixedCart)),session=f.sessions.get(created.data.session_id);
+  session.status='expired';assert.equal((await f.webhook('checkout.session.expired',session)).status,200);assert.equal(f.stock,5);assert.equal((await f.webhook('checkout.session.expired',session)).status,200);assert.equal(f.stock,5);
+ }
+ {
+  const f=fixture(),created=await f.call('create-session',f.checkoutBody(mixedCart)),session=f.sessions.get(created.data.session_id);session.status='complete';session.payment_status='paid';
+  session.collected_information={shipping_details:{address:{country:'MX'}}};assert.equal((await f.webhook('checkout.session.completed',session)).status,409);assert.notEqual(f.orders.get(created.data.order_id).status,'paid');
+  delete session.collected_information;session.shipping_details=shippingDetails();assert.equal((await f.webhook('checkout.session.completed',session)).status,200,'Formato anterior shipping_details sigue siendo compatible');
+ }
+ {
+  const f=fixture(),created=await f.call('create-session',f.checkoutBody()),session=f.sessions.get(created.data.session_id);session.status='complete';session.payment_status='paid';session.amount_total=1;
+  assert.equal((await f.webhook('checkout.session.completed',session)).status,409);assert.notEqual(f.orders.get(created.data.order_id).status,'paid');
+  session.amount_total=5001;assert.equal((await f.webhook('checkout.session.completed',session)).status,409);assert.notEqual(f.orders.get(created.data.order_id).status,'paid');
+ }
+ {
+  const f=fixture(),body={...f.checkoutBody(),phone:'+52 (81) 1234-5678'},created=await f.call('create-session',body);
+  assert.equal(created.status,200);assert.match(created.data.reference,/^TS-[0-9A-F]{16}$/,'Número generado en servidor, aleatorio y no secuencial');
+  const order=f.orders.get(created.data.order_id);assert.equal(order.phone,'+528112345678');
+  const prepared=f.rpcCalls.find(c=>c.name==='tsi230_store_prepare_guest');assert.equal(prepared.p.phone,'+528112345678');
+  assert.equal((await f.call('create-session',{...body,phone:'+52 81 1234 5678'})).data.order_id,order.id,'El formato del mismo teléfono no crea otro pedido');
+  assert.equal((await f.call('create-session',{...body,phone:'8111111111'})).status,409,'El mismo request no puede cambiar su contacto');
+  assert.equal(f.orders.size,1);assert.equal(f.stripeCalls.filter(c=>c.type==='create').length,1);
+  for(const phone of ['',null,'+123','8112345678901234','8112345678 ext 2','8'.repeat(41)]){const invalid=fixture();assert.equal((await invalid.call('create-session',{...invalid.checkoutBody(),phone})).status,400);assert.equal(invalid.orders.size,0);assert.equal(invalid.stripeCalls.length,0);}
+ }
+ {
+  const f=fixture(),body={...f.checkoutBody(),phone:'81 1234 5678'},created=await f.call('create-session',body),order=f.orders.get(created.data.order_id);
+  order.customer={email:'private@example.invalid',phone:'8111111111'};order.shipping={address:{line1:'Dirección privada'}};order.customer_id=crypto.randomUUID();order.request_id=body.request_id;
+  f.coldStart();const lookup={order_reference:' '+order.reference.toLowerCase()+' ',email:' BUYER@EXAMPLE.INVALID '};
+  let found=await f.call('lookup',lookup);assert.equal(found.status,200);assert.equal(found.data.order.id,order.id);assert.equal(found.data.order.status,'awaiting_payment');assert.equal(found.data.order.delivery_link,undefined);
+  assert.equal(found.headers.get('cache-control'),'no-store');assert.equal(f.stripeCalls.filter(c=>c.type==='create').length,1,'Consultar no crea pagos');
+  for(const key of ['email','phone','customer','customer_id','shipping','access_hash','request_id','stripe_session_id'])assert.equal(found.data.order[key],undefined,'Lookup no publica '+key);
+  const session=f.sessions.get(created.data.session_id);session.status='complete';session.payment_status='paid';
+  found=await f.call('lookup',lookup);assert.equal(found.status,200);assert.equal(found.data.order.status,'paid');assert.equal(found.data.order.delivery_link,undefined,'Fotos pagadas usan descarga autorizada, sin enlace bruto');assert.deepEqual(found.data.order.downloadable_photos,[{id:'701',title:'Foto del jugador'}]);
+  const incorrect=await f.call('lookup',{order_reference:order.reference,email:'someone@example.invalid'}),missing=await f.call('lookup',{order_reference:'TS-0000000000000000',email:'buyer@example.invalid'});
+  assert.equal(incorrect.status,404);assert.deepEqual(incorrect.data,missing.data,'No revela si existe número o correo');assert.equal(f.orders.size,1);
+  f.setEnabled(false);f.runtime.STRIPE_SECRET_KEY='';assert.equal((await f.call('lookup',lookup)).data.order.status,'paid','El seguimiento existente funciona con nuevos pagos deshabilitados');
+ }
+ {
+  const f=fixture(),body={order_reference:'TS-0000000000000000',email:'buyer@example.invalid'};
+  for(const invalid of [{...body,order_reference:'TS-1'},{...body,email:'invalid'},{...body,order_id:crypto.randomUUID()},{...body,access_token:'a'.repeat(64)}])assert.equal((await f.call('lookup',invalid)).status,400);
+  assert.equal(f.rpcCalls.filter(c=>c.name!=='tsi230_guest_verify_items').length,0,'Rechaza solicitudes malformadas antes de consultar pedidos');
+  assert.equal((await f.call('lookup',body,{method:'GET'})).status,405);
+  assert.equal((await f.call('lookup',body,{headers:{Origin:'https://other.invalid'}})).status,403);
+  assert.equal((await f.call('lookup',body,{raw:'{'})).status,400);
+ }
+ {
+  const f=fixture(),body={order_reference:'TS-0000000000000000',email:'buyer@example.invalid'};
+  for(let i=0;i<20;i++){f.coldStart();assert.equal((await f.call('lookup',body,{headers:{'CF-Connecting-IP':'192.0.2.'+(i+1)}})).status,404);}
+  f.coldStart();assert.equal((await f.call('lookup',body,{headers:{'CF-Connecting-IP':'192.0.2.200'}})).status,429,'El límite por pedido persiste al cambiar IP o reiniciar la función');
+  const rates=f.rpcCalls.filter(c=>c.name==='tsi224_store_lookup_rate');assert.ok(rates.length);for(const row of rates){assert.deepEqual(Object.keys(row.p),['key_hash']);assert.match(row.p.key_hash,/^[a-f0-9]{64}$/);assert.ok(!JSON.stringify(row.p).includes(body.email));assert.ok(!JSON.stringify(row.p).includes('192.0.2.'));}
+  assert.equal(f.rpcCalls.filter(c=>c.name==='tsi224_store_order_lookup').length,20,'La cuota se consume antes de buscar');
+  f.advance(600001);f.coldStart();assert.equal((await f.call('lookup',body)).status,404,'La ventana permite consultar después de la espera');
+ }
+ {
+  const f=fixture(),body={order_reference:'TS-0000000000000000',email:'buyer@example.invalid'};f.denyRate();assert.equal((await f.call('lookup',body)).status,429);assert.equal(f.rpcCalls.some(c=>c.name==='tsi224_store_order_lookup'),false,'Sin cuota no se consulta');
+  const unavailable=fixture();unavailable.failLookup();assert.equal((await unavailable.call('lookup',body)).status,503,'Fallo de la base no se presenta como correo incorrecto');
+  const disabled=fixture({SUPABASE_URL:'https://tantlgswituiwkxfgmsr.supabase.co'});assert.equal((await disabled.call('lookup',body)).status,503);assert.equal(disabled.rpcCalls.length,0,'Lookup nunca consulta producción');
+ }
+ await guestCases();
+ console.log('Pagos TSI 2.3.0: regresión Stripe completa más invitación, contactos aislados, catálogo, pedidos manuales y descarga pagada autorizada aprobados con red simulada.');
+}
+main().catch(error=>{console.error(error);process.exitCode=1;});
