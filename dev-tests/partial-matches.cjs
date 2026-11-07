@@ -32,7 +32,7 @@ assert.equal(ui.view(),'');assert.equal(ui.importer(),'');assert.equal(calls,0);
 user.role='admin';ui.beforeRender('incompletos');
 assert.match(ui.view(),/Rol de juegos incompletos/);
 assert.match(ui.importer(),/Guardar filas incompletas/);
-const staging=fs.readFileSync(path.join(root,'staging/index.html'),'utf8');
+const staging=fs.readFileSync(path.join(root,'staging/equipo.html'),'utf8');
 assert.match(staging,/PM225\.beforeRender/);
 assert.match(staging,/PM225\.view\(\)/);
 assert.match(staging,/PM225\.importer\(\)/);

@@ -1,0 +1,5 @@
+/* Public entry uses the existing Tanabi design without employee styles. */
+.public-theme{white-space:nowrap}
+.public-error{max-width:1100px;margin:18px auto 0;padding:14px 18px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.ui230-guest-gate{margin:24px auto;max-width:760px}
+.ui230-guest-gate .btn{margin:6px 8px 0 0}

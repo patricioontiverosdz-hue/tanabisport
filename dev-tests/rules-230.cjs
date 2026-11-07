@@ -4,7 +4,7 @@ const path=require('node:path');
 const {pathToFileURL}=require('node:url');
 const root=path.join(__dirname,'..');
 const script=fs.readFileSync(path.join(root,'staging/tsi-230-rules.js'),'utf8');
-const html=fs.readFileSync(path.join(root,'staging/index.html'),'utf8');
+const html=fs.readFileSync(path.join(root,'staging/equipo.html'),'utf8');
 const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261107024910_tsi230_access_payroll_rules.sql'),'utf8');
 const week='2026-11-02';
 const editor={id:'editor-a',name:'Editora A',role:'editora'},otherEditor={id:'editor-b',name:'Editora B',role:'editora'},photo={id:'photo-a',name:'Fotógrafo',role:'foto'};

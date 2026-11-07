@@ -4,8 +4,8 @@ const path=require('node:path');
 const {pathToFileURL}=require('node:url');
 const root=path.join(__dirname,'..');
 const source=fs.readFileSync(path.join(root,'staging/tsi-230-ui.js'),'utf8');
-const labels={resumen:'Resumen',partidos:'Partidos',calendario:'Calendario',micalendario:'Mi calendario',cobertura:'Cobertura',disponibilidad:'Mi disponibilidad',pagos:'Pagos',mipago:'Mi pago',intelligence:'TSI · Capacidad',proceso:'Proceso',cotizador:'Cotizador',clientes:'Clientes',rentabilidad:'Rentabilidad',tienda:'Tienda',fotojuego:'Reto fotográfico',edicionjuego:'Reto de edición',rankingjuegos:'Podio del equipo',future:'Módulo adicional'};
-const allowed={admin:Object.keys(labels).filter(k=>!['micalendario','mipago'].includes(k)),foto:['resumen','partidos','micalendario','cobertura','disponibilidad','mipago','cotizador','clientes','fotojuego','edicionjuego','rankingjuegos','future'],editora:['resumen','intelligence','proceso','mipago','tienda','fotojuego','edicionjuego','rankingjuegos','future']};
+const labels={resumen:'Resumen',partidos:'Partidos',calendario:'Calendario',micalendario:'Mi calendario',cobertura:'Cobertura',disponibilidad:'Mi disponibilidad',pagos:'Pagos',mipago:'Mi pago',intelligence:'TSI · Capacidad',proceso:'Proceso',cotizador:'Cotizador',clientes:'Clientes',rentabilidad:'Rentabilidad',tienda:'Tienda',fotojuego:'Reto fotográfico',edicionjuego:'Reto de edición',rankingjuegos:'Podio del equipo',portafolio:'Imágenes de la página',future:'Módulo adicional'};
+const allowed={admin:Object.keys(labels).filter(k=>!['micalendario','mipago'].includes(k)),foto:['resumen','partidos','micalendario','cobertura','disponibilidad','mipago','cotizador','clientes','fotojuego','edicionjuego','rankingjuegos','future'],editora:['resumen','intelligence','proceso','mipago','tienda','portafolio','fotojuego','edicionjuego','rankingjuegos','future']};
 let Window;
 async function environment(role){
  const window=new Window({url:'https://example.invalid/staging/',settings:{disableJavaScriptFileLoading:true,disableCSSFileLoading:true}});
@@ -25,6 +25,9 @@ async function environment(role){
 async function publicSite(){const e=await environment(null);try{
  assert.match(e.document.querySelector('.ui230-hero h1').textContent,/Cada jugada/);
  assert.equal(e.document.querySelectorAll('img[src*="photo-game"]').length,0,'Training assets are never public portfolio assets');
+ e.S.photos=['https://example.invalid/first-portfolio.jpg'];e.draw();assert.ok(e.document.querySelector('.ui230-brand-art'),'A portfolio upload does not silently change the chosen homepage');
+ e.S.homepageImage={id:'hero',title:'Portada seleccionada',image:'data:image/jpeg;base64,/9j/U0VMRUNURUQ=',expires_at:new Date(Date.now()+60000).toISOString()};e.draw();assert.equal(e.document.querySelector('.ui230-hero-image img').getAttribute('src'),e.S.homepageImage.image);assert.equal(e.document.querySelector('.ui230-hero-image img').alt,'Portada seleccionada');
+ e.S.homepageImage.expires_at=new Date(Date.now()-1).toISOString();e.draw();assert.ok(e.document.querySelector('.ui230-brand-art'),'Expired homepage selection falls back to Tanabi logo');e.S.homepageImage=null;e.S.photos=[];e.draw();
  e.click('[data-ui230-page="proceso"]');assert.equal(e.document.querySelectorAll('.ui230-process li').length,4);assert.equal(e.S.view,'home');
  e.click('[data-ui230-action="support"]');assert.equal(e.counters.support,1);
  e.click('[data-ui230-page="portafolio"]');assert.ok(e.document.querySelector('.ui230-empty-portfolio'));assert.equal(e.document.querySelectorAll('.ui230-gallery img').length,0);
@@ -35,6 +38,7 @@ async function publicSite(){const e=await environment(null);try{
  e.S.booting=true;e.ui.afterRender();assert.ok(e.document.querySelector('.ui230-loader img[src="data:image/png;base64,AAAA"]'));assert.equal(e.document.querySelector('.ui230-loader').getAttribute('role'),'status');
  }finally{await e.close();}}
 async function roleNavigation(){const titles=[];for(const role of ['admin','foto','editora']){const e=await environment(role);try{
+ if(['admin','editora'].includes(role)){const access=e.document.querySelector('[data-tab="portafolio"]');assert.ok(access,'Image administration has a visible sidebar entry');assert.match(access.textContent,/Imágenes de la página/);}else assert.equal(e.document.querySelector('[data-tab="portafolio"]'),null);
  titles.push(e.document.querySelector('.ui230-title h1').textContent);assert.ok(e.document.querySelector('.legacy-recommendation'),'Original recommendations remain available');
  const before=JSON.stringify(e.S);e.click('.ui230-logo');assert.equal(e.S.view,'home');assert.equal(e.S.meId,'owner-'+role);assert.ok(e.document.querySelector('[data-act="goDash"]'));
  e.S.view='dash';e.draw();e.click('[data-ui230-action="tools"]');const modal=e.document.getElementById('ui230-tools');assert.ok(modal.open);

@@ -2,7 +2,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 
 // Prueba el portal completo con cuentas y RPC de lectura simulados. El editor
 // visual se sustituye aquí: su procesamiento de píxeles tiene su propia prueba.
-const root=path.join(__dirname,'..'),htmlPath=path.join(root,'staging/index.html');
+const root=path.join(__dirname,'..'),htmlPath=path.join(root,'staging/equipo.html');
 const html=fs.readFileSync(htmlPath,'utf8'),serverUrl=html.match(/var SBU="([^"]+)"/)[1];
 const authKey=html.match(/localStorage\.setItem\(["']([^"']+_auth)["']/)[1];
 const project=new URL(serverUrl).hostname.split('.')[0],tab='edicionjuego';

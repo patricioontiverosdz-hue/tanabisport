@@ -54,7 +54,7 @@ const ui=model.install(api);
  assert.equal(ui.importer(),'');
  assert.equal(ui.view(),'');
  const prod=fs.readFileSync(path.join(root,'index.html'),'utf8');
- const staging=fs.readFileSync(path.join(root,'staging/index.html'),'utf8');
+ const staging=fs.readFileSync(path.join(root,'staging/equipo.html'),'utf8');
  for(const html of [prod,staging]){
   assert.match(html,/PM225\.importer\(\)/);
   assert.match(html,/page\.replace\(anchor,panel\+anchor\)/);
