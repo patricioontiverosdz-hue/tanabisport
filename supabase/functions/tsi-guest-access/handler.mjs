@@ -1,6 +1,6 @@
 // No Auth signup/sign-in is used for guests. All private operations use opaque,
 // revocable credentials and a fresh database permission check.
-import { validatePortfolioJpeg } from './portfolio.mjs';
+import { validatePortfolioInput } from './portfolio.mjs';
 export const STAGING_PROJECT = 'nksqpoigywfegcbvfhoa';
 export const ALLOWED_ORIGIN = 'https://patricioontiverosdz-hue.github.io';
 const TOKEN = /^[a-f0-9]{64}$/;
@@ -102,7 +102,7 @@ export function createHandler(options={}) {
       await quota(request,'all',120,60);
       const body=await bodyJSON(request),action=body.action;
       if(typeof action!=='string')fail(400,'invalid_request','Solicitud inválida.');
-      if(action!=='portfolio/publish'&&JSON.stringify(body).length>12000)fail(413,'invalid_request','Solicitud demasiado grande.');
+      if(!['portfolio/publish','portfolio/update'].includes(action)&&JSON.stringify(body).length>12000)fail(413,'invalid_request','Solicitud demasiado grande.');
       if(action==='portfolio/list'||action==='portfolio/image') {
         if(!only(body,action==='portfolio/list'?['action']:['action','id'])||(action==='portfolio/image'&&!UUID.test(body.id||'')))fail(400,'invalid_request','Fotografía inválida.');
         await quota(request,'portfolio-public',90,60);
@@ -110,7 +110,7 @@ export function createHandler(options={}) {
         if(result?.unavailable)fail(404,'portfolio_unavailable','Esta fotografía ya no está disponible.');
         return reply(result);
       }
-      if(['portfolio/admin-state','portfolio/publish','portfolio/revoke'].includes(action)) {
+      if(['portfolio/admin-state','portfolio/publish','portfolio/update','portfolio/homepage','portfolio/revoke'].includes(action)) {
         const actor=await identity(request);
         await rpc('tsi230_portfolio_admin',{actor_id:actor,operation:'state',payload:{}});
         await quota(request,'portfolio-staff',20,60);
@@ -122,13 +122,14 @@ export function createHandler(options={}) {
           if(!only(body,['action','id'])||!UUID.test(body.id||''))fail(400,'invalid_request','Fotografía inválida.');
           return reply(await rpc('tsi230_portfolio_admin',{actor_id:actor,operation:'revoke',payload:{id:body.id}}));
         }
-        const payload=body.payload,fields=['request_id','title','image','season_end','consent_until','consent_reference','contains_minors','guardian_reference','consent_confirmed','guardian_confirmed'];
-        if(!only(body,['action','payload'])||!only(payload,fields)||!UUID.test(payload.request_id||'')||typeof payload.title!=='string'||!payload.title.trim()||payload.title.trim().length>80
-          ||typeof payload.contains_minors!=='boolean'||payload.consent_confirmed!==true||!/^[A-Za-z0-9][A-Za-z0-9._/-]{2,159}$/.test(payload.consent_reference||'')
-          ||payload.contains_minors&&(payload.guardian_confirmed!==true||!/^[A-Za-z0-9][A-Za-z0-9._/-]{2,159}$/.test(payload.guardian_reference||'')))fail(400,'portfolio_consent','Confirma la autorización documentada para publicación pública y la del tutor si hay menores.');
-        for(const date of [payload.season_end,payload.consent_until])if(typeof date!=='string'||!Number.isFinite(Date.parse(date))||Date.parse(date)<=now())fail(400,'portfolio_expiry','Confirma fechas futuras de temporada y autorización.');
-        try {validatePortfolioJpeg(payload.image);}catch(error){fail(400,'portfolio_image',error.message);}
-        return reply(await rpc('tsi230_portfolio_admin',{actor_id:actor,operation:'publish',payload}));
+        if(action==='portfolio/homepage') {
+          if(!only(body,['action','id','request_id'])||!Object.hasOwn(body,'id')||(body.id!==null&&!UUID.test(body.id||''))||!UUID.test(body.request_id||''))fail(400,'invalid_request','Selecciona una imagen de inicio vigente.');
+          return reply(await rpc('tsi230_portfolio_admin',{actor_id:actor,operation:'homepage',payload:{id:body.id,request_id:body.request_id}}));
+        }
+        const updating=action==='portfolio/update',payload=body.payload;
+        if(!only(body,updating?['action','id','payload']:['action','payload'])||updating&&!UUID.test(body.id||''))fail(400,'invalid_request','Fotografía inválida.');
+        try {validatePortfolioInput(payload,{update:updating,now:now()});}catch(error){fail(400,'portfolio_consent',error.message);}
+        return reply(await rpc('tsi230_portfolio_admin',{actor_id:actor,operation:updating?'update':'publish',payload:updating?{...payload,id:body.id}:payload}));
       }
       if(action==='config')return reply({email_ready:config().emailReady,test_mode:config().testMode,accounts_created:false});
       if(action==='request') {

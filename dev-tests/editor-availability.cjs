@@ -1,7 +1,9 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 
 const root=path.join(__dirname,'..');
-const htmlPath=path.resolve(root,process.argv[2]||'index.html');
+const requested=process.argv[2]||'index.html';
+// The public staging entry now delegates employee access to this document.
+const htmlPath=path.resolve(root,requested==='staging/index.html'?'staging/equipo.html':requested);
 const html=fs.readFileSync(htmlPath,'utf8');
 const serverUrl=html.match(/var SBU="([^"]+)"/)[1];
 const authKey=html.match(/localStorage\.setItem\(["']([^"']+_auth)["']/)[1];

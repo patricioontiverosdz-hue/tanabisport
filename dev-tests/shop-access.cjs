@@ -31,7 +31,7 @@ async function environment(staging,role,shop){
   const access='test.'+Buffer.from(JSON.stringify({iss:base+'/auth/v1'})).toString('base64url')+'.test';
   window.localStorage.setItem('tsi_'+(staging?'staging':'production')+'_'+project+'_auth',JSON.stringify({access,uid:ids[role],exp:Date.now()/1000+3600}));
  }
- const html=fs.readFileSync(path.join(root,staging?'staging/index.html':'index.html'),'utf8');
+ const html=fs.readFileSync(path.join(root,staging?'staging/equipo.html':'index.html'),'utf8');
  const previewFeature=/<script\b[^>]*src="[^\"]*tsi-shop-preview\.js(?:\?[^\"]*)?"/.test(html);
  if(previewFeature){
   const version=require(staging?'../staging/version.json':'../package.json').version;

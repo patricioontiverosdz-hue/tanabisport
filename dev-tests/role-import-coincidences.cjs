@@ -87,6 +87,6 @@ function run(filename){
  };
  return tests();
 }
-(async()=>{await run('index.html');await run('staging/index.html');})().catch(e=>{
+(async()=>{await run('index.html');await run('staging/equipo.html');})().catch(e=>{
  console.error(e);process.exitCode=1;
 });

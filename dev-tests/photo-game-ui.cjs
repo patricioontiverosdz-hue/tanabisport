@@ -2,7 +2,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 
 // Ejecuta el portal completo con perfiles y RPC de lectura simulados. El juego
 // guarda únicamente intentos de entrenamiento, sin modificar datos operativos.
-const root=path.join(__dirname,'..'),htmlPath=path.join(root,'staging/index.html');
+const root=path.join(__dirname,'..'),htmlPath=path.join(root,'staging/equipo.html');
 const html=fs.readFileSync(htmlPath,'utf8'),serverUrl=html.match(/var SBU="([^"]+)"/)[1];
 const authKey=html.match(/localStorage\.setItem\(["']([^"']+_auth)["']/)[1];
 const project=new URL(serverUrl).hostname.split('.')[0],tab='fotojuego';

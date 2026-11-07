@@ -87,3 +87,17 @@ El ejecutor llama secuencialmente a las suites nuevas de interfaz, reglas, sopor
 Las pruebas de PostgreSQL son locales y opcionales. Para incluirlas, define `TSI230_PGLITE_MODULE` con la ruta de una instalación local de `@electric-sql/pglite` y ejecuta el mismo comando. Soporte incorpora su prueba SQL dentro de `support-230.cjs`; las suites independientes verifican las reglas de disponibilidad/pago y las migraciones reales de invitados, pedidos, permisos y portafolio. La prueba del portafolio comprueba la vigencia mínima, la autorización del representante, la proyección pública sin referencias privadas y que repetir una publicación no recupere fotos retiradas o purgadas. Sin esa variable, el ejecutor informa explícitamente que PostgreSQL fue omitido.
 
 Las pruebas locales complementan las comprobaciones desplegadas anteriores. Continúan pendientes el transporte real de correo, la introducción de una tarjeta y finalización del pago, la revisión visual en navegador y la evaluación de concurrencia entre trabajadores.
+
+## Revisión de carga pública e imágenes
+
+La entrada pública staging/index.html se separó del panel staging/equipo.html. La visita no carga el archivo del equipo, juegos, nómina, importadores, respaldo ni SheetJS. Tienda y permisos invitados se descargan cuando se abre Tienda; Stripe conserva su carga al iniciar el pago. Se mantienen TABI, privacidad, portafolio y el enlace HTTPS de transmisión. Los enlaces existentes de notificaciones dirigen al equipo.
+
+La biblioteca SheetJS existente se conserva intacta en staging/vendor/xlsx-embedded.js y se obtiene solo cuando Administración selecciona un Excel para importar. La carga comparte un único intento, permite reintentar tras fallo y rechaza resultados al cambiar de cuenta. El logotipo se conserva como archivo de imagen compartido.
+
+Medición de recursos estáticos del arranque (sin las fuentes remotas en ambas versiones): HTML 1,602,577 → 3,220 bytes; total 2,075,257 → aproximadamente 420,225 bytes; gzip 827,890 → aproximadamente 296,950 bytes. La reducción comprimida es 64.1 %. No se presenta como una medición de tiempo real en un navegador.
+
+Imágenes de la página es un acceso visible de Administración y Edición. Permite subir, previsualizar, editar títulos y autorizaciones, reemplazar archivos y retirar publicaciones. Administración puede elegir o quitar la imagen de Inicio entre las publicaciones vigentes. La selección se guarda en el servidor y se recupera al abrir de nuevo la página; al retirar o vencer la imagen se vuelve al diseño con el logotipo. Editar conserva el límite de vencimiento original. Las confirmaciones de autorización indican página pública, portafolio e imagen de inicio; las redes sociales conservan su consentimiento independiente.
+
+La migración adicional 	si230_portfolio_edit_homepage y 	si-guest-access v4 se aplicaron solo en staging. Se comprobó edición, selección, retiro y vencimiento en PostgreSQL local; también se verificaron edición/selección/retiro en la base de pruebas dentro de una transacción revertida, sin registros de personas nuevos. La respuesta pública contiene solo imágenes autorizadas y las tablas de selección y comandos permanecen privadas.
+
+Validación de esta revisión: 26/26 suites aprobadas con PostgreSQL local incluido. La prueba pública se repitió después del ajuste final que preserva el enlace de transmisión.

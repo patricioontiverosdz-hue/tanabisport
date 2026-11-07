@@ -48,13 +48,14 @@ async function main(){
    '20261028194754_tsi224_store_customer_lookup.sql',
    '20261107024942_tsi230_guest_access.sql',
    '20261107025824_tsi230_store_guest_binding.sql',
-   '20261107031851_tsi230_private_portfolio_consent.sql'
+   '20261107031851_tsi230_private_portfolio_consent.sql',
+   '20261107162044_tsi230_portfolio_edit_homepage.sql'
   ]){stage=filename;await db.exec(fs.readFileSync(path.join(root,'supabase/migrations',filename),'utf8'));}
-  for(const filename of ['guest230-backend.sql','guest230-store-backend.sql','guest230-admin-backend.sql','portfolio230-database.sql']){
+  for(const filename of ['guest230-backend.sql','guest230-store-backend.sql','guest230-admin-backend.sql','portfolio230-database.sql','portfolio230-edit-database.sql']){
    stage=filename;await db.exec(fs.readFileSync(path.join(__dirname,filename),'utf8'));console.log('PASS PostgreSQL '+filename);
   }
   stage='post-rollback isolation';
-  const leak=await db.query("select (select count(*) from public.tsi230_guest_contacts) contacts,(select count(*) from public.tsi230_guest_sessions) sessions,(select count(*) from public.shop_items) photos,(select count(*) from public.orders) manual_orders,(select count(*) from public.tsi224_store_orders) stripe_orders,(select count(*) from public.tsi230_portfolio) portfolio,(select count(*) from public.tsi230_portfolio_receipts) portfolio_receipts");
+  const leak=await db.query("select (select count(*) from public.tsi230_guest_contacts) contacts,(select count(*) from public.tsi230_guest_sessions) sessions,(select count(*) from public.shop_items) photos,(select count(*) from public.orders) manual_orders,(select count(*) from public.tsi224_store_orders) stripe_orders,(select count(*) from public.tsi230_portfolio) portfolio,(select count(*) from public.tsi230_portfolio_receipts) portfolio_receipts,(select count(*) from public.tsi230_portfolio_commands) portfolio_commands,(select count(*) from public.tsi230_homepage) homepage");
   for(const [name,count]of Object.entries(leak.rows[0]))if(Number(count)!==0)throw Error('Fixture rollback leaked '+name);
   const schedule=await db.query("select count(*) jobs from cron.job where jobname='tsi230-guest-retention' and command='select public.tsi230_guest_purge();'");
   if(Number(schedule.rows[0].jobs)!==1)throw Error('Retention job was not registered');

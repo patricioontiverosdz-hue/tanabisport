@@ -252,3 +252,22 @@
   .tsi230-app .ui230-stat .ui230-button {margin-top:0}
 }
 @media (prefers-reduced-motion:reduce) {.tsi230-app .ui230-loader-track i {animation:none;width:100%}}
+/* Image administration shares the page's existing controls and palette. */
+.p230 {max-width:1100px}
+.p230 .p230-home-settings {display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px;margin:20px 0 28px;border:1px solid var(--line,#3b3b3b);border-radius:16px;background:var(--surface,#fff)}
+.p230 .p230-home-settings h3 {margin-top:0}
+.p230 .p230-home-preview {width:220px;max-height:150px;object-fit:cover;border-radius:10px}
+.p230 form fieldset {display:grid;gap:12px;margin:14px 0 22px;border:1px solid var(--line,#3b3b3b);border-radius:14px;padding:20px}
+.p230 form label {display:block;margin:4px 0 0;font-weight:600}
+.p230 form input:not([type=checkbox]),.p230 form select {width:100%;max-width:100%;box-sizing:border-box}
+.p230 form input[type=checkbox] {width:auto;margin-right:8px}
+.p230 form p {margin:0}
+.p230 [data-p230-guardian]:not([hidden]) {display:grid;gap:10px}
+.p230 .p230-form-actions,.p230 .p230-card-actions {display:flex;flex-wrap:wrap;gap:8px}
+.p230 .p230-image-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.p230 .p230-image-card {overflow:hidden;border:1px solid var(--line,#3b3b3b);border-radius:14px;background:var(--surface,#fff)}
+.p230 .p230-thumbnail {display:block;width:100%;height:190px;object-fit:cover;background:rgba(128,128,128,.08)}
+.p230 .p230-preview-empty {display:flex;align-items:center;justify-content:center;color:var(--muted,#a9a9a9)}
+.p230 .p230-image-info {padding:16px}
+.p230 .p230-current {display:block;margin-top:8px;color:var(--ink,#141414);background:var(--amber,#f0b429);padding:4px 8px;border-radius:6px;font-size:13px;font-weight:700}
+@media(max-width:650px){.p230 .p230-image-grid{grid-template-columns:1fr}.p230 .p230-home-settings{flex-direction:column;align-items:stretch}.p230 .p230-home-preview{width:100%;max-height:220px}.p230 form fieldset{padding:14px}}

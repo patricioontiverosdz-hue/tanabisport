@@ -1,6 +1,6 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto');
 const {pathToFileURL}=require('node:url');
-const root=path.join(__dirname,'..'),htmlPath=path.join(root,'staging/index.html'),html=fs.readFileSync(htmlPath,'utf8');
+const root=path.join(__dirname,'..'),htmlPath=path.join(root,'staging/equipo.html'),html=fs.readFileSync(htmlPath,'utf8');
 const backend=html.match(/var SBU="([^"]+)"/)[1],authKey=html.match(/localStorage\.setItem\(["']([^"']+_auth)["']/)[1];
 const ids={admin:'00000000-0000-4000-8000-000000000001',foto:'00000000-0000-4000-8000-000000000002',editora:'00000000-0000-4000-8000-000000000003'};
 const profiles=Object.entries(ids).map(([role,id])=>({id,role,email:role+'@test.invalid',name:'Usuario '+role}));
