@@ -28,6 +28,11 @@ async function environment(role,server=fixture(),options={}){
   const url=new URL(String(input)),method=request.method||'GET',body=request.body?JSON.parse(request.body):{};
   assert.equal(url.origin,serverUrl,'Todas las solicitudes deben usar el proyecto del HTML probado');
   calls.push({path:url.pathname,method,body});
+  if(url.pathname==='/functions/v1/tsi-role-tools/config'){
+   const roles={};assert.deepEqual(body,{});assert.ok(request.headers.Authorization,'La configuración de herramientas requiere la sesión actual');
+   for(const r of role==='admin'?['foto','editora']:[role])roles[r]={version:1,enabled:window.TSI230RoleCatalog[r].map(row=>row.id)};
+   return response({catalog_version:1,actor_role:role,roles});
+  }
   if(url.pathname==='/rest/v1/settings')return response([{id:'cfg',data:{shop:false,reservasPublicas:false,autoArchive:false}}]);
   if(url.pathname==='/rest/v1/profiles')return response(profiles);
   if(url.pathname==='/rest/v1/rpc/tsi11_state'){

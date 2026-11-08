@@ -57,6 +57,20 @@ export function createHandler(options={}){
   if(!r.ok)fail(401,'Tu sesión venció. Entra de nuevo.');const u=await r.json();if(!UUID.test(u.id||'')||u.is_anonymous)fail(403,'Se requiere una cuenta de equipo.');
   const rows=await db('/rest/v1/profiles?id=eq.'+u.id+'&select=id,role',null,'GET');if(!['admin','foto','editora'].includes(rows?.[0]?.role))fail(403,'Esta bandeja es solo para el equipo.');return u.id;
  }
+ async function staffTools(req){
+  const base=env('SUPABASE_URL'),key=env('SUPABASE_ANON_KEY');
+  if(base!=='https://'+PROJECT+'.supabase.co'||!key)fail(503,'No se pudo comprobar el acceso a Atención.');
+  // The assertion derives auth.uid() from this user's JWT. A service bearer would
+  // lose that identity and must never be used for this permission check.
+  let r;try{r=await fetcher(base+'/rest/v1/rpc/tsi230_assert_tool_enabled',{method:'POST',headers:{apikey:key,Authorization:req.headers.get('authorization'),'Content-Type':'application/json'},body:JSON.stringify({tool_id:'atencion'}),signal:AbortSignal.timeout(10000)});}catch{fail(503,'No se pudo comprobar el acceso a Atención.');}
+  if(!r.ok){let e;try{e=await r.json();}catch{}
+   if((e?.message||'').includes('ROLE_TOOLS_DISABLED'))fail(403,'Atención a clientes no está disponible para tu rol.');
+   if(r.status===401)fail(401,'Tu sesión venció. Entra de nuevo.');
+   fail(503,'No se pudo comprobar el acceso a Atención.');
+  }
+  let allowed;try{allowed=await r.json();}catch{}
+  if(allowed!==true)fail(503,'No se pudo comprobar el acceso a Atención.');
+ }
  return async req=>{
   const origin=req.headers.get('origin');const cors={'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Headers':'authorization,apikey,content-type,x-support-token','Access-Control-Allow-Methods':'POST,OPTIONS','Vary':'Origin','Cache-Control':'no-store','Content-Type':'application/json','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'};
   const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:cors});
@@ -68,6 +82,7 @@ export function createHandler(options={}){
    if(['staff-list','staff-thread','staff-message','staff-status','profile','avatar'].includes(route))actor=await staff(req);
    else if(['register','history','message','draft','submit','category'].includes(route)){const token=req.headers.get('x-support-token')||'';if(!TOKEN.test(token))fail(401,'Falta la autorización de esta conversación.');session_hash=await hash(token,cryptoApi);}
    else fail(404,'Solicitud no disponible.');
+   if(['staff-list','staff-thread','staff-message','staff-status'].includes(route))await staffTools(req);
    if(route==='register')payload={...validateContact(p),request_id:requestId(p)};
    if(['message','staff-message'].includes(route))payload={text:clean(p.text,4000,true),request_id:requestId(p)};
    if(['category','draft','submit'].includes(route)){

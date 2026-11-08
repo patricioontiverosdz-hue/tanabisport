@@ -3,6 +3,9 @@ const fs=require('node:fs'),path=require('node:path'),{spawnSync}=require('node:
 const root=path.resolve(__dirname,'..');
 const postgres=!!process.env.TSI230_PGLITE_MODULE;
 const suites=[
+ 'admin230-ui.cjs',
+ 'role-tools-230-backend.cjs',
+ 'brand-230.cjs',
  'portfolio230-metadata.cjs',
  'excel-lazy-230.cjs',
  'public-light-230.cjs',
