@@ -56,7 +56,7 @@
   async function prepareImage(file){
    if(!file||!/^image\/(jpeg|png|webp)$/.test(file.type)||file.size>10*1024*1024)throw Error('Selecciona una foto JPEG, PNG o WebP de hasta 10 MB.');
    var source=await readFile(file),image=await new Promise(function(resolve,reject){var img=new root.Image();img.onload=function(){if(!img.width||!img.height||img.width*img.height>30000000)reject(Error('La foto es demasiado grande.'));else resolve(img);};img.onerror=function(){reject(Error('La foto no es válida.'));};img.src=source;});
-   var scale=Math.min(1,1280/Math.max(image.width,image.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));var context=canvas.getContext('2d');if(!context)throw Error('No se pudo preparar la foto.');context.drawImage(image,0,0,canvas.width,canvas.height);
+   var scale=Math.min(1,1280/Math.max(image.width,image.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));var context=canvas.getContext('2d',{colorSpace:'srgb'});if(!context)throw Error('No se pudo preparar la foto.');context.drawImage(image,0,0,canvas.width,canvas.height);
    for(var quality of [.75,.6,.45,.3]){var jpeg=canvas.toDataURL('image/jpeg',quality);if(jpeg.length<=500000)return jpeg;}throw Error('La foto supera el tamaño permitido.');
   }
   document.addEventListener('change',function(event){var el=event.target;if(el.id==='p230-file'){event.stopImmediatePropagation();if(staff()&&!D.busy){D.file=el.files&&el.files[0]||null;D.requestId='';}}if(el.closest&&el.closest('[data-p230-form]')){D.form[el.name]=el.value;}},true);
