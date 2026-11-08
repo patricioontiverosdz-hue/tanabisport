@@ -24,6 +24,8 @@ async function main(){
  }});
  async function call(body,headers={},extra={}){const result=await handler(new Request(env.SUPABASE_URL+'/functions/v1/tsi-guest-access',{method:'POST',headers:{origin,'Content-Type':'application/json',...headers},body:JSON.stringify(body),...extra}));return {status:result.status,data:await result.json(),headers:result.headers};}
  const payload={request_id:'23000000-0000-4000-8000-000000000003',title:'Public title',image:encode(jpeg),season_end:'2099-01-01T00:00:00Z',consent_until:'2098-01-01T00:00:00Z',consent_reference:'AUT-LOCAL-001',contains_minors:false,guardian_reference:null,consent_confirmed:true,guardian_confirmed:false};
+ assert.equal((await call({action:'portfolio/publish',payload:{request_id:payload.request_id,title:'Solo foto',image:payload.image}},auth)).status,200,'Publicar no requiere fechas ni autorizaciones');
+ authCalls=0;
  let result=await call({action:'portfolio/list'});assert.equal(result.status,200);assert.equal(authCalls,0);assert.equal(result.data.items.length,1);assert.ok(!JSON.stringify(result.data).includes('consent'));assert.match(result.headers.get('cache-control'),/no-store/);assert.equal(result.headers.get('access-control-allow-origin'),origin);
  assert.equal((await call({action:'portfolio/image',id:photo})).status,200);assert.equal(authCalls,0);
  unavailable=true;assert.equal((await call({action:'portfolio/image',id:photo})).status,404);unavailable=false;
@@ -32,11 +34,11 @@ async function main(){
  for(const r of ['admin','editora']){role=r;calls=[];assert.equal((await call({action:'portfolio/publish',payload},auth)).status,200);assert.deepEqual(calls.filter(c=>c.name==='tsi230_portfolio_admin').map(c=>c.body.operation),['state','publish']);assert.equal((await call({action:'portfolio/admin-state'},auth)).status,200);assert.equal((await call({action:'portfolio/revoke',id:photo},auth)).status,200);}
  for(const r of ['foto','pending']){role=r;calls=[];assert.equal((await call({action:'portfolio/publish',payload},auth)).status,409);assert.ok(!calls.some(c=>c.body.operation==='publish'),'Current server role prevents publication');}role='admin';
  userValid=false;assert.equal((await call({action:'portfolio/publish',payload},auth)).status,403);userValid=true;
- const invalid=[{consent_confirmed:false},{contains_minors:'false'},{contains_minors:true},{contains_minors:true,guardian_confirmed:true,guardian_reference:'https://private.invalid'},{consent_reference:'email@example.invalid'},{season_end:'2000-01-01T00:00:00Z'},{consent_until:'invalid'},{image:'data:image/jpeg;base64,/9j/AAAA'},{image:encode(transform(0xc4,()=>null))},{unauthorized_field:true}];
+ const invalid=[{image:'data:image/jpeg;base64,/9j/AAAA'},{image:encode(transform(0xc4,()=>null))},{unauthorized_field:true}];
  for(const change of invalid){calls=[];assert.equal((await call({action:'portfolio/publish',payload:{...payload,...change}},auth)).status,400,JSON.stringify(Object.keys(change)));assert.ok(!calls.some(c=>c.body.operation==='publish'));}
  assert.equal((await call({action:'portfolio/publish',payload:{...payload,contains_minors:true,guardian_confirmed:true,guardian_reference:'TUTOR-LOCAL-001'}},auth)).status,200);
  assert.equal((await call({action:'portfolio/list'},{origin:'https://other.invalid'})).status,403);
  rates=false;assert.equal((await call({action:'portfolio/list'})).status,429);
- console.log('PASS portfolio230 handler: real baseline JPEG, malformed tables/scan/metadata/dimensions rejected; public projection, cache/CORS, fresh staff roles, consent/guardian, request bounds and staging isolation.');
+ console.log('PASS portfolio230 handler: real baseline JPEG, malformed tables/scan/metadata/dimensions rejected; public projection, cache/CORS, fresh staff roles, direct manual publishing, request bounds and staging isolation.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

@@ -123,12 +123,12 @@ export function createHandler(options={}) {
           return reply(await rpc('tsi230_portfolio_admin',{actor_id:actor,operation:'revoke',payload:{id:body.id}}));
         }
         if(action==='portfolio/homepage') {
-          if(!only(body,['action','id','request_id'])||!Object.hasOwn(body,'id')||(body.id!==null&&!UUID.test(body.id||''))||!UUID.test(body.request_id||''))fail(400,'invalid_request','Selecciona una imagen de inicio vigente.');
+          if(!only(body,['action','id','request_id'])||!Object.hasOwn(body,'id')||(body.id!==null&&!UUID.test(body.id||''))||!UUID.test(body.request_id||''))fail(400,'invalid_request','Selecciona una imagen de inicio publicada.');
           return reply(await rpc('tsi230_portfolio_admin',{actor_id:actor,operation:'homepage',payload:{id:body.id,request_id:body.request_id}}));
         }
         const updating=action==='portfolio/update',payload=body.payload;
         if(!only(body,updating?['action','id','payload']:['action','payload'])||updating&&!UUID.test(body.id||''))fail(400,'invalid_request','Fotografía inválida.');
-        try {validatePortfolioInput(payload,{update:updating,now:now()});}catch(error){fail(400,'portfolio_consent',error.message);}
+        try {validatePortfolioInput(payload,{update:updating,now:now()});}catch(error){fail(400,'portfolio_input',error.message);}
         return reply(await rpc('tsi230_portfolio_admin',{actor_id:actor,operation:updating?'update':'publish',payload:updating?{...payload,id:body.id}:payload}));
       }
       if(action==='config')return reply({email_ready:config().emailReady,test_mode:config().testMode,accounts_created:false});
