@@ -29,6 +29,7 @@ async function main(){
  window.fetch=async(url,opt)=>{calls.push(String(url));const p=new URL(url).pathname;let result=[];
   if(p==='/rest/v1/profiles')result=[{id:uid,email:'foto@test.invalid',name:'Foto prueba',role:'foto'}];
   if(p==='/rest/v1/settings')result=[{id:'cfg',data:{shop:false,reservasPublicas:false,autoArchive:false}}];
+  if(p==='/functions/v1/tsi-role-tools/config'){assert.deepEqual(JSON.parse(opt.body||'{}'),{});assert.ok(opt.headers.Authorization);result={catalog_version:1,actor_role:'foto',roles:{foto:{version:1,enabled:window.TSI230RoleCatalog.foto.map(row=>row.id)}}};}
   if(p==='/rest/v1/rpc/tsi11_photographer_risks')result={risks:[]};
   if(p==='/rest/v1/rpc/tsi11_photo_availability_state')result={photographers:[]};
   if(p==='/rest/v1/rpc/tsi230_rules_state')result={availability:[],clock:[],suspensions:[]};

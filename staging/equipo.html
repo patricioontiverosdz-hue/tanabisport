@@ -324,7 +324,7 @@ body{background:var(--tsi-page)}
 <script src="editing-game.js?v=220"></script>
 <!-- TSI_TRAINING_ASSETS_END -->
 <link rel="stylesheet" href="../assets/tsi-226-privacy.css?v=226">
-<link rel="stylesheet" href="tsi-230-ui.css?v=230-light-images-1">
+<link rel="stylesheet" href="tsi-230-ui.css?v=230-admin-1">
 <link rel="stylesheet" href="tsi-230-guest.css?v=230">
 <link rel="stylesheet" href="tsi-230-support.css?v=230">
 <script src="tsi-230-privacy.js?v=230-manual-photos-1"></script>
@@ -332,7 +332,11 @@ body{background:var(--tsi-page)}
 <script src="tsi-230-guest.js?v=230"></script>
 <script src="tsi-230-portfolio.js?v=230-photo-upload-1"></script>
 <script src="tsi-230-support.js?v=230"></script>
-<script src="tsi-230-ui.js?v=230-manual-photos-1"></script>
+<link rel="stylesheet" href="tsi-230-admin.css?v=230-admin-1">
+<script src="tsi-230-role-catalog.js?v=230-admin-1"></script>
+<script src="tsi-230-admin.js?v=230-admin-1"></script>
+<script src="tsi-230-admin-integration.js?v=230-admin-1"></script>
+<script src="tsi-230-ui.js?v=230-admin-1"></script>
 </head>
 <body>
 <div class="wrap" id="app"></div>
@@ -344,7 +348,7 @@ var LIVE=true;
 var APP_VERSION="2.3.0-staging";
 var UX210=null;
 var DEFAULT_CATALOG={"cats": ["U18", "U16", "U14", "U12", "U10", "U08", "MIDGET", "JR BANTAM", "HORMIGUITAS", "HORMIGAS", "ARDILLAS", "PEEWEE", "BANTAM", "ELECTRONES", "ATOMOS", "MOSQUITOS"], "teams": [{"name": "AGUILAS", "cats": [], "home": {}}, {"name": "AVISPONES", "cats": [], "home": {}}, {"name": "BUFALOS", "cats": [], "home": {}}, {"name": "CARNEROS", "cats": [], "home": {}}, {"name": "DUCKS", "cats": [], "home": {}}, {"name": "ARDILLAS", "cats": [], "home": {}}, {"name": "GENERALES", "cats": [], "home": {}}, {"name": "HALCONES", "cats": [], "home": {}}, {"name": "JAGUARES", "cats": [], "home": {}}, {"name": "LEONES", "cats": [], "home": {}}, {"name": "PANTERAS", "cats": [], "home": {}}, {"name": "POTROS", "cats": [], "home": {}}, {"name": "PUMAS", "cats": [], "home": {}}, {"name": "TITANES", "cats": [], "home": {}}, {"name": "TOROS", "cats": [], "home": {}}, {"name": "VAQUEROS", "cats": [], "home": {}}, {"name": "VIKINGOS", "cats": [], "home": {}}], "fields": []};
-var LOGO='brand/tanabi-logo.png';
+var LOGO='brand/tanabi-logo-transparent.webp';
 var MONTHS=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 var STAGES=[["descarga","Descarga"],["seleccion","Selección"],["edicion","Edición"],["carga","Carga"],["listos","Archivos listos"]];
 var ROLES={admin:"Administrador",foto:"Fotógrafo",editora:"Editora",pending:"Pendiente"};
@@ -2084,6 +2088,7 @@ async function loadAll(lite){
   SYNC.snap=snapOf(buildRows());
   SYNC.prof={};S.users.forEach(function(u){SYNC.prof[u.id]=JSON.stringify([u.name,u.role]);});
   if(PORTFOLIO230)await PORTFOLIO230.publicLoad(true);
+  if(typeof ADMIN230!=="undefined"&&ADMIN230)await ADMIN230.refreshStaff();
 }
 async function tsi230LoadShop(){
   if(!AUTH.access){S.shop.items=[];if(GUEST230&&GUEST230.authorized())return GUEST230.loadShop();GUEST230_STATE.shop.items=[];return [];}
@@ -3194,7 +3199,7 @@ document.addEventListener('click',async function(e){var b=e.target.closest('[dat
  if(action==='snapshot')await tiCommand('snapshot',{forecast:tsi11Forecast(TI.state),basis:{capacity:TI.state.capacity,estimates:TI.state.estimates,sessions:TI.state.sessions,matches:TI.state.matches,model:TI.state.model,suspensions:TI.state.suspensions||[]}});
  if(action==='adjust'){var seconds=prompt('Tiempo activo correcto, en segundos:');if(seconds===null)return;var why=prompt('Motivo del ajuste:');if(!why)return;await tiCommand('adjust',{session_id:id,active_seconds:Number(seconds),reason:why});}
  }catch(err){TI.error=err.message;render();}});
-setInterval(async function(){if(TI.busy||TI.request||TI.loading||!TI.state||!tiRole()||document.hidden)return;var active=TI.state.sessions.find(function(s){return s.status==='active';});try{if(active&&me().role==='editora'){var state=await sb('POST','/rest/v1/rpc/tsi11_command',{operation:'heartbeat',payload:{editor_id:tiTarget(),session_id:active.id},request_id:tiUuid()});TI.state=state;}else TI.state=await sb('POST','/rest/v1/rpc/tsi11_state',{eid:tiTarget()});var el=document.activeElement;if(!el||!/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName))render();}catch(e){TI.error='No se confirmó la actualización del cronómetro: '+e.message;}},25000);
+setInterval(async function(){if(TI.busy||TI.request||TI.loading||!TI.state||!tiRole()||document.hidden)return;var active=TI.state.sessions.find(function(s){return s.status==='active';});try{if(active&&me().role==='editora'){if(typeof ADMIN230!=="undefined"&&ADMIN230&&!ADMIN230.canAccess('intelligence')){await tiCommand('pause',{session_id:active.id});return;}var state=await sb('POST','/rest/v1/rpc/tsi11_command',{operation:'heartbeat',payload:{editor_id:tiTarget(),session_id:active.id},request_id:tiUuid()});TI.state=state;}else TI.state=await sb('POST','/rest/v1/rpc/tsi11_state',{eid:tiTarget()});var el=document.activeElement;if(!el||!/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName))render();}catch(e){TI.error='No se confirmó la actualización del cronómetro: '+e.message;}},25000);
 document.addEventListener('visibilitychange',function(){if(document.hidden&&TI.state&&me()&&me().role==='editora'){var active=TI.state.sessions.find(function(s){return s.status==='active';});if(active)tiCommand('pause',{session_id:active.id});}});
 window.addEventListener('pagehide',function(){if(!TI.state||!me()||me().role!=='editora')return;var active=TI.state.sessions.find(function(s){return s.status==='active';});if(active)fetch(SBU+'/rest/v1/rpc/tsi11_command',{method:'POST',keepalive:true,headers:{apikey:SBK,Authorization:'Bearer '+AUTH.access,'Content-Type':'application/json'},body:JSON.stringify({operation:'pause',payload:{editor_id:tiTarget(),session_id:active.id},request_id:tiUuid()})}).catch(function(){});});
 setInterval(function(){if(!TI.state)return;document.querySelectorAll('[data-ti-live]').forEach(function(el){var session=TI.state.sessions.find(function(s){return s.id===el.getAttribute('data-ti-live');});if(session){var delta=Math.max(0,Math.min(75,(Date.now()-new Date(session.last_ping).getTime())/1000));el.textContent=tiDuration(Number(session.active_seconds)+delta);}});},1000);
@@ -3506,7 +3511,7 @@ render=function(){
 };
 if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',function(e){if(e.data&&e.data.type==='TSI_OPEN_TAB')tsiOpenTab(e.data.tab);});
 var tsiBaseBoot=boot;
-boot=async function(){await tsiBaseBoot();var tab=new URL(location.href).searchParams.get('tsi_tab');if(tab&&me())tsiOpenTab(tab);};
+boot=async function(){await tsiBaseBoot();if(typeof ADMIN230!=="undefined"&&ADMIN230)await ADMIN230.refreshStaff();var tab=new URL(location.href).searchParams.get('tsi_tab');if(tab&&me())tsiOpenTab(tab);};
 
 /* Hotfix 2.0.6: registrar manejador cuando X ya está creado. */
 Object.assign(X,{tsiFbRemovePhoto:async function(t,d){
@@ -3852,14 +3857,16 @@ GUEST230=window.TSI230Guest.install({state:GUEST230_STATE,me:me,server:SBU,publi
 var SUPPORT230=window.TSI230Support.install({state:S,me:me,sb:sb,backendURL:SBU,publicKey:SBK,render:function(){render();}});
 var PORTFOLIO230=window.TSI230Portfolio.install({state:S,me:me,edge:function(body,guard){return tsi230GuestRequest(body,'',guard);},render:function(){render();}});
 tabFotosLive=function(){return PORTFOLIO230.tab();};
+var ADMIN230=window.TSI230AdminBridge.install({state:S,me:me,getAuth:function(){return AUTH;},server:SBU,publicKey:SBK,ensureToken:ensureToken,esc:esc,logo:LOGO,tabs:tabsFor,editingRequest:function(){return TI.request;},render:function(){render();},closeTools:function(){if(UI230)UI230.closeTools();}});
+tabsFor=function(role){return ADMIN230.tabs(role);};
 var tsi230LegacySummary=tabResumen;
-var UI230=window.TSI230UI.install({state:S,me:me,esc:esc,logo:LOGO,version:APP_VERSION,themeControl:tsiThemeControl,tabs:function(role){return tabsFor(role);},active:act,today:todayStr,photoAvailability:function(){return PA.state;},editingState:function(){return TI.state;},legacySummary:function(){return tsi230LegacySummary();},editSession:function(){return TI.state?tiSessionView():'';},photoEligibility:function(match){return RULES230.canTake(match,me())?{allowed:true}:{allowed:false,message:'Confirma tu disponibilidad para la semana, fecha y horario de este partido.'};},clocked:function(uid,mid){return RULES230.clocked(uid,mid);},clockReady:function(){return RULES230.status().ready;},render:function(){render();}});
+var UI230=window.TSI230UI.install({state:S,me:me,esc:esc,logo:LOGO,version:APP_VERSION,themeControl:tsiThemeControl,canAccess:function(key){return ADMIN230.canAccess(key);},controlTool:function(el){return ADMIN230.controlTool(el);},adminControls:function(){return ADMIN230.api.buttons();},tabs:function(role){return tabsFor(role);},active:act,today:todayStr,photoAvailability:function(){return PA.state;},editingState:function(){return TI.state;},legacySummary:function(){return tsi230LegacySummary();},editSession:function(){return TI.state?tiSessionView():'';},photoEligibility:function(match){return RULES230.canTake(match,me())?{allowed:true}:{allowed:false,message:'Confirma tu disponibilidad para la semana, fecha y horario de este partido.'};},clocked:function(uid,mid){return RULES230.clocked(uid,mid);},clockReady:function(){return RULES230.status().ready;},render:function(){render();}});
 topbar=UI230.topbar;viewHome=UI230.home;tabResumen=UI230.summary;tabsBar=UI230.tabs;
-var tsi230BaseDash=viewDash;viewDash=function(){return UI230.wrapDash(tsi230BaseDash());};
+var tsi230BaseDash=viewDash;viewDash=function(){ADMIN230.ensureTab();return UI230.wrapDash(tsi230BaseDash());};
 var tsi230BaseLogin=viewLogin;viewLogin=function(){var page=tsi230BaseLogin(),end=page.lastIndexOf('</div>');return window.TSIPrivacy&&end>=0?page.slice(0,end)+window.TSIPrivacy.summaryHTML()+page.slice(end):page;};
 var tsi230BaseShop=viewShop;viewShop=function(){if(!GUEST230.authorized())return topbar()+'<section class="card ui230-guest-gate"><h1>Tu carpeta, con acceso autorizado.</h1><p>Ingresa con la invitación individual y el correo que Administración aprobó para consultar tus fotografías.</p><button type="button" class="btn primary" data-tsi230-guest="open">Entrar como invitado</button><button type="button" class="btn" data-act="goHome">Volver a Inicio</button></section>';return tsi230BaseShop();};
 var tsi230BaseGoShop=X.goShop;X.goShop=async function(button,data){if(!await GUEST230.ensureAccess({next:'shop'}))return;await GUEST230.loadShop();var result=tsi230BaseGoShop(button,data);if(STORE224)await STORE224.publicLoad(true);render();return result;};
-var tsi230BaseRender=render;render=function(){tsi230BaseRender();UI230.afterRender();RULES230.afterRender();SUPPORT230.afterRender();PORTFOLIO230.afterRender();GUEST230.afterRender();};
+var tsi230BaseRender=render;render=function(){tsi230BaseRender();UI230.afterRender();RULES230.afterRender();SUPPORT230.afterRender();PORTFOLIO230.afterRender();GUEST230.afterRender();ADMIN230.afterRender();};
 var configError=stagingConfigError();
 if(configError){
   S.booting=false;

@@ -72,7 +72,7 @@
   if(button.hasAttribute('data-public-theme')){var current=document.documentElement.getAttribute('data-theme'),dark=current?current==='dark':root.matchMedia&&root.matchMedia('(prefers-color-scheme:dark)').matches;var next=dark?'light':'dark';document.documentElement.setAttribute('data-theme',next);try{root.localStorage.setItem('tsi-ui-theme-v1',next);}catch(ignore){}}
   if(button.hasAttribute('data-public-retry'))boot();
  });
- UI=root.TSI230UI.install({state:S,me:noAccount,esc:esc,logo:'brand/tanabi-logo.png',version:'2.3.0',tabs:function(){return [];},themeControl:themeControl,render:render});
+ UI=root.TSI230UI.install({state:S,me:noAccount,esc:esc,logo:'brand/tanabi-logo-transparent.webp',version:'2.3.0',tabs:function(){return [];},themeControl:themeControl,render:render});
  SUPPORT=root.TSI230Support.install({state:S,me:noAccount,backendURL:SERVER,publicKey:PUBLIC_KEY,sb:function(){return Promise.reject(failure('Esta opción pertenece al equipo.',403));}});
  PORTFOLIO=root.TSI230Portfolio.install({state:S,me:noAccount,edge:guestRequest,render:render});
  root.TSI230Public=Object.freeze({goShop:goShop,goHome:goHome,ready:boot(),diagnostics:function(){return {view:S.view,booting:S.booting,shopEnabled:S.cfg.shop,storeLoaded:!!STORE,guestLoaded:!!GUEST,authorized:!!GUEST&&GUEST.authorized(),publicPhotos:S.photos.length,homepageSelected:!!S.homepageImage,error:error};}});

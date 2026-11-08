@@ -16,7 +16,7 @@ function allowedRequest(method,path,body){
  if(path==='/functions/v1/training-game')return true;
  if(path==='/functions/v1/tsi-guest-access')return Object.keys(body).length===1&&['portfolio/list','portfolio/admin-state'].includes(body.action);
  if(path==='/rest/v1/rpc/tsi11_state')return Object.keys(body).every(key=>key==='eid')&&(!body.eid||Object.values(ids).includes(body.eid));
- return (readRPCs.has(path)||path==='/functions/v1/tsi-support/profile')&&Object.keys(body).length===0;
+ return (readRPCs.has(path)||path==='/functions/v1/tsi-support/profile'||path==='/functions/v1/tsi-role-tools/config')&&Object.keys(body).length===0;
 }
 async function until(check,message){for(let i=0;i<200;i++){if(check())return;await delay(10);}throw Error('No se completó: '+message);}
 
@@ -38,6 +38,11 @@ async function environment(role,options={}){
   assert.equal(url.origin,serverUrl,'El portal probado solo consulta el proyecto staging');
   calls.push({path:url.pathname,method,body});
   assert.ok(allowedRequest(method,url.pathname,body),'El juego no debe generar escrituras operativas: '+method+' '+url.pathname);
+  if(url.pathname==='/functions/v1/tsi-role-tools/config'){
+   const actorRole=profiles.find(profile=>profile.id===uid)?.role,roles={};assert.ok(request.headers.Authorization,'La configuración de herramientas requiere la sesión actual');
+   for(const r of actorRole==='admin'?['foto','editora']:[actorRole])if(window.TSI230RoleCatalog[r])roles[r]={version:1,enabled:window.TSI230RoleCatalog[r].map(row=>row.id)};
+   return response({catalog_version:1,actor_role:actorRole,roles});
+  }
   if(url.pathname==='/functions/v1/training-game')return response({accepted:true});
   if(url.pathname==='/functions/v1/tsi-guest-access'&&body.action==='portfolio/list')return response({items:[]});
   if(url.pathname==='/functions/v1/tsi-guest-access'&&body.action==='portfolio/admin-state')return ['admin','editora'].includes(role)&&request.headers.Authorization?response({items:[]}):new Response('{"message":"Sin permiso"}',{status:403});

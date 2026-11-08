@@ -4,12 +4,22 @@ Esta entrega se limita a la aplicación y al proyecto de pruebas `nksqpoigywfegc
 
 ## Portada y espacios del equipo
 
-- Portada con el logotipo original, navegación pública, portafolio, Tienda, Privacidad y **Cómo trabajamos**, con cuatro pasos desde el contacto hasta la entrega.
+- Portada con el logotipo de Tanabi con fondo transparente, navegación pública, portafolio, Tienda, Privacidad y **Cómo trabajamos**, con cuatro pasos desde el contacto hasta la entrega. El PNG de calidad completa se conserva; la página usa WebP de 126,628 bytes con transparencia para reducir la carga.
 - El portafolio público se reservó para material real autorizado. La revisión desplegada encontró cero fotografías y ningún bucket de portafolio; la portada muestra el estado vacío y la identidad de Tanabi. Las imágenes sintéticas de entrenamiento no se presentan como trabajo real.
 - El logotipo lleva a Inicio y conserva la sesión del equipo. La carga inicial muestra el logotipo real.
 - Resúmenes distintos para Administración, Fotografía y Edición, con cifras de los registros existentes y accesos a las tareas de cada rol.
 - **Más herramientas** conserva todos los módulos autorizados por el rol, incluidos los dos retos, el podio y Privacidad. Las recomendaciones y el detalle operativo anterior continúan disponibles mediante un desplegable.
 - Interfaz adaptable, navegación por teclado, nombres accesibles y respeto por la preferencia de movimiento reducido. Las funciones públicas que dependían de configuración conservan esa condición.
+
+## Administración de herramientas y vistas previas
+
+Administración dispone de **Herramientas por rol** y **Ver como…** en el encabezado del equipo. Puede seleccionar las herramientas de Fotografía y Edición; Resumen permanece disponible. Las opciones comienzan habilitadas según los límites existentes del rol. No se pueden otorgar capacidades exclusivas de Administración ni modificar el rol de una cuenta mediante este control.
+
+La configuración se guarda en un esquema privado del servidor, con comprobación de la identidad y del rol vigente, versión del registro y recibos para reintentar sin duplicar. Tras guardar se consulta la configuración vigente; los borradores del otro rol se conservan. Si falla la confirmación, se exige recargar antes de otro guardado. El personal vuelve a consultar sus herramientas al actualizar los datos; ante un fallo de lectura conserva únicamente Resumen. Las rutas deshabilitadas vuelven a Resumen y sus accesos desaparecen del menú y de los accesos rápidos. Un cronómetro activo se pausa en la siguiente actualización si se deshabilita su herramienta.
+
+La selección controla la disponibilidad de herramientas. Los datos operativos compartidos conservan sus permisos originales por cuenta y rol. Atención a clientes y los puntos dedicados de juegos/podio verifican también la disponibilidad en el servidor. No se presenta este control como un reemplazo de todas las políticas existentes sobre datos compartidos.
+
+**Ver como…** abre una vista de Cliente, Fotografía o Edición, identificada como vista previa y con datos de muestra para el personal. Respeta la selección guardada y permite recorrer las herramientas. No cambia la sesión, las cuentas ni los registros reales. El cliente utiliza una representación segura de las páginas públicas; no envía mensajes ni pedidos desde la vista previa.
 
 ## Publicación manual del portafolio e Inicio
 
@@ -60,7 +70,7 @@ Cuando Stripe está desactivado y la configuración permite pedidos manuales de 
 
 ## Servicios de pruebas
 
-Los cambios de base de datos y las funciones se despliegan únicamente en STAGING. Checkout utiliza **`tsi-store-checkout` v6**; soporte, **`tsi-support` v1**; invitados y portafolio, **`tsi-guest-access` v3**.
+Los cambios de base de datos y las funciones se despliegan únicamente en STAGING. Checkout utiliza **`tsi-store-checkout` v6**; soporte, **`tsi-support` v2**; invitados y portafolio, **`tsi-guest-access` v6**; herramientas por rol, **`tsi-role-tools` v1**.
 
 Las comprobaciones contra los servicios desplegados confirmaron:
 
