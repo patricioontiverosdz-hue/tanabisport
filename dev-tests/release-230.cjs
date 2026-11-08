@@ -19,7 +19,7 @@ const suites=[
  'store-payments-230.cjs',
  'store-ui-230-security.cjs',
  'integration-230.cjs',
- ...(postgres?['rules-230-postgres.cjs','guest230-postgres.cjs']:[]),
+ ...(postgres?['rules-230-postgres.cjs','guest230-postgres.cjs','portfolio230-manual-postgres.cjs']:[]),
  'staging-isolation.cjs',
  'photo-game-ui.cjs',
  'editing-game-model.cjs',

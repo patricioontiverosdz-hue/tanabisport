@@ -11,13 +11,13 @@ Esta entrega se limita a la aplicación y al proyecto de pruebas `nksqpoigywfegc
 - **Más herramientas** conserva todos los módulos autorizados por el rol, incluidos los dos retos, el podio y Privacidad. Las recomendaciones y el detalle operativo anterior continúan disponibles mediante un desplegable.
 - Interfaz adaptable, navegación por teclado, nombres accesibles y respeto por la preferencia de movimiento reducido. Las funciones públicas que dependían de configuración conservan esa condición.
 
-## Publicación segura del portafolio
+## Publicación manual del portafolio e Inicio
 
-La nueva publicación pública exige confirmación y referencia de una autorización específica para portafolio, fecha de fin de temporada y fecha límite de esa autorización. También exige declarar si aparecen menores y, en ese caso, confirmar y referenciar la autorización de su representante. Estos registros documentan la comprobación del integrante que publica; no sustituyen la recepción y revisión de la autorización correspondiente.
+Administración y Edición pueden subir, previsualizar, editar, reemplazar y retirar imágenes del portafolio. El formulario pide únicamente la fotografía y un título opcional. No solicita fechas, temporada, referencias de autorización ni datos de menores. Administración puede elegir o quitar la imagen principal de Inicio.
 
-Administración y Edición publican o retiran fotografías con identidad y rol comprobados en el servidor. Las imágenes se mantienen privadas como JPEG, sin URL pública de Storage. La interfaz las prepara con un máximo de 1,600 píxeles; el servidor rechaza formatos, dimensiones y metadatos EXIF/IPTC no admitidos. El acceso público utiliza únicamente los servicios de listado e imagen autorizados por la política del portafolio.
+Las imágenes del portafolio y de Inicio no tienen vencimiento automático. El equipo las retira manualmente; el proceso de borrado programado del portafolio se desactiva y su función de purga devuelve cero. Las referencias históricas existentes se conservan sin bloquear publicaciones. Las fechas no intervienen en las lecturas ni en la selección de Inicio. Se mantienen los permisos del personal, el procesamiento de archivos y la protección frente a solicitudes repetidas o respuestas de otra cuenta.
 
-La disponibilidad pública termina en el primero de estos límites: 56 días desde la publicación, fin de temporada o vencimiento de la autorización. Cada consulta vuelve a comprobar la vigencia y el retiro deja de permitir el acceso. El registro heredado de portafolio queda cerrado a la consulta directa; un bucket heredado, si existiera, queda privado.
+Tienda mantiene sus invitaciones, sesiones temporales, límites de conservación y comprobaciones de acceso anteriores. Los avisos y documentos de privacidad continúan disponibles por separado.
 
 ## Disponibilidad y pago de edición
 
@@ -96,8 +96,14 @@ La biblioteca SheetJS existente se conserva intacta en staging/vendor/xlsx-embed
 
 Medición de recursos estáticos del arranque (sin las fuentes remotas en ambas versiones): HTML 1,602,577 → 3,220 bytes; total 2,075,257 → aproximadamente 420,225 bytes; gzip 827,890 → aproximadamente 296,950 bytes. La reducción comprimida es 64.1 %. No se presenta como una medición de tiempo real en un navegador.
 
-Imágenes de la página es un acceso visible de Administración y Edición. Permite subir, previsualizar, editar títulos y autorizaciones, reemplazar archivos y retirar publicaciones. Administración puede elegir o quitar la imagen de Inicio entre las publicaciones vigentes. La selección se guarda en el servidor y se recupera al abrir de nuevo la página; al retirar o vencer la imagen se vuelve al diseño con el logotipo. Editar conserva el límite de vencimiento original. Las confirmaciones de autorización indican página pública, portafolio e imagen de inicio; las redes sociales conservan su consentimiento independiente.
+Imágenes de la página es un acceso visible de Administración y Edición. Permite subir, previsualizar, editar títulos, reemplazar archivos y retirar publicaciones manualmente. Administración puede elegir o quitar la imagen de Inicio; se recupera al volver a abrir la página y permanece hasta su retiro manual. No se solicitan fechas, autorizaciones ni referencias para publicar.
 
 La migración adicional 	si230_portfolio_edit_homepage y 	si-guest-access v4 se aplicaron solo en staging. Se comprobó edición, selección, retiro y vencimiento en PostgreSQL local; también se verificaron edición/selección/retiro en la base de pruebas dentro de una transacción revertida, sin registros de personas nuevos. La respuesta pública contiene solo imágenes autorizadas y las tablas de selección y comandos permanecen privadas.
 
 Validación de esta revisión: 26/26 suites aprobadas con PostgreSQL local incluido. La prueba pública se repitió después del ajuste final que preserva el enlace de transmisión.
+
+## Revisión de publicación manual
+
+Por instrucción del usuario, portafolio e Inicio quedan sin fechas de vencimiento ni formularios de autorización. La migración tsi230_portfolio_manual_publication desactiva únicamente la limpieza programada del portafolio y conserva las restricciones de Tienda. La publicación sigue disponible solo para los roles del equipo autorizados, y las imágenes se retiran manualmente desde Imágenes de la página.
+
+La revisión manual se desplegó en tsi-guest-access v5. Se verificó en staging que la tarea de limpieza del portafolio está desactivada, su purga devuelve cero y el trabajo de conservación de Tienda sigue activo. Una transacción revertida confirmó publicación sin fechas, permanencia tras 100 días, selección de Inicio y retiro manual.

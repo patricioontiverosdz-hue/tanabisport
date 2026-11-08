@@ -43,18 +43,12 @@ export function validatePortfolioJpeg(value) {
   return {width,height,bytes:bytes.length};
 }
 
-/** Validates the complete authorization whenever image or consent metadata changes. */
-export function validatePortfolioInput(payload,{update=false,now=Date.now()}={}) {
+/** Portfolio and homepage publishing is manual; old metadata is accepted for open clients. */
+export function validatePortfolioInput(payload,{update=false}={}) {
  const fields=['request_id','title','image','season_end','consent_until','consent_reference','contains_minors','guardian_reference','consent_confirmed','guardian_confirmed'];
  if(!payload||typeof payload!=='object'||Array.isArray(payload)||Object.keys(payload).some(key=>!fields.includes(key))
   ||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(payload.request_id||'')
   ||typeof payload.title!=='string'||!payload.title.trim()||payload.title.trim().length>80)throw Error('Revisa el título y la solicitud de la fotografía.');
- const full=!update||Object.keys(payload).some(key=>!['request_id','title'].includes(key));
- if(!full)return {full:false};
- if(typeof payload.contains_minors!=='boolean'||payload.consent_confirmed!==true||!/^[A-Za-z0-9][A-Za-z0-9._/-]{2,159}$/.test(payload.consent_reference||'')
-  ||payload.contains_minors&&(payload.guardian_confirmed!==true||!/^[A-Za-z0-9][A-Za-z0-9._/-]{2,159}$/.test(payload.guardian_reference||'')))
-  throw Error('Confirma la autorización documentada para publicación pública y la del tutor si hay menores.');
- for(const date of [payload.season_end,payload.consent_until])if(typeof date!=='string'||!Number.isFinite(Date.parse(date))||Date.parse(date)<=now)throw Error('Confirma fechas futuras de temporada y autorización.');
  if(!update||Object.hasOwn(payload,'image'))validatePortfolioJpeg(payload.image);
- return {full:true};
+ return {full:!update||Object.hasOwn(payload,'image')};
 }
