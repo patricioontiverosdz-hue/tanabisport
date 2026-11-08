@@ -1,0 +1,127 @@
+{
+  "project_id": "tantlgswituiwkxfgmsr",
+  "source_project": "nksqpoigywfegcbvfhoa",
+  "mode": "manual_orders_only",
+  "stripe_enabled": false,
+  "guest_delivery": "administrator_manual_code",
+  "email_configured": false,
+  "ordered_sql": [
+    {
+      "file": "sql/001_shop_preview.sql",
+      "source": "supabase/migrations/20261026222548_tsi224_shop_preview.sql",
+      "migration_name": "tsi230_prod_001_shop_preview"
+    },
+    {
+      "file": "sql/002_store.sql",
+      "source": "supabase/migrations/20261028033805_tsi224_store.sql",
+      "migration_name": "tsi230_prod_002_store"
+    },
+    {
+      "file": "sql/003_customer_lookup.sql",
+      "source": "supabase/migrations/20261028194754_tsi224_store_customer_lookup.sql",
+      "migration_name": "tsi230_prod_003_customer_lookup"
+    },
+    {
+      "file": "sql/004_support_avatar.sql",
+      "source": "supabase/migrations/20261107024802_tsi230_support_avatar.sql",
+      "migration_name": "tsi230_prod_004_support_avatar"
+    },
+    {
+      "file": "sql/005_access_payroll_rules.sql",
+      "source": "supabase/migrations/20261107024910_tsi230_access_payroll_rules.sql",
+      "migration_name": "tsi230_prod_005_access_payroll_rules"
+    },
+    {
+      "file": "sql/006_guest_access.sql",
+      "source": "supabase/migrations/20261107024942_tsi230_guest_access.sql",
+      "migration_name": "tsi230_prod_006_guest_access"
+    },
+    {
+      "file": "sql/007_store_guest_binding.sql",
+      "source": "supabase/migrations/20261107025824_tsi230_store_guest_binding.sql",
+      "migration_name": "tsi230_prod_007_store_guest_binding"
+    },
+    {
+      "file": "sql/008_portfolio_schema.sql",
+      "source": "supabase/migrations/20261107031851_tsi230_private_portfolio_consent.sql",
+      "migration_name": "tsi230_prod_008_portfolio_schema"
+    },
+    {
+      "file": "sql/009_portfolio_edit_homepage.sql",
+      "source": "supabase/migrations/20261107162044_tsi230_portfolio_edit_homepage.sql",
+      "migration_name": "tsi230_prod_009_portfolio_edit_homepage"
+    },
+    {
+      "file": "sql/010_portfolio_manual.sql",
+      "source": "supabase/migrations/20261107171017_tsi230_portfolio_manual_publication.sql",
+      "migration_name": "tsi230_prod_010_portfolio_manual"
+    },
+    {
+      "file": "sql/011_role_tools.sql",
+      "source": "supabase/migrations/20261108034808_tsi230_role_tools.sql",
+      "migration_name": "tsi230_prod_011_role_tools"
+    },
+    {
+      "file": "sql/012_legacy_portfolio_import.sql",
+      "source": "production-specific additive legacy preservation",
+      "migration_name": "tsi230_prod_012_legacy_portfolio_import"
+    }
+  ],
+  "edge_functions": [
+    {
+      "name": "tsi-support",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "files": [
+        "handler.mjs",
+        "index.ts"
+      ]
+    },
+    {
+      "name": "tsi-guest-access",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "files": [
+        "deno.json",
+        "handler.mjs",
+        "index.ts",
+        "portfolio.mjs"
+      ]
+    },
+    {
+      "name": "tsi-store-checkout",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "files": [
+        "deno.json",
+        "deno.lock",
+        "handler.mjs",
+        "index.ts"
+      ]
+    },
+    {
+      "name": "tsi-role-tools",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "files": [
+        "handler.mjs",
+        "index.ts"
+      ]
+    }
+  ],
+  "prepared_only": true,
+  "post_frontend_sql": [
+    {
+      "file": "sql/013_close_legacy_after_frontend.sql",
+      "only_after": "verified production HTTP and complete legacy image import",
+      "migration_name": "tsi230_prod_013_close_legacy_after_frontend"
+    }
+  ],
+  "legacy_portfolio": {
+    "prepared_count": 6,
+    "source": "public.portfolio",
+    "credentials": "MCP SQL adapter; no service key required by client",
+    "importer": "prepare-legacy-portfolio.mjs",
+    "in_git_data": false
+  }
+}
