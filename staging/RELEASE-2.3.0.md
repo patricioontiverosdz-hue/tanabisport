@@ -107,3 +107,7 @@ Validación de esta revisión: 26/26 suites aprobadas con PostgreSQL local inclu
 Por instrucción del usuario, portafolio e Inicio quedan sin fechas de vencimiento ni formularios de autorización. La migración tsi230_portfolio_manual_publication desactiva únicamente la limpieza programada del portafolio y conserva las restricciones de Tienda. La publicación sigue disponible solo para los roles del equipo autorizados, y las imágenes se retiran manualmente desde Imágenes de la página.
 
 La revisión manual se desplegó en tsi-guest-access v5. Se verificó en staging que la tarea de limpieza del portafolio está desactivada, su purga devuelve cero y el trabajo de conservación de Tienda sigue activo. Una transacción revertida confirmó publicación sin fechas, permanencia tras 100 días, selección de Inicio y retiro manual.
+
+## Corrección de subida JPEG
+
+La publicación y el reemplazo preparan automáticamente los JPEG antes de guardarlos: se retiran datos de cámara, comentarios y miniaturas, conservando perfiles de color ICC completos y los datos de imagen. Se aceptan también JPEG estándar sin segmento JFIF. El formulario solicita un lienzo sRGB; el servidor valida tamaños, tablas y estructura después de normalizar y envía esa imagen al almacenamiento. No se agregan pasos ni campos al usuario. Tienda y publicación manual permanecen sin cambios.
