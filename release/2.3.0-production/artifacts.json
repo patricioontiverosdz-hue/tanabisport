@@ -1,0 +1,541 @@
+{
+  "version": "2.3.0",
+  "baseline_main_sha": "708816c9fc5cf6a16520f23423ab1ae1ba2ff329",
+  "schedule": {
+    "date": "2026-11-09",
+    "time": "00:00",
+    "timezone": "America/Monterrey",
+    "utc": "2026-11-09T06:00:00Z"
+  },
+  "production_project": "tantlgswituiwkxfgmsr",
+  "staging_project": "nksqpoigywfegcbvfhoa",
+  "staging_tree_sha": "b21dce148974cbcffa9d4e5c3e89d0036649cf0d",
+  "stripe": "disabled_manual_orders_authorized",
+  "previous_index_sha256": "450411250eeb1f3f815c724d7f432b008f0e3fc367d8603c7138e04ad45b05d2",
+  "production": [
+    {
+      "path": "index.html",
+      "bytes": 3792,
+      "sha256": "8fb0eb169244852170b9bf13cea8046a3a11bec289329f389dfab033098fd72b"
+    },
+    {
+      "path": "equipo.html",
+      "bytes": 360567,
+      "sha256": "e1dda0907bb2d37993cf5f865d3ca445f931f2ff4a87ba9cb817963a73adf557"
+    },
+    {
+      "path": "assets/tsi230/availability-suspensions.js",
+      "bytes": 9811,
+      "sha256": "9fac6a1fa153973220c3366d9714bb270dff8575acd10e6ea4e00c15c2a3f667"
+    },
+    {
+      "path": "assets/tsi230/brand/tanabi-logo-transparent.png",
+      "bytes": 880647,
+      "sha256": "608a1a97a91ac4e7773bb1cc937487a73f6ac9cf82bd5c58498f7364f0452da0"
+    },
+    {
+      "path": "assets/tsi230/brand/tanabi-logo-transparent.webp",
+      "bytes": 126628,
+      "sha256": "9f012860c0543cbeb7305d44346a4b5df2e8765fc2d6c1964c82cb87b545062f"
+    },
+    {
+      "path": "assets/tsi230/brand/tanabi-logo.png",
+      "bytes": 219134,
+      "sha256": "24380506726f864dd2348809a047d91f857c38bc457b6e445efc0b587e3137e8"
+    },
+    {
+      "path": "assets/tsi230/editing-game-model.js",
+      "bytes": 18551,
+      "sha256": "5ae689b0d793a1bd079f7ddadf9d71ba172cb8db88c40d890f3875ed62564564"
+    },
+    {
+      "path": "assets/tsi230/editing-game-renderer.js",
+      "bytes": 9278,
+      "sha256": "b97f035b2845b070c0ff7cd16145531a9421bb50038397e2548cb3d568607061"
+    },
+    {
+      "path": "assets/tsi230/editing-game.css",
+      "bytes": 8032,
+      "sha256": "4cd464312be5669ccc6e3b205105dafc6f8445022a6211fa29e34a3c02e790ef"
+    },
+    {
+      "path": "assets/tsi230/editing-game.js",
+      "bytes": 12855,
+      "sha256": "1237b99d2ed03aed41a8b0b4a36d5c8267a486ec5d2577be27c7f2f21c9a18a6"
+    },
+    {
+      "path": "assets/tsi230/game-ranking.css",
+      "bytes": 7025,
+      "sha256": "6260a28a41d74e1e5c1838c2cb694d7c96767578a87ec19729ece2bdcfa94e8b"
+    },
+    {
+      "path": "assets/tsi230/game-ranking.js",
+      "bytes": 11040,
+      "sha256": "5b555ad0baf822b048a8382725611f9217a969943c129d1b815db099f7fa4a33"
+    },
+    {
+      "path": "assets/tsi230/photo-game-model.js",
+      "bytes": 16798,
+      "sha256": "717db9bb70ba5f1bab812d3e687992255b36f0228a794fd32069bd8749e35ec6"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/aerial-catch.jpg",
+      "bytes": 161127,
+      "sha256": "4b09427d74024feb42845e56ad40c5d796ec339d26b41871284ea038338f56bd"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/baseball-swing.jpg",
+      "bytes": 237385,
+      "sha256": "80443a4bdb6ecf0afb56d8db6811cc1dcb54c3401a24845b69a167d8b7c1576a"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/cycling-sprint.jpg",
+      "bytes": 249817,
+      "sha256": "aa32b4af52f1151ff7e6b077ddb48b3fbc4d330c8f65a8cb2c0165d39ca57ab8"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/daylight-action.jpg",
+      "bytes": 197462,
+      "sha256": "0e38aa4d729c4c2cf6ea52a7c0978c9308e690a49f03f893ee9f7342c47a8a68"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/goalkeeper-save.jpg",
+      "bytes": 207151,
+      "sha256": "5714daf89c5ec015beaaa783e0df9defe75fd69e502265235b1f325841421703"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/golden-hour-portrait.jpg",
+      "bytes": 112159,
+      "sha256": "8b096f766f2e2cbefc00d3fdc942a120b96cd036f3b35b14e19f1519bb1149a6"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/indoor-basketball.jpg",
+      "bytes": 178684,
+      "sha256": "81749b7b75c2e06c818115556e5dbf9791cf1e7904094fd51519154ef1ad1bf2"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/night-action.jpg",
+      "bytes": 143982,
+      "sha256": "cd979e72c152f58c8ced9bb61281ce44f7fb863e6f5ac4e7890836c1dbb7622a"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/rainy-action.jpg",
+      "bytes": 302281,
+      "sha256": "bb5c7d81d57cd27a028a8ba81f503a21deab17f98636b529ef9d19b1460e1ae8"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/sideline-portrait.jpg",
+      "bytes": 122359,
+      "sha256": "0a65de9d738f8708bc119b4b0d10ae194273dbf9b660e031fde82d9ce1a99349"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/soccer-celebration.jpg",
+      "bytes": 211695,
+      "sha256": "0f0ef88fd8a574a084751ad6f108ebe8bf55a9df2bf5faaad0b7dd46daf3f9ec"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/swimming-race.jpg",
+      "bytes": 239389,
+      "sha256": "b2cbd4f25526de21486bac45b2da30c2c27291e392ef1c1d61d0d0c05478ed2a"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/team-portrait.jpg",
+      "bytes": 193595,
+      "sha256": "1954a2c656055c2d5e9ee1cb8b4c9fb632527b7a24a453eb709467411399ba37"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/tennis-serve.jpg",
+      "bytes": 185315,
+      "sha256": "0ae3601b70d9c2f5e62fba014a5bc0579b6e68a24328527c97412824742defeb"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/track-finish.jpg",
+      "bytes": 212322,
+      "sha256": "85b1d064589e2894a44768626a21111035ca0679578f7b18bc35c9f144867476"
+    },
+    {
+      "path": "assets/tsi230/photo-game-scenes/volleyball-block.jpg",
+      "bytes": 201045,
+      "sha256": "d83dab6e1df85aa7de4643910d4ec11529c705d3ba5d7ba39f0cc360a1f46a5f"
+    },
+    {
+      "path": "assets/tsi230/photo-game.css",
+      "bytes": 8938,
+      "sha256": "b15c0700ce5ce3d2d978f9fb65fbed04b553031f6e2ea8f18f453804f6102498"
+    },
+    {
+      "path": "assets/tsi230/photo-game.js",
+      "bytes": 11034,
+      "sha256": "b06b3aa4415123945e81292980f810081cf345ba770b7818ef86c9ecd71f772f"
+    },
+    {
+      "path": "assets/tsi230/public-base.css",
+      "bytes": 26491,
+      "sha256": "9857b3debe27803b6b8e894ffd5ce714f5e3116edc4c87a134ec4235b4af485d"
+    },
+    {
+      "path": "assets/tsi230/tsi-210.js",
+      "bytes": 50567,
+      "sha256": "34f640e14051c18a1c41295cfaf43438f07a94887230b07c0eafef620045d95c"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-admin-integration.js",
+      "bytes": 6483,
+      "sha256": "6a13d8a2067ef31118319da522c80cae8c0e2241379292d493a9cf8010491176"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-admin.css",
+      "bytes": 7250,
+      "sha256": "be15f1053b08ed9c426efeab7399ee4be22c2e4c0d7aa3f1e95b4c86ae6a27f5"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-admin.js",
+      "bytes": 27797,
+      "sha256": "e851fc1e4017d4b68a349e4ac9c05bf6a113e42e344c43d6ed58127cee859b66"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-excel.js",
+      "bytes": 842,
+      "sha256": "98f42a7051b00e9c45c7030ba64972f7f9b98eb069e1aa130cf278749e6fcb98"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-guest.css",
+      "bytes": 2306,
+      "sha256": "78103e1e1e50f0fad10d4c2b210fc64cdef593855055285cf528d774ee51b1e8"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-guest.js",
+      "bytes": 20110,
+      "sha256": "b80325096e7c0b86438c561e3b5d6bf37b66024a56f8c14a49b367912b90369a"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-portfolio.js",
+      "bytes": 14267,
+      "sha256": "d451bf6e84775b6b3e339b600d553305612a018af56d00d1e9bb02d9963cd006"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-privacy.js",
+      "bytes": 19281,
+      "sha256": "514c97af019e6dd930c212c8008bbed014e735acd3f431df6a4aecec69ccbe7c"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-public.css",
+      "bytes": 348,
+      "sha256": "e46e1cc3ed9033cb4e4dffe945a15ed36ccf9be376e5d4f8577a69b9332307f0"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-public.js",
+      "bytes": 10525,
+      "sha256": "be4e4a231ba11a08818c8f912875094a7cf4f3db6629b0594044d74ff6981d23"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-role-catalog.js",
+      "bytes": 3508,
+      "sha256": "f86d6e4780c27e0b863cf3f605389bfcd4f4cea538d62e771be8ae3c2ffbe5f8"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-rules.js",
+      "bytes": 6016,
+      "sha256": "4b78c824e8cec611d8db0165c2bd9263e3ff965f4b22c7b44ace2b6d1142cb7a"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-store.js",
+      "bytes": 62855,
+      "sha256": "b647f4245a7d3b718c30ee2eae32a788c6536d9a0c34f9210dd9577b440d149c"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-support.css",
+      "bytes": 6759,
+      "sha256": "5ec32f748892c15db217d26aaeb6c51a42340c176d498b69b9f6058452a51bf0"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-support.js",
+      "bytes": 23371,
+      "sha256": "1b6011dde454aea6bcb55ba74d5ace087f6e78d8b8a12283cd04d7b681e0cf7f"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-ui.css",
+      "bytes": 26431,
+      "sha256": "43d799a90d38619c4693a94e772ab3317e8dd8b258a7d9d7fcb231fa0c056ac2"
+    },
+    {
+      "path": "assets/tsi230/tsi-230-ui.js",
+      "bytes": 27974,
+      "sha256": "90b06a6dd4628f559e0c3586787d28af07ae0f41b4d0f0f4cca3ad39c6346eec"
+    },
+    {
+      "path": "assets/tsi230/vendor/xlsx-embedded.js",
+      "bytes": 951905,
+      "sha256": "7ae79f83f530df831841e2d7cf7128e8126d933ee105cb0b70bda1615674186f"
+    }
+  ],
+  "shared": [
+    {
+      "path": "assets/favicon-ts.svg",
+      "bytes": 38096,
+      "sha256": "28827434531cbc6313c455f1a8b30a0a4438865ccb3f8063ca5f45a3a6aff60a"
+    },
+    {
+      "path": "assets/Tanabi-Sports-aviso-privacidad-integral-2.2.6.pdf",
+      "bytes": 461862,
+      "sha256": "854fd9bd960db0b0646afca4e47ebe32a4167c787747d3a6fcaa2c5069c85b7f"
+    },
+    {
+      "path": "assets/Tanabi-Sports-consentimiento-fotografias-2.2.6.pdf",
+      "bytes": 459434,
+      "sha256": "58dc067480d86e1cd60f36d00b56063d9902e509c1cada1b32652cb17bd28565"
+    },
+    {
+      "path": "assets/tsi-210-backup.js",
+      "bytes": 3909,
+      "sha256": "e82d2878aba771730da3122e7742b96e96ee134c71b61875915bd06c56caf462"
+    },
+    {
+      "path": "assets/tsi-210-model.js",
+      "bytes": 8193,
+      "sha256": "ba8e6eec58813da6efb48b395cb04221fadb487bf721a49e475eee061f472af1"
+    },
+    {
+      "path": "assets/tsi-210.css",
+      "bytes": 3220,
+      "sha256": "ae5b541bc38cc5a7ecf1495fb528e30596442d442de7b5adcb69dcc65239ce98"
+    },
+    {
+      "path": "assets/tsi-210.js",
+      "bytes": 50567,
+      "sha256": "34f640e14051c18a1c41295cfaf43438f07a94887230b07c0eafef620045d95c"
+    },
+    {
+      "path": "assets/tsi-225-availability-suspensions.js",
+      "bytes": 9811,
+      "sha256": "9fac6a1fa153973220c3366d9714bb270dff8575acd10e6ea4e00c15c2a3f667"
+    },
+    {
+      "path": "assets/tsi-225-incomplete-matches.js",
+      "bytes": 14959,
+      "sha256": "baa1e739c03d6ad231cdcf3a602006b3889b2bc53e8d35183cca605530351050"
+    },
+    {
+      "path": "assets/tsi-226-privacy.css",
+      "bytes": 1466,
+      "sha256": "752180ed64adb74c10b429b71b8b52c97cee55e5229f308da39d966e77c537a1"
+    },
+    {
+      "path": "assets/tsi-226-privacy.js",
+      "bytes": 19232,
+      "sha256": "36c803c8a722a29c78ce2336669622825259ec9c48568413afa3da309cdd3b86"
+    },
+    {
+      "path": "assets/tsi-shop-preview.css",
+      "bytes": 2907,
+      "sha256": "995a8479bd2692c93d29c7fac77e8c70bd0dae771ca586e3a7e980974d3e56f7"
+    },
+    {
+      "path": "assets/tsi-shop-preview.js",
+      "bytes": 23317,
+      "sha256": "9eed94f07f145bc8d3662bb258ba32239095d8534b59a520d2be34308c116f54"
+    },
+    {
+      "path": "assets/tsi-store.css",
+      "bytes": 9966,
+      "sha256": "ddce9d700fcc93c846b6a62a47075a61e6c61eebedf02432189d9bcf4046f73b"
+    },
+    {
+      "path": "assets/tsi-store.js",
+      "bytes": 61971,
+      "sha256": "924fb8f2250338b3e2e00cd6134921c0fc4ad43a7290d7b3a23b5d6728285ece"
+    },
+    {
+      "path": "training/editing-game-model.js",
+      "bytes": 18551,
+      "sha256": "5ae689b0d793a1bd079f7ddadf9d71ba172cb8db88c40d890f3875ed62564564"
+    },
+    {
+      "path": "training/editing-game-renderer.js",
+      "bytes": 9264,
+      "sha256": "7e873d55d159cbc439291fb51403effbeb13035e32b272479a727ea4d9d75c96"
+    },
+    {
+      "path": "training/editing-game.css",
+      "bytes": 8032,
+      "sha256": "4cd464312be5669ccc6e3b205105dafc6f8445022a6211fa29e34a3c02e790ef"
+    },
+    {
+      "path": "training/editing-game.js",
+      "bytes": 12807,
+      "sha256": "b2c482bc43f434cdcd075000aeda2463063700f7165f6d86f19ba95160e73c77"
+    },
+    {
+      "path": "training/game-ranking.css",
+      "bytes": 7025,
+      "sha256": "6260a28a41d74e1e5c1838c2cb694d7c96767578a87ec19729ece2bdcfa94e8b"
+    },
+    {
+      "path": "training/game-ranking.js",
+      "bytes": 11040,
+      "sha256": "5b555ad0baf822b048a8382725611f9217a969943c129d1b815db099f7fa4a33"
+    },
+    {
+      "path": "training/photo-game-model.js",
+      "bytes": 16798,
+      "sha256": "717db9bb70ba5f1bab812d3e687992255b36f0228a794fd32069bd8749e35ec6"
+    },
+    {
+      "path": "training/photo-game-scenes/aerial-catch.jpg",
+      "bytes": 161127,
+      "sha256": "4b09427d74024feb42845e56ad40c5d796ec339d26b41871284ea038338f56bd"
+    },
+    {
+      "path": "training/photo-game-scenes/baseball-swing.jpg",
+      "bytes": 237385,
+      "sha256": "80443a4bdb6ecf0afb56d8db6811cc1dcb54c3401a24845b69a167d8b7c1576a"
+    },
+    {
+      "path": "training/photo-game-scenes/cycling-sprint.jpg",
+      "bytes": 249817,
+      "sha256": "aa32b4af52f1151ff7e6b077ddb48b3fbc4d330c8f65a8cb2c0165d39ca57ab8"
+    },
+    {
+      "path": "training/photo-game-scenes/daylight-action.jpg",
+      "bytes": 197462,
+      "sha256": "0e38aa4d729c4c2cf6ea52a7c0978c9308e690a49f03f893ee9f7342c47a8a68"
+    },
+    {
+      "path": "training/photo-game-scenes/goalkeeper-save.jpg",
+      "bytes": 207151,
+      "sha256": "5714daf89c5ec015beaaa783e0df9defe75fd69e502265235b1f325841421703"
+    },
+    {
+      "path": "training/photo-game-scenes/golden-hour-portrait.jpg",
+      "bytes": 112159,
+      "sha256": "8b096f766f2e2cbefc00d3fdc942a120b96cd036f3b35b14e19f1519bb1149a6"
+    },
+    {
+      "path": "training/photo-game-scenes/indoor-basketball.jpg",
+      "bytes": 178684,
+      "sha256": "81749b7b75c2e06c818115556e5dbf9791cf1e7904094fd51519154ef1ad1bf2"
+    },
+    {
+      "path": "training/photo-game-scenes/night-action.jpg",
+      "bytes": 143982,
+      "sha256": "cd979e72c152f58c8ced9bb61281ce44f7fb863e6f5ac4e7890836c1dbb7622a"
+    },
+    {
+      "path": "training/photo-game-scenes/rainy-action.jpg",
+      "bytes": 302281,
+      "sha256": "bb5c7d81d57cd27a028a8ba81f503a21deab17f98636b529ef9d19b1460e1ae8"
+    },
+    {
+      "path": "training/photo-game-scenes/sideline-portrait.jpg",
+      "bytes": 122359,
+      "sha256": "0a65de9d738f8708bc119b4b0d10ae194273dbf9b660e031fde82d9ce1a99349"
+    },
+    {
+      "path": "training/photo-game-scenes/soccer-celebration.jpg",
+      "bytes": 211695,
+      "sha256": "0f0ef88fd8a574a084751ad6f108ebe8bf55a9df2bf5faaad0b7dd46daf3f9ec"
+    },
+    {
+      "path": "training/photo-game-scenes/swimming-race.jpg",
+      "bytes": 239389,
+      "sha256": "b2cbd4f25526de21486bac45b2da30c2c27291e392ef1c1d61d0d0c05478ed2a"
+    },
+    {
+      "path": "training/photo-game-scenes/team-portrait.jpg",
+      "bytes": 193595,
+      "sha256": "1954a2c656055c2d5e9ee1cb8b4c9fb632527b7a24a453eb709467411399ba37"
+    },
+    {
+      "path": "training/photo-game-scenes/tennis-serve.jpg",
+      "bytes": 185315,
+      "sha256": "0ae3601b70d9c2f5e62fba014a5bc0579b6e68a24328527c97412824742defeb"
+    },
+    {
+      "path": "training/photo-game-scenes/track-finish.jpg",
+      "bytes": 212322,
+      "sha256": "85b1d064589e2894a44768626a21111035ca0679578f7b18bc35c9f144867476"
+    },
+    {
+      "path": "training/photo-game-scenes/volleyball-block.jpg",
+      "bytes": 201045,
+      "sha256": "d83dab6e1df85aa7de4643910d4ec11529c705d3ba5d7ba39f0cc360a1f46a5f"
+    },
+    {
+      "path": "training/photo-game.css",
+      "bytes": 8938,
+      "sha256": "b15c0700ce5ce3d2d978f9fb65fbed04b553031f6e2ea8f18f453804f6102498"
+    },
+    {
+      "path": "training/photo-game.js",
+      "bytes": 10986,
+      "sha256": "de4ff8fde02bf25f3fd01d6902ffb65780fec8f3ad438791e51ac7a6a02214b1"
+    },
+    {
+      "path": "manifest.webmanifest",
+      "bytes": 434,
+      "sha256": "02e4d29c96cc3eb4f72caa43c14fa52eb68735690c10e35846cd2b3d8abdf003"
+    },
+    {
+      "path": "tsi-push-sw.js",
+      "bytes": 1437,
+      "sha256": "21df94b7269a74cca96c669f480a42ee92db9d727528d1008139d57bae27d451"
+    },
+    {
+      "path": "icon-192.png",
+      "bytes": 18505,
+      "sha256": "18aed6a29cfb66eebb37004d1c0dc3b6cbc8e4161df76b39988359235948f23b"
+    },
+    {
+      "path": "icon-512.png",
+      "bytes": 77450,
+      "sha256": "240d816b70aa88bf16ee94fcbd768fad79d3860f0e57c14853c3bbb577b4db62"
+    }
+  ],
+  "staging": [
+    {
+      "path": "staging/index.html",
+      "bytes": 3241,
+      "sha256": "3dd3c19b525dc5c001ef84bbee69d3bfb01935d0a3951d5a41586cd2c9eb9b86"
+    },
+    {
+      "path": "staging/equipo.html",
+      "bytes": 360275,
+      "sha256": "34da25830c9462b0c9336006404f2bfeb6afd5a8260b8e47d445b6f8a87958c6"
+    },
+    {
+      "path": "staging/tsi-230-public.js",
+      "bytes": 10475,
+      "sha256": "0c5af09decca27fc6f15e51360e9c7377c958fbefe05db92218f0ce74ab0be03"
+    },
+    {
+      "path": "staging/tsi-230-ui.js",
+      "bytes": 28080,
+      "sha256": "08e99c2e50885274c3243a8e0b0b771de4dc6655f53d8801318d83474e61bab2"
+    },
+    {
+      "path": "staging/tsi-230-admin.js",
+      "bytes": 27805,
+      "sha256": "dbb4ea1dd56f213fe78efee3c43ba142fb6cd773030a9ede5629b7f23a87aecf"
+    },
+    {
+      "path": "staging/tsi-230-admin-integration.js",
+      "bytes": 6467,
+      "sha256": "d629eda55b44193c0a7540ede7c78fc61f29e1585c315f2574b00e695c53d18f"
+    },
+    {
+      "path": "staging/tsi-230-role-catalog.js",
+      "bytes": 3508,
+      "sha256": "f86d6e4780c27e0b863cf3f605389bfcd4f4cea538d62e771be8ae3c2ffbe5f8"
+    },
+    {
+      "path": "staging/tsi-230-guest.js",
+      "bytes": 19211,
+      "sha256": "668f735df9d5bee3305a1218e19fe0d654f50053e0cbb4eac0f4b007f8771970"
+    },
+    {
+      "path": "staging/tsi-230-store.js",
+      "bytes": 62923,
+      "sha256": "f7bb10a785ef93d6242868be303ac4f09fa1337c6b6ad86735a1d33d44982cdc"
+    }
+  ]
+}

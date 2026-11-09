@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict'),{status,assertWindow}=require('../scripts/release-window-230.cjs');
+assert.equal(status('2026-11-09T05:59:59.999Z').reason,'not_yet');
+assert.throws(()=>assertWindow('2026-11-09T05:59:59.999Z'),/no puede empezar antes/);
+assert.equal(assertWindow('2026-11-09T06:00:00.000Z').allowed,true);
+assert.equal(assertWindow('2026-11-09T00:00:00-06:00').utc,'2026-11-09T06:00:00.000Z');
+assert.equal(assertWindow('2026-11-09T06:59:59.999Z').allowed,true);
+assert.equal(status('2026-11-09T07:00:00Z').reason,'window_closed');
+assert.throws(()=>assertWindow('2026-11-09T07:00:00Z'),/ventana/);
+assert.throws(()=>assertWindow('2026-11-16T00:00:00-06:00'),/ventana/);
+assert.throws(()=>status('invalid'),/inválida/);
+assert.equal(new Intl.DateTimeFormat('en-US',{weekday:'long',timeZone:'America/Monterrey'}).format(new Date('2026-11-09T06:00:00Z')),'Monday');
+console.log('PASS release window: Monday Nov 9 at 00:00 Monterrey = 06:00 UTC; early, late, repeated-week and invalid runs blocked.');
