@@ -11,7 +11,7 @@ const assert=require('node:assert/strict'),path=require('node:path'),{pathToFile
   if(url.endsWith('tsi231_support_command'))return {thread:{id:bid},booking:{paid:650}};
   throw Error(url);
  },stripeFactory:(secret,options)=>{assert.ok(secret.startsWith('rk_test_'));assert.equal(options.apiVersion,'2026-09-30.endive');return {accounts:{retrieve:async()=>({id:account})},checkout:{sessions:{create:async(p,o)=>{created.push({p,o});return structuredClone(session);},retrieve:async()=>structuredClone(session)}}};}});
- let r=await service.start('hash');assert.ok(r.test_mode);assert.equal(r.amount_cents,65000);assert.equal(created.length,1);
+ let r=await service.start('hash');assert.ok(r.test_mode);assert.equal(r.amount_cents,65000);assert.equal(created.length,1);assert.equal(created[0].p.ui_mode,undefined,'use API default hosted_page, not removed hosted enum');
  assert.equal(created[0].p.line_items[0].price_data.unit_amount,65000);assert.equal(created[0].p.payment_method_types,undefined);assert.ok(created[0].p.integration_identifier.match(/[a-z]{8}$/));
  assert.ok(!JSON.stringify(created).includes('hash'));assert.equal(created[0].p.metadata.tabi_booking_id,bid);
  await service.start('hash');assert.equal(created.length,1,'retry reuses linked session');

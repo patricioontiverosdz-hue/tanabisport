@@ -35,11 +35,11 @@ export function createTabiPayments({env,db,fail,stripeFactory,now=Date.now}){
    const expires=Math.floor(new Date(p.created_at).getTime()/1000)+2700;
    if(!Number.isFinite(expires)||expires-Math.floor(now()/1000)<1800)fail(409,'Esta solicitud de pago necesita revisión del equipo antes de reintentarse.');
    const suffix=p.id.replaceAll('-','').slice(0,8).split('').map(c=>String.fromCharCode(97+parseInt(c,16))).join('');
-   const params={mode:'payment',ui_mode:'hosted',success_url:RETURN+'?tabi_payment=return',cancel_url:RETURN+'?tabi_payment=cancel',
+   const params={mode:'payment',success_url:RETURN+'?tabi_payment=return',cancel_url:RETURN+'?tabi_payment=cancel',
     expires_at:expires,client_reference_id:p.id,integration_identifier:'tabi-staging-'+suffix,adaptive_pricing:{enabled:false},
     metadata:{tsi_environment:'staging',tsi_integration:'tabi',tabi_payment_id:p.id,tabi_booking_id:p.booking_id},
     line_items:[{quantity:1,price_data:{currency:'mxn',unit_amount:p.amount_cents,product_data:{name:'Tanabi Sports · '+p.folio+' · pago de prueba'}}}]};
-   try{s=await client.checkout.sessions.create(params,{idempotencyKey:'tabi-payment-'+p.id});}catch{fail(503,'No pudimos confirmar la sesión de pago. Reintenta; conservamos la misma solicitud para evitar duplicados.');}
+   try{s=await client.checkout.sessions.create(params,{idempotencyKey:'tabi-payment-'+p.id});}catch(e){console.error('TABI_CHECKOUT_CREATE',JSON.stringify({type:e?.type,code:e?.code,param:e?.param,status:e?.statusCode,request_id:e?.requestId}));fail(503,'No pudimos confirmar la sesión de pago. Reintenta; conservamos la misma solicitud para evitar duplicados.');}
    try{validateTabiSession(s,p);}catch{fail(409,'No se pudo verificar la sesión de Stripe.');}
    await rpc('tsi231_support_payment',{operation:'link',payload:{payment_id:p.id,session_id:s.id},session_hash});
    await settle(s,p);
