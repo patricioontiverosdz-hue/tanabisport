@@ -6,7 +6,7 @@ TABI ahora responde preguntas frecuentes y conecta la conversación con cotizaci
 
 - Flag: $200 por jugador, mínimo 6, anticipo mínimo $600.
 - Tackle: $250 por jugador, mínimo 12, anticipo mínimo $750.
-- Individual: $650 por jugador, 25–35 fotos y un video. El anticipo individual está pendiente de decisión; su confirmación automática se bloquea hasta configurarlo.
+- Individual: $650 por jugador, pago completo antes de la cobertura, 25–35 fotos y un video.
 - Equipo: más de 80 fotografías y dos reels por equipo.
 - Entregas de lunes a miércoles posteriores al juego.
 - Acceso al campo aparte cuando tenga costo.
@@ -17,7 +17,7 @@ TABI ahora responde preguntas frecuentes y conecta la conversación con cotizaci
 
 El motor reconoce consultas sobre paquetes, pagos, entrega, disponibilidad y contratación, conserva deporte y cantidad de jugadores y abre un cotizador guiado. Los precios se recalculan en PostgreSQL. La confirmación requiere aceptación expresa de condiciones y revalida un partido futuro con fotógrafo asignado. No crea ni cambia asignaciones.
 
-La confirmación registra la cobertura y solicita el anticipo; no acredita un pago. El equipo registra el importe acumulado recibido, avance y enlace de entrega. Estos importes son seguimiento y no crean cobros ni asientos duplicados en caja o nómina.
+La confirmación registra la cobertura y solicita su pago; no acredita un pago. Stripe de prueba cobra $650 en individual y el anticipo mínimo de $600/$750 para equipos. Después del anticipo permite pagar el saldo. Solo la confirmación de Stripe registra el importe recibido, mediante webhook firmado o conciliación autenticada con la sesión actual del proveedor. El equipo registra avance y enlace de entrega. Estos importes son seguimiento y no crean cobros ni asientos duplicados en caja o nómina.
 
 Quejas, cancelaciones, devoluciones, disputas de pago, privacidad y solicitudes de una persona se transfieren al equipo. Dos consultas desconocidas consecutivas también escalan. Tomar un caso asigna responsable y pausa TABI; otra persona debe esperar, salvo intervención de Administración. El personal puede devolverlo a TABI.
 
@@ -27,7 +27,7 @@ El seguimiento de visitantes usa exclusivamente la sesión cifrada de su convers
 
 Esta primera versión utiliza reglas de conversación y contenido controlado, sin modelo generativo ni proveedor externo. No hay una tasa de resolución del 90% demostrada. Falta medir conversaciones reales y decidir si se integra un modelo para comprensión más amplia. No aprende automáticamente de respuestas del personal.
 
-Pendientes comerciales: anticipo individual y datos oficiales de pago. No se inventan instrucciones bancarias. La configuración permanece en tsi231_support_config en el entorno de pruebas.
+Pagos autorizados únicamente en Stripe de prueba, cuenta EntornoTanabi acct_1UVH3OQ9WFCZJIYG. Se reutilizan los secretos y el webhook firmado de tsi-store-checkout en staging. El retorno de Checkout no acredita pagos. No se habilitan cargos reales ni transferencias bancarias.
 
 La selección de partidos se limita a 80 próximos partidos válidos asignados; nuevas necesidades de capacidad por fotógrafo o varias coberturas simultáneas necesitan reglas adicionales. Una conversación contiene una contratación.
 
@@ -46,3 +46,13 @@ No ejecutar el generador de producción ni promover este paquete fuera de la ven
 - dev-tests/tabi-autonomy-database.sql se ejecutó en staging con rollback: tarifas, anticipos, idempotencia, pérdida de asignación, aceptación de condiciones, toma de casos, descuentos administrativos, saldo, reanudación y aislamiento.
 - Navegador: registro, respuesta natural dentro de los temas cubiertos, partidos, cotización, condiciones, confirmación, ancho móvil, pestaña de personal y limpieza al cerrar sesión.
 - Las tablas nuevas tienen RLS y ningún acceso directo de anon/authenticated. Solo el endpoint autorizado usa las funciones de servidor.
+
+## Stripe de prueba
+
+El endpoint tsi-support-autonomy ofrece checkout y payment-status para la sesión privada de la conversación. Cada pago toma el importe de PostgreSQL; ninguna cantidad del navegador llega a Stripe. Una contratación solo puede tener un pago pendiente. Los reintentos conservan su ID y los parámetros de Checkout; la moneda es MXN y los métodos son dinámicos.
+
+El webhook existente de tsi-store-checkout conserva el comportamiento de Tienda y deriva únicamente sesiones marcadas tsi_integration=tabi a la conciliación de coberturas. Firma, cuenta de prueba, importe, moneda, referencia, sesión y entorno se verifican antes de registrar un pago. Los eventos pendientes no acreditan importes; eventos repetidos o atrasados no duplican ni revierten pagos ya recibidos. Las pruebas de tienda previas siguen pasando.
+
+Mientras hay un Checkout pendiente, el personal no puede cambiar el importe recibido ni el descuento; sí puede actualizar la entrega. Un pago Stripe acreditado no puede borrarse modificando el importe manual. Los reembolsos requieren atención del equipo.
+
+Pruebas añadidas: tabi-stripe.cjs, tabi-stripe-webhook.cjs y tabi-stripe-database.sql (con rollback). El navegador verificó el botón y la actualización mediante servicios simulados. La conectividad saliente del ejecutor bloqueó una prueba HTTPS del sitio desplegado, por lo que no se completó aquí un pago con tarjeta de prueba ni se verificó un evento real de Stripe. No confundir las pruebas simuladas con un cargo exitoso.

@@ -64,10 +64,14 @@
  function safeLink(v){try{var x=new URL(v);return x.protocol==='https:'&&!x.username&&!x.password?x.href:'';}catch(e){return '';}}
  function bookingHtml(b,staff){
   if(!b)return '';
-  var link=safeLink(b.delivery_url),h='<section class="ts231-booking"><h3>📷 '+esc(b.folio)+'</h3><p>'+esc(b.team)+' · '+esc(b.sport)+' · '+esc(b.package)+' · '+esc(b.players)+' jugador(es)</p><dl><dt>Estado</dt><dd>'+esc(b.status)+'</dd><dt>Total</dt><dd>'+amount(b.total)+'</dd><dt>Anticipo mínimo</dt><dd>'+(b.deposit==null?'Pendiente de configurar':amount(b.deposit))+'</dd><dt>Pago registrado</dt><dd>'+amount(b.paid)+'</dd><dt>Descuento autorizado</dt><dd>'+amount(b.discount)+'</dd><dt>Saldo</dt><dd>'+amount(b.balance)+'</dd><dt>Avance</dt><dd>'+esc(b.progress)+'</dd></dl>';
+  var link=safeLink(b.delivery_url),h='<section class="ts231-booking"><h3>📷 '+esc(b.folio)+'</h3><p>'+esc(b.team)+' · '+esc(b.sport)+' · '+esc(b.package)+' · '+esc(b.players)+' jugador(es)</p><dl><dt>Estado</dt><dd>'+esc(b.status)+'</dd><dt>Total</dt><dd>'+amount(b.total)+'</dd><dt>'+(b.package==='individual'?'Pago completo':'Anticipo mínimo')+'</dt><dd>'+(b.deposit==null?'Pendiente de configurar':amount(b.deposit))+'</dd><dt>Pago registrado</dt><dd>'+amount(b.paid)+'</dd><dt>Descuento autorizado</dt><dd>'+amount(b.discount)+'</dd><dt>Saldo</dt><dd>'+amount(b.balance)+'</dd><dt>Avance</dt><dd>'+esc(b.progress)+'</dd></dl>';
   if(link)h+='<a class="ts231-delivery" href="'+esc(link)+'" target="_blank" rel="noopener noreferrer">📦 Abrir entrega</a>';
   h+='<p class="ts230-hint">Entrega de lunes a miércoles posteriores al juego. Acceso al campo aparte cuando tenga costo.</p>';
   if(!staff&&b.status==='Cotizada')h+='<form data-ts230="confirm" class="ts230-form"><label class="ts230-consent"><input name="terms" type="checkbox" required> Confirmo los datos. Acepto que, si cancelo dentro de las 12 horas previas al juego, el anticipo no es reembolsable. Las cancelaciones las revisa el personal.</label><button class="ts230-primary" '+(busy||b.deposit==null?'disabled':'')+'>Confirmar cobertura</button></form>';
+  if(!staff&&b.status==='Confirmada'){
+   if(Number(b.balance)>0){var due=Math.min(Number(b.balance),Number(b.paid)<Number(b.deposit)?Number(b.deposit)-Number(b.paid):Number(b.balance));h+='<button type="button" class="ts230-primary" data-ts230-action="stripe-pay" '+(busy?'disabled':'')+'>Pagar '+amount(due)+' · Stripe de prueba</button>';}
+   h+='<button type="button" data-ts230-action="stripe-refresh" '+(busy?'disabled':'')+'>Actualizar pago</button><p class="ts230-hint">🧪 Stripe está en modo de prueba. No se realizan cargos reales.</p>';
+  }
   return h+'</section>';
  }
  function quoteHtml(){
@@ -80,6 +84,17 @@
   if(!staffBooking)return '';
   var b=staffBooking,d=staffFormDraft[b.id]||{};
   return bookingHtml(b,true)+'<details class="ts231-quote"><summary>Actualizar pago y entrega</summary><form data-ts230="staff-booking" class="ts230-form"><label>Total recibido (acumulado)<input name="paid" type="number" min="0" step="0.01" value="'+esc(d.paid??b.paid)+'" required></label>'+(ctx.me().role==='admin'?'<label>Descuento autorizado<input name="discount" type="number" min="0" step="0.01" value="'+esc(d.discount??b.discount)+'"></label>':'')+'<label>Avance<select name="progress">'+['Programada','En edición','Lista','Entregada'].map(function(v){return '<option '+((d.progress||b.progress)===v?'selected':'')+'>'+v+'</option>';}).join('')+'</select></label><label>Enlace privado de entrega<input name="delivery_url" type="url" value="'+esc(d.delivery_url??b.delivery_url)+'" placeholder="https://…"></label><p class="ts230-hint">Estos importes sirven para seguimiento. No generan un segundo cobro ni un registro duplicado de caja.</p><button '+(busy?'disabled':'')+'>Guardar seguimiento</button></form></details>';
+ }
+
+
+ async function stripePay(refresh){
+  if(busy||!session)return;busy=true;error='';paint();
+  try{
+   var r=await request(refresh?'payment-status':'checkout',refresh?{}:{request_id:uuid()});
+   if(refresh)applyPublic(r);
+   else if(r.checkout_url){var url=new URL(r.checkout_url);if(url.protocol!=='https:'||url.hostname!=='checkout.stripe.com')throw Error('El enlace de pago no es válido.');await save();global.location.assign(url.href);}
+   else{applyPublic(await request('history',{}));if(r.payment_status==='unpaid')error='El pago sigue pendiente de confirmación.';}
+  }catch(e){error=e.message;}finally{busy=false;paint();}
  }
 
  function staffHtml(){
@@ -127,6 +142,7 @@ if(e.target.matches('[data-ts230-filter]')){staffStatus=e.target.value;staffOffs
    if(a==='edit-summary'){editing=true;summary=thread.summary;category=thread.category;paint();save();}
    if(a==='save-draft'){var f=host.querySelector('form[data-ts230="summary"]');if(f.reportValidity()){summary=f.elements.summary.value;enqueue('draft',{category:category,summary:summary});}}
    if(a==='new'&&global.confirm('¿Cerrar esta sesión de atención? Tu historial quedará con el equipo y no se podrá abrir desde esta pestaña sin la sesión actual.')){session=null;thread=null;messages=[];queue=[];booking=null;assistantState={};slots=[];quoteDraft={};draft='';summary='';category='';editing=false;error='';save();paint();}
+   if(a==='stripe-pay')stripePay(false);if(a==='stripe-refresh')stripePay(true);
    if(a==='slots')loadSlots();
    if(a==='claim'&&staffThread)staffMutation('staff-claim',{thread_id:staffThread.id,request_id:uuid()});
    if(a==='resume'&&staffThread)staffMutation('staff-resume',{thread_id:staffThread.id,request_id:uuid()});
@@ -150,7 +166,7 @@ if(e.target.matches('[data-ts230-filter]')){staffStatus=e.target.value;staffOffs
   });
  }
  function identityCheck(){var id=uid();if(id!==lastUser){lastUser=id;staffRows=[];staffThread=null;staffMessages=[];staffDrafts={};pendingStaff=null;contact=null;error='';avatars={};profileUser='';staffBooking=null;owner=null;staffFormDraft={};if(mode!=='public'){opened=false;mode='public';paint();}if(id)loadProfile();}}
- var api={install:function(options){ctx=options;mount();ready=restore().then(function(){identityCheck();paint();if(session){if(queue.length)flush();else refreshPublic();}});clearInterval(timer);timer=setInterval(function(){identityCheck();if(document.hidden||busy)return;if(mode==='staff'&&opened&&isStaff())staffLoad(staffThread&&staffThread.id);else if(mode==='public'&&session){if(queue.length)flush();else refreshPublic();}},30000);return api;},
+ var api={install:function(options){ctx=options;mount();ready=restore().then(function(){identityCheck();paint();if(session){if(queue.length)flush();else if(new URL(global.location.href).searchParams.has('tabi_payment')){opened=true;stripePay(true);var returnUrl=new URL(global.location.href);returnUrl.searchParams.delete('tabi_payment');global.history.replaceState(null,'',returnUrl.href);}else refreshPublic();}});clearInterval(timer);timer=setInterval(function(){identityCheck();if(document.hidden||busy)return;if(mode==='staff'&&opened&&isStaff())staffLoad(staffThread&&staffThread.id);else if(mode==='public'&&session){if(queue.length)flush();else refreshPublic();}},30000);return api;},
   open:function(){if(isStaff()){api.openStaff();return;}ready.then(function(){mode='public';opened=true;error='';mount();paint();save();if(session){if(queue.length)flush();else refreshPublic();}});},
   openStaff:function(){ready.then(function(){identityCheck();if(!isStaff())return;mode='staff';opened=true;ctx.state.view='dash';ctx.state.tab='atencion';if(ctx.render)ctx.render();mount();var target=document.querySelector('[data-ts231-inbox]');if(target)target.appendChild(host);paint();staffLoad();});},
   openProfile:function(){ready.then(function(){identityCheck();mode='profile';opened=true;mount();paint();loadProfile();});},

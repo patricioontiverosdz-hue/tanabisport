@@ -2,7 +2,7 @@
 export const PACKAGES=Object.freeze({flag:{price:200,min:6,deposit:600},tackle:{price:250,min:12,deposit:750},individual:{price:650}});
 export function normalize(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();}
 const money=n=>'$'+Number(n).toLocaleString('es-MX')+' MXN';
-const packages='📷 Flag: $200 por jugador (mínimo 6). Tackle: $250 por jugador (mínimo 12). En equipo: más de 80 fotos y 2 reels por equipo.\n🌟 Individual: $650, entre 25 y 35 fotos y 1 video.\n📦 Entrega de lunes a miércoles posteriores al juego. El acceso al campo no está incluido cuando tenga costo.';
+const packages='📷 Flag: $200 por jugador (mínimo 6). Tackle: $250 por jugador (mínimo 12). En equipo: más de 80 fotos y 2 reels por equipo.\n🌟 Individual: $650 (pago completo), entre 25 y 35 fotos y 1 video.\n📦 Entrega de lunes a miércoles posteriores al juego. El acceso al campo no está incluido cuando tenga costo.';
 export function answer(text,previous={},snapshot={}){
  const s=normalize(text),state={...previous};let replies=[],handoff=false;state.show_booking=!!state.show_booking;
  if(/\b(flag|tocho)\b/.test(s))state.sport='flag';else if(/\b(tackle|americano)\b/.test(s))state.sport='tackle';
@@ -20,8 +20,8 @@ export function answer(text,previous={},snapshot={}){
    else replies.push('📦 Entregamos entre lunes y miércoles posteriores al juego. Todavía no hay una contratación vinculada a esta conversación. Si tu contratación fue por otro medio, el equipo debe verificarla antes de compartir pagos o enlaces privados.');
   }
   if(/\b(anticipo|anticipar|pago|pagos|pagar|transferencia|deposito|saldo|cuenta|clabe|banco)\b/.test(s)){
-   replies.push('💳 Para equipos, el anticipo mínimo equivale a 3 jugadores: $600 en flag o $750 en tackle. El paquete individual cuesta $650; '+(snapshot.settings?.individual_deposit!=null?'su anticipo configurado es '+money(snapshot.settings.individual_deposit)+'.':'Administración aún debe definir su anticipo.'));
-   if(b)replies.push('Tu pago registrado es '+money(b.paid)+' y el saldo es '+money(b.balance)+'. Un mensaje o comprobante no acredita el pago automáticamente; el equipo registra el importe recibido.');
+   replies.push('💳 Para equipos, el anticipo mínimo equivale a 3 jugadores: $600 en flag o $750 en tackle. El paquete individual se paga completo: $650; '+(snapshot.settings?.individual_deposit!=null?'su anticipo configurado es '+money(snapshot.settings.individual_deposit)+'.':'Administración aún debe definir su anticipo.'));
+   if(b)replies.push('Tu pago registrado es '+money(b.paid)+' y el saldo es '+money(b.balance)+'. En staging puedes pagar con Stripe de prueba. El importe se registra cuando Stripe confirma el pago; enviar un mensaje o volver desde el checkout no acredita un pago.');
    replies.push(snapshot.settings?.payment_instructions||'Los datos para realizar el pago aún no están configurados. No transfieras a cuentas no verificadas; puedes solicitarlos al equipo.');
   }
   if(/\b(campo|entrada|acceso)\b/.test(s))replies.push('🏟️ El cobro de acceso al campo no está incluido cuando el lugar lo exija. Ese importe se informa por separado; no tengo una tarifa de acceso confirmada.');

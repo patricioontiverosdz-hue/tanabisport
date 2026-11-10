@@ -1,3 +1,4 @@
+import { createTabiPayments } from './tabi-payments.mjs';
 import { answer } from './assistant.mjs';
 // Isolated staging endpoint. No customer Auth accounts, email delivery, or gallery authorization.
 export const PROJECT = 'nksqpoigywfegcbvfhoa';
@@ -48,6 +49,7 @@ export function createHandler(options={}){
    if(m.includes('SUPPORT_LIMIT'))fail(429,'Hay muchas solicitudes. Espera un momento antes de intentar.');
    if(m.includes('SUPPORT_FORBIDDEN'))fail(403,'Tu cuenta no tiene acceso a esta atención.');
    if(m.includes('SUPPORT_CONFLICT'))fail(409,'La solicitud cambió. Actualiza e intenta nuevamente.');
+   if(m.includes('SUPPORT_PAID'))fail(409,'Esta cobertura ya no tiene un pago pendiente. Actualiza el seguimiento.');
    if(m.includes('SUPPORT_UNAVAILABLE'))fail(409,'Ese partido ya no tiene disponibilidad confirmada. Consulta los partidos de nuevo.');
    if(m.includes('SUPPORT_MINIMUM'))fail(400,'No se alcanza el mínimo del equipo. Puedes elegir el paquete individual.');
    if(m.includes('SUPPORT_DEPOSIT_CONFIG'))fail(409,'Administración debe definir el anticipo individual antes de confirmar este paquete.');
@@ -75,6 +77,7 @@ export function createHandler(options={}){
   let allowed;try{allowed=await r.json();}catch{}
   if(allowed!==true)fail(503,'No se pudo comprobar el acceso a Atención.');
  }
+ const payments=createTabiPayments({env,db,fail,stripeFactory:options.stripeFactory,now:options.now});
  return async req=>{
   const origin=req.headers.get('origin');const cors={'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Headers':'authorization,apikey,content-type,x-support-token','Access-Control-Allow-Methods':'POST,OPTIONS','Vary':'Origin','Cache-Control':'no-store','Content-Type':'application/json','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'};
   const reply=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:cors});
@@ -84,7 +87,7 @@ export function createHandler(options={}){
    if(req.method!=='POST')fail(405,'Usa una solicitud POST.');
    const route=new URL(req.url).pathname.split('/').filter(Boolean).at(-1),p=await bodyOf(req);let actor=null,session_hash=null,payload={};
    if(['staff-list','staff-thread','staff-message','staff-status','staff-claim','staff-resume','staff-booking','profile','avatar'].includes(route))actor=await staff(req);
-   else if(['register','history','message','draft','submit','category','quote','confirm','slots'].includes(route)){const token=req.headers.get('x-support-token')||'';if(!TOKEN.test(token))fail(401,'Falta la autorización de esta conversación.');session_hash=await hash(token,cryptoApi);}
+   else if(['register','history','message','draft','submit','category','quote','confirm','slots','checkout','payment-status','payment-config'].includes(route)){const token=req.headers.get('x-support-token')||'';if(!TOKEN.test(token))fail(401,'Falta la autorización de esta conversación.');session_hash=await hash(token,cryptoApi);}
    else fail(404,'Solicitud no disponible.');
    if(['staff-list','staff-thread','staff-message','staff-status','staff-claim','staff-resume','staff-booking'].includes(route))await staffTools(req);
    if(route==='register'){payload={...validateContact(p),request_id:requestId(p)};if(!payload.phone)fail(400,'Escribe tu WhatsApp para dar seguimiento.');}
@@ -112,6 +115,9 @@ export function createHandler(options={}){
    const ip=req.headers.get('cf-connecting-ip')||req.headers.get('x-forwarded-for')?.split(',').at(-1)?.trim()||'unknown';
    const rateKey=await hash((env('SUPABASE_SERVICE_ROLE_KEY')||'')+':support230:'+ (route==='register'?ip:actor||session_hash||'')+':'+(route==='register'?'register':'request'),cryptoApi);
    await db('/rest/v1/rpc/tsi230_support_rate',{key_hash:rateKey,limit_count:route==='register'?8:120});
+   if(route==='checkout'){requestId(p);const paymentKey=await hash((env('SUPABASE_SERVICE_ROLE_KEY')||'')+':tabi-checkout:'+session_hash,cryptoApi);await db('/rest/v1/rpc/tsi230_support_rate',{key_hash:paymentKey,limit_count:10});return reply(await payments.start(session_hash));}
+   if(route==='payment-status')return reply(await payments.refresh(session_hash));
+   if(route==='payment-config')return reply({ready:payments.ready(),test_mode:true});
    let result=await db('/rest/v1/rpc/tsi231_support_command',{operation:route,payload,session_hash,actor});
    if(['message','submit','category'].includes(route)&&!result.thread?.bot_paused){
     const text=route==='message'?payload.text:route==='submit'?payload.summary:payload.category==='Humano'?'humano':payload.category;

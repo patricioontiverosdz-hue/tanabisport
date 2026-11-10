@@ -17,6 +17,7 @@ const {pathToFileURL}=require('node:url');const {chromium}=require(process.env.T
   if(op==='message'){const plan=answer(p.text,record.assistant_state,record);record.assistant_state=plan.state;record.thread.bot_paused=plan.handoff;record.messages.push({kind:'client',text:p.text,author_name:'Cliente'},{kind:'bot',text:plan.reply,author_name:'Tabi'});}
   if(op==='quote')record.booking={id:'23000000-0000-4000-8000-000000000077',folio:'COT-TEST',team:p.team,sport:p.sport,package:p.package,players:p.players,total:1200,deposit:600,paid:0,discount:0,balance:1200,status:'Cotizada',progress:'Programada',delivery_url:''};
   if(op==='confirm'){assert.equal(p.accept_terms,true);record.booking.status='Confirmada';}
+  if(op==='checkout'){record.booking.paid=600;record.booking.balance=600;return route.fulfill({json:{closed:true,payment_status:'paid',test_mode:true}});}
   await route.fulfill({json:response()});
  });
  await page.goto('http://127.0.0.1:'+server.address().port);
@@ -33,6 +34,9 @@ const {pathToFileURL}=require('node:url');const {chromium}=require(process.env.T
  await page.getByRole('button',{name:'Cotizar',exact:true}).click();await page.locator('select[name="match_id"] option[value="match-test"]').waitFor({state:'attached'});
  await page.locator('input[name="team"]').fill('Equipo prueba');await page.locator('select[name="match_id"]').selectOption('match-test');await page.getByRole('button',{name:'Generar cotización'}).click();
  await page.locator('input[name="terms"]').check();await page.getByRole('button',{name:'Confirmar cobertura',exact:true}).click();await page.locator('.ts231-booking').getByText('Confirmada',{exact:true}).waitFor();
+ await page.getByRole('button',{name:/Pagar.*Stripe de prueba/}).click();
+ await page.waitForFunction(()=>document.querySelector('.ts231-booking')?.textContent.includes('Pago registrado'));
+ assert.ok(routes.includes('checkout'));
  await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await page.evaluate(()=>{testRole='foto';TSI230Support.afterRender();TSI230Support.openStaff();});
  await page.locator('[data-ts231-inbox] .ts231-inline').waitFor();await page.locator('[data-ts230-thread]').click();await page.getByText('Cliente privado',{exact:true}).waitFor();
