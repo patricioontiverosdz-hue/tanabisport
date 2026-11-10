@@ -15,7 +15,7 @@ TABI ahora responde preguntas frecuentes y conecta la conversación con cotizaci
 
 ## Comportamiento
 
-El motor reconoce consultas sobre paquetes, pagos, entrega, disponibilidad y contratación, conserva deporte y cantidad de jugadores y abre un cotizador guiado. Los precios se recalculan en PostgreSQL. La confirmación requiere aceptación expresa de condiciones y revalida un partido futuro con fotógrafo asignado. No crea ni cambia asignaciones.
+El motor reconoce consultas sobre paquetes, pagos, entrega, disponibilidad y contratación, conserva deporte y cantidad de jugadores y abre un cotizador guiado. Los precios se recalculan en PostgreSQL. La confirmación requiere aceptación expresa de condiciones. El partido no es requisito para cotizar, confirmar la solicitud ni preparar el pago; la relación se realiza después por el personal desde Atención. No crea ni cambia asignaciones.
 
 La confirmación registra la cobertura y solicita su pago; no acredita un pago. Stripe de prueba cobra $650 en individual y el anticipo mínimo de $600/$750 para equipos. Después del anticipo permite pagar el saldo. Solo la confirmación de Stripe registra el importe recibido, mediante webhook firmado o conciliación autenticada con la sesión actual del proveedor. El equipo registra avance y enlace de entrega. Estos importes son seguimiento y no crean cobros ni asientos duplicados en caja o nómina.
 
@@ -29,7 +29,7 @@ Esta primera versión utiliza reglas de conversación y contenido controlado, si
 
 Pagos autorizados únicamente en Stripe de prueba, cuenta EntornoTanabi acct_1UVH3OQ9WFCZJIYG. Se reutilizan los secretos y el webhook firmado de tsi-store-checkout en staging. El retorno de Checkout no acredita pagos. No se habilitan cargos reales ni transferencias bancarias.
 
-La selección de partidos se limita a 80 próximos partidos válidos asignados; nuevas necesidades de capacidad por fotógrafo o varias coberturas simultáneas necesitan reglas adicionales. Una conversación contiene una contratación.
+La selección interna para relacionar solicitudes se limita a 80 próximos partidos publicados, incluso sin fotógrafo asignado; nuevas necesidades de capacidad por fotógrafo o varias coberturas simultáneas necesitan reglas adicionales. Una conversación contiene una contratación.
 
 ## Aislamiento y despliegue
 
@@ -56,3 +56,9 @@ El webhook existente de tsi-store-checkout conserva el comportamiento de Tienda 
 Mientras hay un Checkout pendiente, el personal no puede cambiar el importe recibido ni el descuento; sí puede actualizar la entrega. Un pago Stripe acreditado no puede borrarse modificando el importe manual. Los reembolsos requieren atención del equipo.
 
 Pruebas añadidas: tabi-stripe.cjs, tabi-stripe-webhook.cjs y tabi-stripe-database.sql (con rollback). El navegador verificó el botón y la actualización mediante servicios simulados. La conectividad saliente del ejecutor bloqueó una prueba HTTPS del sitio desplegado, por lo que no se completó aquí un pago con tarjeta de prueba ni se verificó un evento real de Stripe. No confundir las pruebas simuladas con un cargo exitoso.
+
+## Corrección: cotización independiente del partido
+
+El visitante solo indica deporte, paquete, jugadores y equipo/jugador. No aparece un selector de partido ni se consulta disponibilidad para habilitar la cotización. PostgreSQL admite match_id nulo e ignora cualquier relación enviada al cotizar por el visitante. Atención ofrece al personal un selector opcional para relacionar o desvincular el partido; no se asigna fotógrafo automáticamente. Stripe conserva los mismos importes y permite preparar el pago sin partido relacionado. Se verificó el flujo en navegador con servicios simulados y PostgreSQL con rollback.
+
+El cotizador permite capturar fecha, lugar y hora como datos libres del evento. Los tres pueden quedar por confirmar. Se guardan con la cotización y se muestran en el seguimiento; no sustituyen ni exigen el ID de un partido de TSI.
