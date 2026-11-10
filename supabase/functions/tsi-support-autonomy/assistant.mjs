@@ -31,7 +31,7 @@ export function answer(text,previous={},snapshot={}){
     state.package='individual';state.players=1;
     replies.push('Para equipo completo necesitamos al menos '+PACKAGES[state.sport].min+' jugadores. Puedo ofrecerte el individual de $650, con 25–35 fotos y 1 video 🌟.');
    }
-   replies.push('¡Vamos a preparar tu cobertura! 🏈 En el cotizador de abajo puedes elegir únicamente partidos publicados que ya tengan fotógrafo asignado. Revisa deporte, paquete y jugadores; después confirma la cotización. Si tu partido no aparece, el equipo debe revisar la disponibilidad.');
+   replies.push('¡Vamos a preparar tu cobertura! 🏈 Para cotizar solo necesito deporte, paquete, cantidad de jugadores y equipo o jugador. Puedes indicar fecha, lugar y hora, o dejarlos por confirmar. No necesitas seleccionar un partido 😊. El equipo relacionará la solicitud con un partido desde su panel.');
    if(state.sport&&state.package==='equipo'&&state.players)replies.push('Con '+state.players+' jugadores de '+state.sport+', el total estimado es '+money(state.players*PACKAGES[state.sport].price)+' y el anticipo mínimo es '+money(PACKAGES[state.sport].deposit)+'. El importe final se valida al generar la cotización.');
   }
  }

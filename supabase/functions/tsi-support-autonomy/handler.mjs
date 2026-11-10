@@ -86,26 +86,31 @@ export function createHandler(options={}){
   try{
    if(req.method!=='POST')fail(405,'Usa una solicitud POST.');
    const route=new URL(req.url).pathname.split('/').filter(Boolean).at(-1),p=await bodyOf(req);let actor=null,session_hash=null,payload={};
-   if(['staff-list','staff-thread','staff-message','staff-status','staff-claim','staff-resume','staff-booking','profile','avatar'].includes(route))actor=await staff(req);
+   if(['staff-list','staff-thread','staff-message','staff-status','staff-claim','staff-resume','staff-booking','staff-slots','profile','avatar'].includes(route))actor=await staff(req);
    else if(['register','history','message','draft','submit','category','quote','confirm','slots','checkout','payment-status','payment-config'].includes(route)){const token=req.headers.get('x-support-token')||'';if(!TOKEN.test(token))fail(401,'Falta la autorización de esta conversación.');session_hash=await hash(token,cryptoApi);}
    else fail(404,'Solicitud no disponible.');
-   if(['staff-list','staff-thread','staff-message','staff-status','staff-claim','staff-resume','staff-booking'].includes(route))await staffTools(req);
+   if(['staff-list','staff-thread','staff-message','staff-status','staff-claim','staff-resume','staff-booking','staff-slots'].includes(route))await staffTools(req);
    if(route==='register'){payload={...validateContact(p),request_id:requestId(p)};if(!payload.phone)fail(400,'Escribe tu WhatsApp para dar seguimiento.');}
    if(['message','staff-message'].includes(route))payload={text:clean(p.text,4000,true),request_id:requestId(p)};
    if(['category','draft','submit'].includes(route)){
     if(!CATEGORIES.includes(p.category))fail(400,'Elige un motivo de atención.');payload={category:p.category,request_id:requestId(p)};
     if(route!=='category'){payload.summary=clean(p.summary,4000,true);}
    }
-   if(['staff-thread','staff-message','staff-status','staff-claim','staff-resume','staff-booking'].includes(route)){if(!UUID.test(p.thread_id||''))fail(400,'Selecciona una conversación.');payload.thread_id=p.thread_id;}
+   if(['staff-thread','staff-message','staff-status','staff-claim','staff-resume','staff-booking','staff-slots'].includes(route)){if(!UUID.test(p.thread_id||''))fail(400,'Selecciona una conversación.');payload.thread_id=p.thread_id;}
    if(route==='staff-status'){if(!['Por atender','En atención','Resuelta'].includes(p.status))fail(400,'Selecciona un estado válido.');payload.status=p.status;payload.request_id=requestId(p);}
    if(route==='staff-list'){payload.offset=Number.isSafeInteger(p.offset)&&p.offset>=0&&p.offset<=100000?p.offset:0;payload.status=['Por atender','En atención','Resuelta'].includes(p.status)?p.status:'';}
    if(route==='quote'){
     if(!['flag','tackle'].includes(p.sport)||!['equipo','individual'].includes(p.package)||!Number.isSafeInteger(p.players)||p.players<1||p.players>100)fail(400,'Revisa deporte, paquete y jugadores.');
-    payload={sport:p.sport,package:p.package,players:p.players,match_id:clean(p.match_id,200,true),team:clean(p.team,120,true),request_id:requestId(p)};
+    payload={sport:p.sport,package:p.package,players:p.players,team:clean(p.team,120,true),event_date:clean(p.event_date||'',10),event_time:clean(p.event_time||'',5),event_venue:clean(p.event_venue||'',200),request_id:requestId(p)};
+   }
+   if(route==='quote'){
+    if(payload.event_date&&(!/^\d{4}-\d{2}-\d{2}$/.test(payload.event_date)||!Number.isFinite(Date.parse(payload.event_date+'T12:00:00Z'))||new Date(payload.event_date+'T12:00:00Z').toISOString().slice(0,10)!==payload.event_date))fail(400,'Revisa la fecha del evento o déjala por confirmar.');
+    if(payload.event_time&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(payload.event_time))fail(400,'Revisa la hora del evento o déjala por confirmar.');
    }
    if(route==='confirm'){if(!UUID.test(p.booking_id||'')||p.accept_terms!==true)fail(400,'Acepta las condiciones antes de confirmar.');payload={booking_id:p.booking_id,accept_terms:true,request_id:requestId(p)};}
    if(['staff-claim','staff-resume','staff-booking'].includes(route))payload.request_id=requestId(p);
    if(route==='staff-booking'){
+    if(p.match_id!==undefined)payload.match_id=clean(p.match_id,200);
     if(p.paid!==undefined){if(!Number.isFinite(p.paid)||p.paid<0||p.paid>1000000)fail(400,'Revisa el importe recibido.');payload.paid=p.paid;}
     if(p.discount!==undefined){if(!Number.isFinite(p.discount)||p.discount<0||p.discount>1000000)fail(400,'Revisa el descuento.');payload.discount=p.discount;}
     if(p.progress!==undefined){if(!['Programada','En edición','Lista','Entregada'].includes(p.progress))fail(400,'Revisa el avance.');payload.progress=p.progress;}

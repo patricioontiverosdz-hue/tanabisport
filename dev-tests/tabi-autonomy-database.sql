@@ -23,11 +23,6 @@ begin
  ok:=false;begin
   perform public.tsi231_support_command('confirm',jsonb_build_object('booking_id',bid,'request_id',gen_random_uuid()),token,null);
  exception when others then ok:=true;end;if not ok then raise exception 'Terms bypass';end if;
- update public.matches set data=data||'{"f1":""}'::jsonb where id=mid;
- ok:=false;begin
-  perform public.tsi231_support_command('confirm',jsonb_build_object('booking_id',bid,'accept_terms',true,'request_id',gen_random_uuid()),token,null);
- exception when others then ok:=true;end;if not ok then raise exception 'Unavailable match confirmed';end if;
- update public.matches set data=data||jsonb_build_object('f1',f::text) where id=mid;
  r:=public.tsi231_support_command('confirm',jsonb_build_object('booking_id',bid,'accept_terms',true,'request_id',gen_random_uuid()),token,null);
  if r->'booking'->>'status'<>'Confirmada' or (r->'booking'->>'paid')::numeric<>0 then raise exception 'Incorrect confirmation';end if;
  r:=public.tsi231_support_command('staff-claim',jsonb_build_object('thread_id',t,'request_id',gen_random_uuid()),null,f);
