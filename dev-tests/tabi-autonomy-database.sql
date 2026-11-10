@@ -1,0 +1,52 @@
+begin;
+do $$
+declare a uuid; f uuid; e uuid; token text:=repeat('a',64); token2 text:=repeat('b',64); r jsonb; q jsonb; t uuid; bid uuid; mid text:='TABI-AUTONOMY-ROLLBACK-TEST'; rid uuid:=gen_random_uuid(); ok boolean;
+begin
+ select id into a from public.profiles where role='admin' limit 1;
+ select id into f from public.profiles where role='foto' limit 1;
+ select id into e from public.profiles where role='editora' limit 1;
+ if a is null or f is null or e is null then raise exception 'Missing staging role fixtures';end if;
+ perform set_config('request.jwt.claim.sub','',true);
+ perform set_config('request.jwt.claims',jsonb_build_object('role','service_role')::text,true);
+ insert into public.matches(id,data) values(mid,jsonb_build_object('id',mid,'date',((now() at time zone 'America/Monterrey')::date+30)::text,'time','12:00','venue','Campo de prueba','teams','TEST A vs TEST B','cat','FLAG_TEST','f1',f::text,'stage','publicado'));
+ r:=public.tsi231_support_command('register',jsonb_build_object('name','Prueba automatizada','phone','8112345678','consent',true,'request_id',gen_random_uuid()),token,null);
+ t:=(r->'thread'->>'id')::uuid;
+ if r->'thread'->>'folio' is null then raise exception 'Missing folio';end if;
+ r:=public.tsi231_support_command('slots','{}',token,null);
+ if not exists(select 1 from jsonb_array_elements(r->'slots') x where x->>'id'=mid) then raise exception 'Assigned match missing';end if;
+ q:=jsonb_build_object('sport','flag','package','equipo','players',6,'team','Equipo prueba','match_id',mid,'request_id',rid,'total',1,'discount',99999);
+ r:=public.tsi231_support_command('quote',q,token,null);
+ if (r->'booking'->>'total')::numeric<>1200 or (r->'booking'->>'deposit')::numeric<>600 or (r->'booking'->>'discount')::numeric<>0 then raise exception 'Client supplied pricing accepted';end if;
+ bid:=(r->'booking'->>'id')::uuid;
+ r:=public.tsi231_support_command('quote',q,token,null);
+ if (select count(*) from public.tsi231_support_bookings where thread_id=t)<>1 then raise exception 'Duplicate quote';end if;
+ ok:=false;begin
+  perform public.tsi231_support_command('confirm',jsonb_build_object('booking_id',bid,'request_id',gen_random_uuid()),token,null);
+ exception when others then ok:=true;end;if not ok then raise exception 'Terms bypass';end if;
+ update public.matches set data=data||'{"f1":""}'::jsonb where id=mid;
+ ok:=false;begin
+  perform public.tsi231_support_command('confirm',jsonb_build_object('booking_id',bid,'accept_terms',true,'request_id',gen_random_uuid()),token,null);
+ exception when others then ok:=true;end;if not ok then raise exception 'Unavailable match confirmed';end if;
+ update public.matches set data=data||jsonb_build_object('f1',f::text) where id=mid;
+ r:=public.tsi231_support_command('confirm',jsonb_build_object('booking_id',bid,'accept_terms',true,'request_id',gen_random_uuid()),token,null);
+ if r->'booking'->>'status'<>'Confirmada' or (r->'booking'->>'paid')::numeric<>0 then raise exception 'Incorrect confirmation';end if;
+ r:=public.tsi231_support_command('staff-claim',jsonb_build_object('thread_id',t,'request_id',gen_random_uuid()),null,f);
+ if not (r->'thread'->>'bot_paused')::boolean then raise exception 'Bot not paused';end if;
+ ok:=false;begin perform public.tsi231_support_command('staff-message',jsonb_build_object('thread_id',t,'text','Mensaje de otro operador','request_id',gen_random_uuid()),null,e);exception when others then ok:=true;end;if not ok then raise exception 'Ownership ignored';end if;
+ ok:=false;begin perform public.tsi231_support_command('staff-booking',jsonb_build_object('thread_id',t,'discount',1,'request_id',gen_random_uuid()),null,f);exception when others then ok:=true;end;if not ok then raise exception 'Photographer discount allowed';end if;
+ r:=public.tsi231_support_command('staff-booking',jsonb_build_object('thread_id',t,'paid',600,'progress','En edición','request_id',gen_random_uuid()),null,f);
+ if (r->'booking'->>'balance')::numeric<>600 then raise exception 'Bad balance';end if;
+ r:=public.tsi231_support_command('staff-booking',jsonb_build_object('thread_id',t,'discount',100,'request_id',gen_random_uuid()),null,a);
+ if (r->'booking'->>'balance')::numeric<>500 then raise exception 'Admin discount failed';end if;
+ r:=public.tsi231_support_command('staff-resume',jsonb_build_object('thread_id',t,'request_id',gen_random_uuid()),null,a);
+ if (r->'thread'->>'bot_paused')::boolean then raise exception 'Bot not resumed';end if;
+ rid:=gen_random_uuid();
+ q:=jsonb_build_object('request_id',rid,'expected_version',r->'thread'->>'version','reply','Prueba de respuesta','state','{}'::jsonb,'handoff',false);
+ r:=public.tsi231_support_command('assist',q,token,null);
+ perform public.tsi231_support_command('assist',q,token,null);
+ if (select count(*) from public.tsi230_support_messages where thread_id=t and text='Prueba de respuesta')<>1 then raise exception 'Duplicate bot answer';end if;
+ r:=public.tsi231_support_command('register',jsonb_build_object('name','Otro visitante','phone','8112345679','consent',true,'request_id',gen_random_uuid()),token2,null);
+ if r->'booking'<>'null'::jsonb then raise exception 'Cross-visitor booking leak';end if;
+ if has_table_privilege('anon','public.tsi231_support_bookings','SELECT') or has_function_privilege('authenticated','public.tsi231_support_command(text,jsonb,text,uuid)','EXECUTE') then raise exception 'Public privileged access';end if;
+end $$;
+rollback;

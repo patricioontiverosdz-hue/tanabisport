@@ -1,3 +1,4 @@
+import { validateTabiSession } from './tabi-payments.mjs';
 // Pure Web API handler. Runtime secrets and the Stripe SDK are injected by index.ts.
 export const STRIPE_API_VERSION = '2026-08-26.dahlia';
 export const STAGING_PROJECT = 'nksqpoigywfegcbvfhoa';
@@ -274,6 +275,14 @@ export function createHandler(options = {}) {
     // The runtime supplies the pinned SDK's SubtleCrypto verifier in addition to the raw-byte check.
     if (typeof sdk.webhooks?.constructEventAsync === 'function') {
       try { const verified = await sdk.webhooks.constructEventAsync(decode(raw),signature,cfg.webhook,300); if (verified.id !== event.id) throw Error(); } catch { fail(400,'invalid_signature','La firma del evento no es válida.'); }
+    }
+    if(event.data?.object?.metadata?.tsi_integration==='tabi'){
+      if(!SESSION.test(event.data?.object?.id||''))fail(400,'invalid_event','Sesión de pago inválida.');
+      await accountReady();
+      let current;try{current=await sdk.checkout.sessions.retrieve(event.data.object.id);}catch{fail(503,'payments_unavailable','No se pudo consultar el pago de TABI.');}
+      let payment;try{payment=validateTabiSession(current);}catch{fail(409,'session_mismatch','El pago no corresponde a TABI staging.');}
+      await rpc('tsi231_support_payment_event',{payload:{...payment,event_id:event.id,event_type:event.type}});
+      return {received:true,integration:'tabi'};
     }
     const session = await retrieve(event.data?.object?.id);
     await recordSession(session,event.id,event.type); return {received:true};

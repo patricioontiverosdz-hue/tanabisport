@@ -326,12 +326,12 @@ body{background:var(--tsi-page)}
 <link rel="stylesheet" href="../assets/tsi-226-privacy.css?v=226">
 <link rel="stylesheet" href="tsi-230-ui.css?v=230-admin-1">
 <link rel="stylesheet" href="tsi-230-guest.css?v=230">
-<link rel="stylesheet" href="tsi-230-support.css?v=230">
+<link rel="stylesheet" href="tsi-230-support.css?v=231-tabi-stripe-2">
 <script src="tsi-230-privacy.js?v=230-manual-photos-1"></script>
 <script src="tsi-230-rules.js?v=230"></script>
 <script src="tsi-230-guest.js?v=230"></script>
 <script src="tsi-230-portfolio.js?v=230-photo-upload-1"></script>
-<script src="tsi-230-support.js?v=230"></script>
+<script src="tsi-230-support.js?v=231-tabi-stripe-2"></script>
 <link rel="stylesheet" href="tsi-230-admin.css?v=230-admin-1">
 <script src="tsi-230-role-catalog.js?v=230-admin-1"></script>
 <script src="tsi-230-admin.js?v=230-admin-1"></script>
@@ -583,10 +583,11 @@ function viewLoginDemo(){
 }
 
 function tabsFor(role){
-  var all={resumen:"Resumen",calendario:"Calendario",partidos:"Partidos",cobertura:"Cobertura",proceso:"Proceso",reservaciones:"Reservaciones",catalogo:"Catálogo",fotografos:"Por fotógrafo",estadisticas:"Estadísticas",comentarios:"Comentarios",micalendario:"Mi calendario",pagos:"Pagos",mipago:"Mi pago",gastos:"Gastos",prestamos:"Préstamos",tienda:"Tienda",avisos:"Avisos",notif:"Notificaciones",ubicaciones:"Ubicaciones",equipo:"Equipo",datos:"Datos",ajustes:"Ajustes",portafolio:"Imágenes de la página",envivo:"En vivo"};
+  var all={atencion:"Atención",resumen:"Resumen",calendario:"Calendario",partidos:"Partidos",cobertura:"Cobertura",proceso:"Proceso",reservaciones:"Reservaciones",catalogo:"Catálogo",fotografos:"Por fotógrafo",estadisticas:"Estadísticas",comentarios:"Comentarios",micalendario:"Mi calendario",pagos:"Pagos",mipago:"Mi pago",gastos:"Gastos",prestamos:"Préstamos",tienda:"Tienda",avisos:"Avisos",notif:"Notificaciones",ubicaciones:"Ubicaciones",equipo:"Equipo",datos:"Datos",ajustes:"Ajustes",portafolio:"Imágenes de la página",envivo:"En vivo"};
   var keys=role==="admin"?["resumen","estadisticas","calendario","partidos","reservaciones","catalogo","fotografos","cobertura","proceso","comentarios","pagos","gastos","prestamos","tienda","avisos","notif","ubicaciones","equipo","datos","ajustes","portafolio","envivo"]
           :role==="foto"?["resumen","partidos","micalendario","cobertura","comentarios","mipago","gastos","prestamos","avisos","notif","calendario","ubicaciones"]
           :["resumen","proceso","portafolio","comentarios","mipago","gastos","prestamos","avisos","notif","calendario"];
+  if(["admin","foto","editora"].includes(role))keys.push("atencion");
   if(role==="foto"&&processMatches().length)keys.splice(keys.indexOf("cobertura")+1,0,"proceso");
   if(role==="editora")keys.splice(keys.indexOf("portafolio"),0,"tienda");
   if(role!=="admin"&&!S.cfg.loans)keys=keys.filter(function(k){return k!=="prestamos";});
@@ -909,7 +910,7 @@ function tabEnVivo(){
 function viewDash(){
   var allowed=tabsFor(me().role).map(function(x){return x[0];});
   if(allowed.indexOf(S.tab)<0)S.tab="resumen";
-  var fn={suspensiones:tabAvailabilitySuspensions,resumen:tabResumen,intelligence:tabIntelligence,disponibilidadedicion:tabEditingAvailability,importarrol:tabRoleImport,disponibilidad:tabPhotoAvailability,calendario:tabCalendario,partidos:tabPartidos,cobertura:tabCobertura,proceso:tabProceso,ubicaciones:tabUbicaciones,equipo:tabEquipo,datos:tabDatos,pagos:tabPagos,mipago:tabMiPago,micalendario:tabMiCalendario,comentarios:tabComentarios,gastos:tabGastos,prestamos:tabPrestamos,tienda:tabTienda,avisos:tabAvisos,notif:tabNotif,ajustes:tabAjustes,reservaciones:tabReservaciones,catalogo:tabCatalogo,fotografos:tabFotografos,estadisticas:tabEstadisticas,portafolio:tabFotos,envivo:tabEnVivo}[S.tab];
+  var fn={atencion:function(){return '<div data-ts231-inbox></div>';},suspensiones:tabAvailabilitySuspensions,resumen:tabResumen,intelligence:tabIntelligence,disponibilidadedicion:tabEditingAvailability,importarrol:tabRoleImport,disponibilidad:tabPhotoAvailability,calendario:tabCalendario,partidos:tabPartidos,cobertura:tabCobertura,proceso:tabProceso,ubicaciones:tabUbicaciones,equipo:tabEquipo,datos:tabDatos,pagos:tabPagos,mipago:tabMiPago,micalendario:tabMiCalendario,comentarios:tabComentarios,gastos:tabGastos,prestamos:tabPrestamos,tienda:tabTienda,avisos:tabAvisos,notif:tabNotif,ajustes:tabAjustes,reservaciones:tabReservaciones,catalogo:tabCatalogo,fotografos:tabFotografos,estadisticas:tabEstadisticas,portafolio:tabFotos,envivo:tabEnVivo}[S.tab];
   return topbar()+'<div class="ti-section-head">'+tabsBar()+'<h1>'+esc((tabsFor(me().role).find(function(x){return x[0]===S.tab;})||['','Resumen'])[1])+'</h1></div>'+(UX210?UX210.draftBanner():'')+(UX210&&UX210.hasTab(S.tab)?UX210.renderTab(S.tab):fn())+'<footer>'+(LIVE?"Datos guardados en línea.":"Datos guardados en este navegador.")+' · Versión '+APP_VERSION+'</footer>';
 }
 

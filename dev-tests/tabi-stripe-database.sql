@@ -1,0 +1,35 @@
+begin;
+do $$
+declare f uuid; a uuid; t uuid; r jsonb; p jsonb; bid uuid; pid uuid; token text:=repeat('c',64); ok boolean; event jsonb;
+begin
+ select id into f from public.profiles where role='foto' limit 1;
+ select id into a from public.profiles where role='admin' limit 1;
+ perform set_config('request.jwt.claim.sub','',true);perform set_config('request.jwt.claims','{"role":"service_role"}',true);
+ insert into public.matches(id,data) values('TABI-STRIPE-ROLLBACK',jsonb_build_object('id','TABI-STRIPE-ROLLBACK','date',((now() at time zone 'America/Monterrey')::date+30)::text,'time','12:00','venue','Pruebas','teams','A vs B','cat','FLAG_TEST','f1',f,'stage','publicado'));
+ r:=public.tsi231_support_command('register',jsonb_build_object('name','Prueba Stripe','phone','8112345678','consent',true,'request_id',gen_random_uuid()),token,null);
+ t:=(r->'thread'->>'id')::uuid;
+ r:=public.tsi231_support_command('quote',jsonb_build_object('sport','flag','package','individual','players',1,'team','Prueba individual','match_id','TABI-STRIPE-ROLLBACK','request_id',gen_random_uuid()),token,null);
+ bid:=(r->'booking'->>'id')::uuid;
+ if (r->'booking'->>'deposit')::numeric<>650 then raise exception 'Individual must be paid in full';end if;
+ perform public.tsi231_support_command('confirm',jsonb_build_object('booking_id',bid,'accept_terms',true,'request_id',gen_random_uuid()),token,null);
+ p:=public.tsi231_support_payment('prepare','{}',token)->'payment';
+ pid:=(p->>'id')::uuid;
+ if (p->>'amount_cents')::integer<>65000 then raise exception 'Incorrect Stripe amount';end if;
+ r:=public.tsi231_support_payment('prepare','{}',token);
+ if (r->'payment'->>'id')::uuid<>pid then raise exception 'Multiple pending payments';end if;
+ perform public.tsi231_support_payment('link',jsonb_build_object('payment_id',pid,'session_id','cs_test_tabi_rollback'),token);
+ ok:=false;begin perform public.tsi231_support_command('staff-booking',jsonb_build_object('thread_id',t,'paid',650,'request_id',gen_random_uuid()),null,a);exception when others then ok:=true;end;if not ok then raise exception 'Pending payment edited manually';end if;
+ event:=jsonb_build_object('payment_id',pid,'booking_id',bid,'session_id','cs_test_tabi_rollback','event_id','evt_tabi_test_unpaid','event_type','checkout.session.completed','livemode',false,'currency','mxn','amount_total',65000,'session_status','complete','payment_status','unpaid');
+ perform public.tsi231_support_payment_event(event);
+ if (select paid from public.tsi231_support_bookings where id=bid)<>0 then raise exception 'Unpaid completed session fulfilled';end if;
+ ok:=false;begin perform public.tsi231_support_payment_event(event||'{"event_id":"evt_bad_amount","amount_total":1}'::jsonb);exception when others then ok:=true;end;if not ok then raise exception 'Wrong amount accepted';end if;
+ ok:=false;begin perform public.tsi231_support_payment_event(event||'{"event_id":"evt_live","livemode":true}'::jsonb);exception when others then ok:=true;end;if not ok then raise exception 'Live event accepted';end if;
+ event:=event||'{"event_id":"evt_tabi_paid","event_type":"checkout.session.async_payment_succeeded","payment_status":"paid"}'::jsonb;
+ perform public.tsi231_support_payment_event(event);perform public.tsi231_support_payment_event(event);
+ perform public.tsi231_support_payment_event(event||'{"event_id":"evt_tabi_stale","payment_status":"unpaid","session_status":"expired"}'::jsonb);
+ if (select paid from public.tsi231_support_bookings where id=bid)<>650 or (select stripe_paid from public.tsi231_support_bookings where id=bid)<>650 then raise exception 'Payment duplication/downgrade';end if;
+ ok:=false;begin perform public.tsi231_support_payment('prepare','{}',token);exception when others then ok:=true;end;if not ok then raise exception 'Paid individual charged again';end if;
+ ok:=false;begin perform public.tsi231_support_command('staff-booking',jsonb_build_object('thread_id',t,'paid',0,'request_id',gen_random_uuid()),null,a);exception when others then ok:=true;end;if not ok then raise exception 'Stripe payment erased manually';end if;
+ if has_table_privilege('anon','public.tsi231_support_payments','SELECT') or has_function_privilege('authenticated','public.tsi231_support_payment_event(jsonb)','EXECUTE') then raise exception 'Public payment permissions';end if;
+end $$;
+rollback;

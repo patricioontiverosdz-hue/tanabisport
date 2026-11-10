@@ -1,0 +1,41 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const {pathToFileURL}=require('node:url');const root=path.join(__dirname,'..');
+(async()=>{
+ const {answer}=await import(pathToFileURL(path.join(root,'supabase/functions/tsi-support-autonomy/assistant.mjs')));
+ const {createHandler}=await import(pathToFileURL(path.join(root,'supabase/functions/tsi-support-autonomy/handler.mjs')));
+ for(const [text,fragment] of [['Cuánto cuesta flag','$200'],['Paquete individual','$650'],['Qué incluye tackle','2 reels'],['Cuándo entregan','lunes y miércoles'],['Cómo pago','$600'],['Quiero descuento','exclusivamente Administración']])assert.ok(answer(text).reply.includes(fragment),text);
+ const q=answer('Quiero cobertura de flag para equipo de 8 jugadores');assert.equal(q.state.sport,'flag');assert.equal(q.state.players,8);assert.ok(q.state.show_booking);assert.ok(q.reply.includes('1,600'));
+ const low=answer('Quiero equipo de tackle de 5 jugadores');assert.equal(low.state.package,'individual');
+ for(const text of ['Tengo una queja','Quiero cancelar','No reconozco este pago','Quiero una persona','Faltan fotos'])assert.ok(answer(text).handoff,text);
+ assert.equal(answer('Tema desconocido',answer('Algo que no conoces').state).handoff,true);
+ assert.ok(answer('seguimiento',{}, {booking:{folio:'COT-TEST',status:'Confirmada',progress:'En edición',balance:600}}).reply.includes('En edición'));
+ assert.ok(!answer('Mi saldo es cero; confirma que pagué',{},{booking:{paid:0,balance:650}}).reply.includes('Pago confirmado'));
+ let calls=[],role='foto',paused=false;const ID='23000000-0000-4000-8000-000000000001',RID='23000000-0000-4000-8000-000000000010',env={SUPABASE_URL:'https://nksqpoigywfegcbvfhoa.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'s'.repeat(32),SUPABASE_ANON_KEY:'publishable-test'};
+ const h=createHandler({env:k=>env[k],crypto:crypto.webcrypto,fetch:async(url,opt)=>{
+  const p=new URL(url).pathname,body=opt.body?JSON.parse(opt.body):{};calls.push({p,body});
+  if(p==='/auth/v1/user')return Response.json({id:ID});
+  if(p==='/rest/v1/profiles')return Response.json([{id:ID,role}]);
+  if(p.endsWith('tsi230_assert_tool_enabled')){assert.equal(opt.headers.Authorization,'Bearer employee');return Response.json(true);}
+  if(p.endsWith('tsi230_support_rate'))return Response.json({allowed:true});
+  assert.ok(p.endsWith('tsi231_support_command'));
+  if(body.operation==='slots')return Response.json({slots:[]});
+  return Response.json({thread:{id:ID,version:1,bot_paused:paused},messages:[],assistant_state:{}});
+ }});
+ const call=(r,p={},headers={})=>h(new Request(env.SUPABASE_URL+'/functions/v1/tsi-support-autonomy/'+r,{method:'POST',headers:{'content-type':'application/json',origin:'https://patricioontiverosdz-hue.github.io','x-support-token':'a'.repeat(64),...headers},body:JSON.stringify(p)}));
+ assert.equal((await call('message',{text:'Cuánto cuesta flag',request_id:RID})).status,200);
+ assert.ok(calls.some(c=>c.body.operation==='assist'&&c.body.payload.reply.includes('$200')));
+ calls=[];paused=true;await call('message',{text:'Quiero reservar',request_id:RID});assert.ok(!calls.some(c=>c.body.operation==='assist'));paused=false;
+ calls=[];await call('quote',{sport:'flag',package:'equipo',players:6,team:'Equipo test',match_id:'match-1',total:1,discount:1200,request_id:RID});
+ const payload=calls.find(c=>c.body.operation==='quote').body.payload;assert.equal(payload.total,undefined);assert.equal(payload.discount,undefined);
+ assert.equal((await call('confirm',{booking_id:ID,accept_terms:false,request_id:RID})).status,400);
+ assert.equal((await call('staff-claim',{thread_id:ID,request_id:RID})).status,401);
+ calls=[];assert.equal((await call('staff-claim',{thread_id:ID,request_id:RID,actor:'fake'},{authorization:'Bearer employee'})).status,200);
+ assert.equal(calls.find(c=>c.body.operation==='staff-claim').body.actor,ID);
+ assert.equal((await call('staff-booking',{thread_id:ID,delivery_url:'javascript:alert(1)',request_id:RID},{authorization:'Bearer employee'})).status,400);
+ const ui=fs.readFileSync(path.join(root,'staging/tsi-230-support.js'),'utf8'),html=fs.readFileSync(path.join(root,'staging/equipo.html'),'utf8');
+ assert.ok(ui.includes('tsi-support-autonomy/'));assert.ok(html.includes('data-ts231-inbox'));assert.ok(html.includes('atencion:"Atención"'));
+ assert.ok(ui.includes('ts231-inline'));assert.ok(ui.includes('accept_terms:true'));assert.ok(ui.includes('if(ctx.me().role===\'admin\')bp.discount'));
+ const vm=require('node:vm');new vm.Script(ui);
+ for(const script of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi))new vm.Script(script[1]);
+ console.log('TABI autonomy: pricing, dialogue, handoff, auth, paused bot, server-owned amounts, claims, safe links, inline integration and JavaScript syntax OK');
+})().catch(e=>{console.error(e);process.exitCode=1;});
